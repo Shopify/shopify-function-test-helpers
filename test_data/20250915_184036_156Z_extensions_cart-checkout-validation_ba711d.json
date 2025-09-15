@@ -1,0 +1,45 @@
+{
+  "shopId": 1234,
+  "apiClientId": 5678,
+  "payload": {
+    "export": "cart_validations_generate_run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "quantity": 2
+          }
+        ],
+        "buyerIdentity": {
+          "email": "alexandre.bradley@shopify.com"
+        }
+      }
+    },
+    "inputBytes": 76,
+    "output": {
+      "operations": [
+        {
+          "validationAdd": {
+            "errors": [
+              {
+                "message": "Not possible to order more than one of each",
+                "target": "$.cart"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "outputBytes": 105,
+    "logs": [],
+    "functionId": "fa215165-66f3-4598-a170-db593371637a",
+    "fuelConsumed": 19381
+  },
+  "logType": "function_run",
+  "status": "success",
+  "source": "cart-checkout-validation",
+  "sourceNamespace": "extensions",
+  "logTimestamp": "2025-09-15T18:40:36.156216Z",
+  "localTime": "2025-09-15 14:40:36",
+  "storeName": "test-shop.myshopify.com"
+}
