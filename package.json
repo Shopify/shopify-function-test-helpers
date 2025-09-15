@@ -1,12 +1,37 @@
 {
   "name": "shopify-functions-wasm-testing-helpers",
   "version": "1.0.0",
-  "description": "",
+  "description": "A JavaScript library for testing Shopify Functions WASM modules, particularly cart-checkout-validation functions",
   "main": "index.js",
+  "files": [
+    "index.js",
+    "src/",
+    "test_data/",
+    "README.md"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint index.js test/",
+    "lint:fix": "eslint index.js test/ --fix",
+    "prepublishOnly": "npm run test && npm run lint"
   },
-  "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "eslint": "^8.57.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/shopify-functions-wasm-testing-helpers.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/shopify-functions-wasm-testing-helpers/issues"
+  },
+  "homepage": "https://github.com/your-username/shopify-functions-wasm-testing-helpers#readme"
 }
