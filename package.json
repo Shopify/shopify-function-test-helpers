@@ -33,5 +33,8 @@
   "bugs": {
     "url": "https://github.com/your-username/shopify-functions-wasm-testing-helpers/issues"
   },
-  "homepage": "https://github.com/your-username/shopify-functions-wasm-testing-helpers#readme"
+  "homepage": "https://github.com/your-username/shopify-functions-wasm-testing-helpers#readme",
+  "dependencies": {
+    "graphql": "^16.11.0"
+  }
 }
