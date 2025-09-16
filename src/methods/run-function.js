@@ -19,9 +19,14 @@ async function runFunction(exportName, input) {
     // __dirname = /path/to/function/tests/helpers
     // functionDir = /path/to/function (go up 2 levels from helpers)
     // appRootDir = /path/to (go up 1 more level to get to app root)
-    const functionDir = path.dirname(path.dirname(__dirname));
+
+    const functionDir = path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(__dirname)))));
     const appRootDir = path.dirname(functionDir);
     const functionName = path.basename(functionDir);
+    
+    console.log('functionName', functionName);
+    console.log('appRootDir', appRootDir);
+    console.log('functionDir', functionDir);
 
     return new Promise((resolve, reject) => {
       const shopifyProcess = spawn('shopify', [
