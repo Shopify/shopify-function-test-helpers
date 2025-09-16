@@ -1,0 +1,14 @@
+query Input {
+  cart {
+    lines {
+      quantity
+      merchandise {
+        id
+        title
+      }
+    }
+    buyerIdentity {
+      email
+    }
+  }
+}
