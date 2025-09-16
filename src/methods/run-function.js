@@ -15,11 +15,9 @@ async function runFunction(exportName, input) {
   try {
     const inputJson = JSON.stringify(input);
 
-    // Calculate paths correctly:
-    // __dirname = /path/to/function/tests/helpers
-    // functionDir = /path/to/function (go up 2 levels from helpers)
-    // appRootDir = /path/to (go up 1 more level to get to app root)
-
+    // Calculate paths correctly for when used as a dependency:
+    // __dirname = /path/to/function/tests/node_modules/function-testing-helpers/src/methods
+    // Go up 5 levels to get to function directory: ../../../../../ = /path/to/function
     const functionDir = path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(__dirname)))));
     const appRootDir = path.dirname(functionDir);
     const functionName = path.basename(functionDir);
@@ -39,7 +37,7 @@ async function runFunction(exportName, input) {
         stdio: ['pipe', 'pipe', 'pipe']
       });
 
-      let stdout = 'functionName: ' + functionName + '\nappRootDir: ' + appRootDir + '\nfunctionDir: ' + functionDir + '\n';
+      let stdout = '';
       let stderr = '';
 
       shopifyProcess.stdout.on('data', (data) => {

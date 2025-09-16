@@ -9,7 +9,8 @@ const {
   runFunction
 } = require('./index.js');
 
-console.log('=== Shopify Functions WASM Testing Helpers Example ===\n');
+async function runExample() {
+  console.log('=== Shopify Functions WASM Testing Helpers Example ===\n');
 
 // 1. Load a fixture from test data
 console.log('1. Loading a fixture from test data...');
@@ -44,13 +45,18 @@ try {
 
 // 3. Build a function payload
 console.log('3. Building a function payload...');
-buildFunction();
+// You can provide a specific function path, or let it auto-detect
+// const buildResult = await buildFunction('/path/to/your/function');
+const buildResult = await buildFunction();
 
 console.log('Function payload built successfully');
+console.log('Build result:', buildResult);
 
 // 4. Run a function
 console.log('4. Running a function...');
-const result = runFunction(fixture.export, fixture.input);
+// You can provide a specific function path, or let it auto-detect
+// const result = await runFunction(fixture.export, fixture.input, '/path/to/your/function');
+const result = await runFunction(fixture.export, fixture.input);
 
 console.log('Function executed successfully');
 console.log('Result status:', result.result.output.operations.length);
@@ -58,3 +64,7 @@ console.log('Output operations:', result.result.output.operations.length);
 
 console.log('');
 console.log('=== Example completed ===');
+}
+
+// Run the example
+runExample().catch(console.error);
