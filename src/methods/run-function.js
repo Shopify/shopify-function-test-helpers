@@ -11,7 +11,7 @@ const path = require('path');
  * @param {String} input - The actual function implementation to test
  * @returns {Object} The function run result
  */
-function runFunction(exportName, input) {
+async function runFunction(exportName, input) {
   try {
     const inputJson = JSON.stringify(input);
 

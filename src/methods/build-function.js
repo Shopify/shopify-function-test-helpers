@@ -9,7 +9,7 @@ const path = require('path');
  * Build a function run payload from a cart and options
  * @returns {Object} A function run payload
  */
-function buildFunction() {
+async function buildFunction() {
   try {
     // Calculate paths correctly:
     // __dirname = /path/to/function/tests/helpers
