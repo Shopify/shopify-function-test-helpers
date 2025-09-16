@@ -23,11 +23,11 @@ async function loadFixture(filename) {
     };
   } catch (error) {
     if (error instanceof SyntaxError) {
-      throw new Error(`Invalid JSON in fixture file ${fixturePath}: ${error.message}`);
+      throw new Error(`Invalid JSON in fixture file ${filename}: ${error.message}`);
     } else if (error instanceof Error) {
-      throw new Error(`Failed to load fixture file ${fixturePath}: ${error.message}`);
+      throw new Error(`Failed to load fixture file ${filename}: ${error.message}`);
     } else {
-      throw new Error(`Unknown error loading fixture file ${fixturePath}`);
+      throw new Error(`Unknown error loading fixture file ${filename}`);
     }
   } 
 }

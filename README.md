@@ -58,31 +58,25 @@ Validates a fixture to ensure it has the correct structure.
 
 **Returns:** ValidationResult object with `isValid` boolean and `errors` array
 
-#### `buildFunction(cart, options?)`
-Builds a function run payload from a cart and options.
+#### `buildFunction(functionPath?)`
+Builds a Shopify function using the Shopify CLI.
 
 **Parameters:**
-- `cart`: Cart object to include in the payload
-- `options` (optional): Configuration object
-  - `shopId`: Shop ID (default: 1234)
-  - `apiClientId`: API client ID (default: 5678)
-  - `status`: Function run status (default: "success")
-  - `source`: Function source (default: "cart-checkout-validation")
-  - `storeName`: Store name (default: "test-shop.myshopify.com")
-  - `functionId`: Function ID (default: "test-function-id")
+- `functionPath` (optional): Path to the function directory. If not provided, will auto-detect from current working directory.
 
-**Returns:** Fixture object
+**Returns:** Promise that resolves to build result object with `success`, `output`, and `error` properties.
 
-#### `runFunction(payload, functionImplementation)`
-Runs a function with the given payload and returns the result.
+#### `runFunction(exportName, input, functionPath?)`
+Runs a Shopify function using the Shopify CLI.
 
 **Parameters:**
-- `payload`: The function run payload
-- `functionImplementation`: The actual function implementation to test
+- `exportName`: The export name of the function to run
+- `input`: The input data to pass to the function
+- `functionPath` (optional): Path to the function directory. If not provided, will auto-detect from current working directory.
 
-**Returns:** Fixture object with execution results
+**Returns:** Promise that resolves to result object with `result` and `error` properties.
 
-**Throws:** Error if functionImplementation is not a function
+**Note:** Both functions will automatically detect the function directory by looking for `shopify.function.toml` in common locations (current directory, src/, functions/, extensions/). You can also provide a specific path if needed.
 
 ## Development
 

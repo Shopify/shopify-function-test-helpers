@@ -7,17 +7,26 @@ const path = require('path');
 
 /**
  * Build a function run payload from a cart and options
+ * @param {string} functionPath - Optional path to the function directory
  * @returns {Object} A function run payload
  */
-async function buildFunction() {
+async function buildFunction(functionPath) {
   try {
-    // Calculate paths correctly:
-    // __dirname = /path/to/function/tests/helpers
-    // functionDir = /path/to/function (go up 2 levels from helpers)
-    // appRootDir = /path/to (go up 1 more level to get to app root)
-    const functionDir = path.dirname(path.dirname(__dirname));
-    const appRootDir = path.dirname(functionDir);
-    const functionName = path.basename(functionDir);
+    let functionDir, appRootDir, functionName;
+    
+    if (functionPath) {
+      // Use provided function path
+      functionDir = path.resolve(functionPath);
+      appRootDir = path.dirname(functionDir);
+      functionName = path.basename(functionDir);
+    } else {
+      // Calculate paths correctly for when used as a dependency:
+      // __dirname = /path/to/function/tests/node_modules/function-testing-helpers/src/methods
+      // Go up 5 levels to get to function directory: ../../../../../ = /path/to/function
+      functionDir = path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(__dirname)))));
+      appRootDir = path.dirname(functionDir);
+      functionName = path.basename(functionDir);
+    }
 
     return new Promise((resolve, reject) => {
       const shopifyProcess = spawn('shopify', [
