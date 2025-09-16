@@ -1,5 +1,5 @@
 {
-  "name": "shopify-functions-wasm-testing-helpers",
+  "name": "function-testing-helpers",
   "version": "1.0.0",
   "description": "A JavaScript library for testing Shopify Functions WASM modules, particularly cart-checkout-validation functions",
   "main": "index.js",
