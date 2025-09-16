@@ -22,10 +22,6 @@ async function runFunction(exportName, input) {
     const appRootDir = path.dirname(functionDir);
     const functionName = path.basename(functionDir);
     
-    console.log('functionName', functionName);
-    console.log('appRootDir', appRootDir);
-    console.log('functionDir', functionDir);
-
     return new Promise((resolve, reject) => {
       const shopifyProcess = spawn('shopify', [
         'app', 'function', 'run',

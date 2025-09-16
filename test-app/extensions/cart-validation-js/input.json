@@ -1,0 +1,15 @@
+{
+    "cart": {
+      "buyerIdentity": null,
+      "cost": {
+        "subtotalAmount": {
+          "amount": "100.0"
+        }
+      },
+      "lines": [
+        {
+          "quantity": 1
+        }
+      ]
+    }
+}
