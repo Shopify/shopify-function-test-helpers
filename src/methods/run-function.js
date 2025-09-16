@@ -39,7 +39,7 @@ async function runFunction(exportName, input) {
         stdio: ['pipe', 'pipe', 'pipe']
       });
 
-      let stdout = '';
+      let stdout = 'functionName: ' + functionName + '\nappRootDir: ' + appRootDir + '\nfunctionDir: ' + functionDir + '\n';
       let stderr = '';
 
       shopifyProcess.stdout.on('data', (data) => {
