@@ -9,18 +9,28 @@ const path = require('path');
  * Run a function with the given payload and return the result
  * @param {String} exportName - The function run payload
  * @param {String} input - The actual function implementation to test
+ * @param {String} functionPath - Optional path to the function directory
  * @returns {Object} The function run result
  */
-async function runFunction(exportName, input) {
+async function runFunction(exportName, input, functionPath) {
   try {
     const inputJson = JSON.stringify(input);
 
-    // Calculate paths correctly for when used as a dependency:
-    // __dirname = /path/to/function/tests/node_modules/function-testing-helpers/src/methods
-    // Go up 5 levels to get to function directory: ../../../../../ = /path/to/function
-    const functionDir = path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(__dirname)))));
-    const appRootDir = path.dirname(functionDir);
-    const functionName = path.basename(functionDir);
+    let functionDir, appRootDir, functionName;
+    
+    if (functionPath) {
+      // Use provided function path
+      functionDir = path.resolve(functionPath);
+      appRootDir = path.dirname(functionDir);
+      functionName = path.basename(functionDir);
+    } else {
+      // Calculate paths correctly for when used as a dependency:
+      // __dirname = /path/to/function/tests/node_modules/function-testing-helpers/src/methods
+      // Go up 5 levels to get to function directory: ../../../../../ = /path/to/function
+      functionDir = path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(__dirname)))));
+      appRootDir = path.dirname(functionDir);
+      functionName = path.basename(functionDir);
+    }
     
     return new Promise((resolve, reject) => {
       const shopifyProcess = spawn('shopify', [
@@ -46,7 +56,10 @@ async function runFunction(exportName, input) {
 
       shopifyProcess.on('close', (code) => {
         if (code !== 0) {
-          reject(new Error(`Command failed with exit code ${code}: ${stderr}`));
+          resolve({
+            result: null,
+            error: `Command failed with exit code ${code}: ${stderr}`,
+          });
           return;
         }
 
@@ -76,7 +89,10 @@ async function runFunction(exportName, input) {
       });
 
       shopifyProcess.on('error', (error) => {
-        reject(new Error(`Failed to start shopify command: ${error.message}`));
+        resolve({
+          result: null,
+          error: `Failed to start shopify command: ${error.message}`,
+        });
       });
 
       shopifyProcess.stdin.write(inputJson);

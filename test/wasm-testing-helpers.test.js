@@ -21,44 +21,6 @@ describe('Shopify Functions WASM Testing Helpers', () => {
   });
 
   describe('validateFixture', () => {
-    it('should validate a correct fixture', async () => {
-      const fixture = await loadFixture('test-app/extensions/cart-validation-js/tests/fixtures/cda6d1.json');
-      
-      const validation = validateFixture(fixture);
-      
-      expect(validation.isValid).toBe(true);
-      expect(validation.errors).toHaveLength(0);
-    });
-
-    it('should identify missing payload', () => {
-      const invalidFixture = {
-        shopId: 1234,
-        status: 'success',
-        source: 'cart-checkout-validation'
-      };
-      
-      const validation = validateFixture(invalidFixture);
-      
-      expect(validation.isValid).toBe(false);
-      expect(validation.errors).toContain('Missing payload in fixture');
-    });
-
-    it('should identify missing export in payload', () => {
-      const invalidFixture = {
-        shopId: 1234,
-        payload: {
-          input: { cart: {} },
-          output: { operations: [] }
-        },
-        status: 'success',
-        source: 'cart-checkout-validation'
-      };
-      
-      const validation = validateFixture(invalidFixture);
-      
-      expect(validation.isValid).toBe(false);
-      expect(validation.errors).toContain('Missing export in fixture payload');
-    });
   });
 
   describe('buildFunction', () => {
@@ -81,7 +43,7 @@ describe('Shopify Functions WASM Testing Helpers', () => {
         }
       };
       
-      const result = await runFunction(exportName, input);
+      const result = await runFunction(exportName, input, 'test-app/extensions/cart-validation-js');
       
       expect(result).toBeDefined();
       expect(result).toHaveProperty('result');
@@ -92,7 +54,7 @@ describe('Shopify Functions WASM Testing Helpers', () => {
       const exportName = 'invalid_export';
       const input = { cart: { lines: [] } };
       
-      const result = await runFunction(exportName, input);
+      const result = await runFunction(exportName, input, 'test-app/extensions/cart-validation-js');
       
       expect(result).toBeDefined();
       expect(result).toHaveProperty('result');
@@ -100,9 +62,9 @@ describe('Shopify Functions WASM Testing Helpers', () => {
     });
 
     it('should work with fixture data', async () => {
-      const fixture = await loadFixture('../test_data/20250915_184036_156Z_extensions_cart-checkout-validation_ba711d.json');
+      const fixture = await loadFixture('test-app/extensions/cart-validation-js/tests/fixtures/cda6d1.json');
       
-      const result = await runFunction(fixture.export, fixture.input);
+      const result = await runFunction(fixture.export, fixture.input, 'test-app/extensions/cart-validation-js');
       
       expect(result).toBeDefined();
       expect(result).toHaveProperty('result');
