@@ -9,7 +9,7 @@ const path = require('path');
  * Run a function with the given payload and return the result
  * @param {String} exportName - The function run payload
  * @param {String} input - The actual function implementation to test
- * @param {String} functionPath - Optional path to the function directory
+ * @param {String} [functionPath] - Optional path to the function directory
  * @returns {Object} The function run result
  */
 async function runFunction(exportName, input, functionPath) {
@@ -18,7 +18,7 @@ async function runFunction(exportName, input, functionPath) {
 
     let functionDir, appRootDir, functionName;
     
-    if (functionPath) {
+    if (functionPath !== undefined && functionPath !== null) {
       // Use provided function path
       functionDir = path.resolve(functionPath);
       appRootDir = path.dirname(functionDir);

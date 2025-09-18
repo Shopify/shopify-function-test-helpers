@@ -1,4 +1,4 @@
-const validateInputQuery = require('../src/methods/validate-input-query.js');
+const validateInputQuery = require('../../src/methods/validate-input-query.js');
 
 describe('validateInputQuery', () => {
   it('should validate a valid GraphQL query against schema', async () => {
