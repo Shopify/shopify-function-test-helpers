@@ -1,4 +1,4 @@
-const { buildReducedSchema } = require('../src/methods/build-reduced-schema.js');
+const buildReducedSchema = require('../src/methods/build-reduced-schema.js');
 const { buildSchema, printSchema } = require('graphql');
 const fs = require('fs').promises;
 
