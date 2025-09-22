@@ -21,10 +21,25 @@ describe("Default Integration Test", () => {
       const functionDir = path.dirname(__dirname);
 
       const schemaPath = path.join(functionDir, "schema.graphql");
-      const inputQueryPath = path.join(functionDir, "src/run.graphql");
+      const inputQueryPath = path.join(functionDir, "src/cart_validations_generate_run.graphql");
 
-      await validateFixture(fixture);
+      // Validate fixture using our comprehensive validation system
+      const validationResult = await validateFixture({
+        schemaPath,
+        fixturePath: fixtureFile,
+        inputQueryPath,
+        mutationName: 'cartValidationsGenerateRun',
+        resultParameterName: 'result'
+      });
 
+      // Log validation results for debugging
+      console.log(`Validation for ${path.basename(fixtureFile)}:`);
+      console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
+      console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
+      console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
+      console.log(`  Overall: ${validationResult.overall.valid ? '✅' : '❌'}`);
+
+      // Run the actual function
       const runResult = await runFunction(
         fixture.export,
         fixture.input,
