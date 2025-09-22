@@ -1,0 +1,93 @@
+{
+  "shopId": 55479926983,
+  "apiClientId": 282965573633,
+  "payload": {
+    "export": "cart_lines_discounts_generate_run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/0",
+            "cost": {
+              "subtotalAmount": {
+                "amount": "6.0"
+              }
+            }
+          }
+        ]
+      },
+      "discount": {
+        "discountClasses": [
+          "PRODUCT",
+          "ORDER",
+          "SHIPPING"
+        ]
+      }
+    },
+    "inputBytes": 126,
+    "output": {
+      "operations": [
+        {
+          "orderDiscountsAdd": {
+            "candidates": [
+              {
+                "associatedDiscountCode": null,
+                "conditions": null,
+                "message": "10% OFF ORDER",
+                "targets": [
+                  {
+                    "orderSubtotal": {
+                      "excludedCartLineIds": []
+                    }
+                  }
+                ],
+                "value": {
+                  "percentage": {
+                    "value": "10.0"
+                  }
+                }
+              }
+            ],
+            "selectionStrategy": "FIRST"
+          }
+        },
+        {
+          "productDiscountsAdd": {
+            "candidates": [
+              {
+                "associatedDiscountCode": null,
+                "message": "20% OFF PRODUCT",
+                "targets": [
+                  {
+                    "cartLine": {
+                      "id": "gid://shopify/CartLine/0",
+                      "quantity": null
+                    }
+                  }
+                ],
+                "value": {
+                  "percentage": {
+                    "value": "20.0"
+                  }
+                }
+              }
+            ],
+            "selectionStrategy": "FIRST"
+          }
+        }
+      ]
+    },
+    "outputBytes": 399,
+    "logs": [],
+    "functionId": "0199721a-ba07-70fd-9b6f-63e9c35a8d19",
+    "fuelConsumed": 50920,
+    "target": "cart.lines.discounts.generate.run"
+  },
+  "logType": "function_run",
+  "status": "success",
+  "source": "discount-function",
+  "sourceNamespace": "extensions",
+  "logTimestamp": "2025-09-22T15:57:24.476234Z",
+  "localTime": "2025-09-22 11:57:24",
+  "storeName": "lopert-scripts.myshopify.com"
+}
