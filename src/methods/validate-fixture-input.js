@@ -19,7 +19,7 @@ const { convertFixtureToQuery } = require('./convert-fixture-to-query');
  * @returns {Promise<Object>} Validation result with validity, errors, and data
  */
 
-async function validateInputFixtureWithOriginalSchema(inputFixtureData, originalSchema) {
+async function validateFixtureInput(inputFixtureData, originalSchema) {
   try {
     // Step 1: Convert fixture data structure to a GraphQL query
     // The query directly matches the Input type structure (no field wrapper needed)
@@ -64,5 +64,5 @@ async function validateInputFixtureWithOriginalSchema(inputFixtureData, original
 }
 
 module.exports = {
-  validateInputFixtureWithOriginalSchema
+  validateFixtureInput
 };

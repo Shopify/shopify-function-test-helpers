@@ -1,4 +1,4 @@
-const { convertFixtureToQuery } = require('../src/methods/convert-fixture-to-query');
+const { convertFixtureToQuery } = require('../../src/methods/convert-fixture-to-query');
 
 describe('convertFixtureToQuery', () => {
 
@@ -151,8 +151,11 @@ describe('convertFixtureToQuery', () => {
       console.log('Input:', JSON.stringify(fixture, null, 2));
       console.log('Generated query:', query);
       
-      expect(query).toBe('query { data { other } }');
-      expect(query).not.toContain('value');
+      // For mutation-based validation, we want to include all fields (including null)
+      // so GraphQL can validate the complete structure
+      expect(query).toBe('query { data { value other } }');
+      expect(query).toContain('value');
+      expect(query).toContain('other');
     });
 
     it('should handle mixed data types', () => {
@@ -211,8 +214,11 @@ describe('convertFixtureToQuery', () => {
       console.log('Input:', JSON.stringify(fixture, null, 2));
       console.log('Generated query:', query);
       
-      expect(query).toBe('query { data { normalField } }');
-      expect(query).not.toContain('emptyObject');
+      // For mutation-based validation, we include empty objects in the query structure
+      // GraphQL will handle validation of whether empty objects are allowed
+      expect(query).toBe('query { data { emptyObject normalField } }');
+      expect(query).toContain('emptyObject');
+      expect(query).toContain('normalField');
     });
   });
 });

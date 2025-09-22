@@ -14,7 +14,7 @@ const { validate, parse, graphql } = require('graphql');
  * @param {string} resultParameterName - The parameter name in the mutation (usually 'result')
  * @returns {Object} Validation result with { valid, errors, query, variables }
  */
-async function validateOutputWithMutation(outputFixtureData, originalSchema, mutationName, resultParameterName = 'result') {
+async function validateFixtureOutput(outputFixtureData, originalSchema, mutationName, resultParameterName = 'result') {
   try {
     // Get the mutation type from schema
     const mutationType = originalSchema.getMutationType();
@@ -100,5 +100,5 @@ async function validateOutputWithMutation(outputFixtureData, originalSchema, mut
 }
 
 module.exports = {
-  validateOutputWithMutation
+  validateFixtureOutput
 };

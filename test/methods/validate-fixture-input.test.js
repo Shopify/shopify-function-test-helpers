@@ -1,9 +1,9 @@
-const { validateInputFixtureWithOriginalSchema } = require('../src/methods/validate-input-fixture-original-schema');
-const loadFixture = require('../src/methods/load-fixture');
+const { validateFixtureInput } = require('../../src/methods/validate-fixture-input');
+const loadFixture = require('../../src/methods/load-fixture');
 const { buildSchema } = require('graphql');
 const fs = require('fs').promises;
 
-describe('validateInputFixtureWithOriginalSchema', () => {
+describe('validateFixtureInput', () => {
   let schema;
   let fixture;
 
@@ -17,7 +17,7 @@ describe('validateInputFixtureWithOriginalSchema', () => {
   });
 
   it('should validate input fixture against original schema', async () => {
-    const result = await validateInputFixtureWithOriginalSchema(fixture.input, schema);
+    const result = await validateFixtureInput(fixture.input, schema);
 
     console.log('\\n=== INPUT FIXTURE VALIDATION WITH ORIGINAL SCHEMA ===');
     console.log('Input data:', JSON.stringify(fixture.input, null, 2));
@@ -42,7 +42,7 @@ describe('validateInputFixtureWithOriginalSchema', () => {
       }
     };
 
-    const result = await validateInputFixtureWithOriginalSchema(invalidInput, schema);
+    const result = await validateFixtureInput(invalidInput, schema);
 
     console.log('\\n=== INVALID INPUT DETECTION ===');
     console.log('Invalid input:', JSON.stringify(invalidInput, null, 2));
@@ -58,7 +58,7 @@ describe('validateInputFixtureWithOriginalSchema', () => {
       // Missing cart field entirely
     };
 
-    const result = await validateInputFixtureWithOriginalSchema(incompleteInput, schema);
+    const result = await validateFixtureInput(incompleteInput, schema);
 
     console.log('\\n=== MISSING FIELDS DETECTION ===');
     console.log('Incomplete input:', JSON.stringify(incompleteInput, null, 2));
@@ -83,7 +83,7 @@ describe('validateInputFixtureWithOriginalSchema', () => {
       }
     };
 
-    const result = await validateInputFixtureWithOriginalSchema(complexInput, schema);
+    const result = await validateFixtureInput(complexInput, schema);
 
     console.log('\\n=== COMPLEX NESTED DATA VALIDATION ===');
     console.log('Complex input:', JSON.stringify(complexInput, null, 2));

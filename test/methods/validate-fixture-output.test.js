@@ -1,9 +1,9 @@
-const { validateOutputWithMutation } = require('../src/methods/validate-output-with-mutation');
-const loadFixture = require('../src/methods/load-fixture');
+const { validateFixtureOutput } = require('../../src/methods/validate-fixture-output');
+const loadFixture = require('../../src/methods/load-fixture');
 const { buildSchema } = require('graphql');
 const fs = require('fs').promises;
 
-describe('validateOutputWithMutation', () => {
+describe('validateFixtureOutput', () => {
   let schema;
   let fixture;
 
@@ -23,7 +23,7 @@ describe('validateOutputWithMutation', () => {
         operations: [] // No validation errors expected
       };
 
-      const result = await validateOutputWithMutation(
+      const result = await validateFixtureOutput(
         outputData, 
         schema, 
         'cartValidationsGenerateRun', 
@@ -65,7 +65,7 @@ describe('validateOutputWithMutation', () => {
         ]
       };
 
-      const result = await validateOutputWithMutation(
+      const result = await validateFixtureOutput(
         outputWithErrors, 
         schema, 
         'cartValidationsGenerateRun', 
@@ -87,7 +87,7 @@ describe('validateOutputWithMutation', () => {
     it('should handle invalid mutation name', async () => {
       const outputData = { operations: [] };
 
-      const result = await validateOutputWithMutation(
+      const result = await validateFixtureOutput(
         outputData, 
         schema, 
         'nonExistentMutation', 
@@ -106,7 +106,7 @@ describe('validateOutputWithMutation', () => {
     it('should handle invalid parameter name', async () => {
       const outputData = { operations: [] };
 
-      const result = await validateOutputWithMutation(
+      const result = await validateFixtureOutput(
         outputData, 
         schema, 
         'cartValidationsGenerateRun', 
@@ -133,7 +133,7 @@ describe('validateOutputWithMutation', () => {
         }
       };
 
-      const result = await validateOutputWithMutation(
+      const result = await validateFixtureOutput(
         fetchOutputData, 
         schema, 
         'cartValidationsGenerateFetch', 
@@ -158,7 +158,7 @@ describe('validateOutputWithMutation', () => {
         operations: "this should be an array" // Wrong type
       };
 
-      const result = await validateOutputWithMutation(
+      const result = await validateFixtureOutput(
         invalidOutputData, 
         schema, 
         'cartValidationsGenerateRun', 
@@ -202,7 +202,7 @@ describe('validateOutputWithMutation', () => {
         ]
       };
 
-      const result = await validateOutputWithMutation(
+      const result = await validateFixtureOutput(
         outputWithExtraFields, 
         schema, 
         'cartValidationsGenerateRun', 
@@ -232,7 +232,7 @@ describe('validateOutputWithMutation', () => {
     it('should show the complete mutation query structure', async () => {
       const outputData = { operations: [] };
 
-      const result = await validateOutputWithMutation(
+      const result = await validateFixtureOutput(
         outputData, 
         schema, 
         'cartValidationsGenerateRun', 
