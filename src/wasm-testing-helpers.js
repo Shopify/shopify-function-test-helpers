@@ -7,7 +7,7 @@
 
 // Import all methods from separate files
 const loadFixture = require('./methods/load-fixture');
-const validateFixture = require('./methods/validate-fixture');
+const { validateFixture } = require('./methods/validate-fixture');
 const buildFunction = require('./methods/build-function');
 const runFunction = require('./methods/run-function');
 

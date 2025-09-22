@@ -1,7 +1,7 @@
-const { validateFixtureComplete } = require('../../src/methods/validate-fixture-complete');
+const { validateFixture } = require('../../src/methods/validate-fixture');
 const path = require('path');
 
-describe('validateFixtureComplete', () => {
+describe('validateFixture', () => {
   describe('Cart Validation Function', () => {
     it('should perform complete validation workflow for cart validation function', async () => {
       // First, let's create a simple input query file for testing
@@ -22,7 +22,7 @@ describe('validateFixtureComplete', () => {
       await fs.writeFile(testQueryPath, testQuery);
 
       try {
-        const result = await validateFixtureComplete({
+        const result = await validateFixture({
           schemaPath: './test-app/extensions/cart-validation-js/schema.graphql',
           fixturePath: './test-app/extensions/cart-validation-js/tests/fixtures/cda6d1.json',
           inputQueryPath: testQueryPath,
@@ -126,7 +126,7 @@ describe('validateFixtureComplete', () => {
       await fs.writeFile(testQueryPath, testQuery);
 
       try {
-        const result = await validateFixtureComplete({
+        const result = await validateFixture({
           schemaPath: './test-app/extensions/discount-function/schema.graphql',
           fixturePath: './test-app/extensions/discount-function/tests/fixtures/20250922_155724_476Z_extensions_discount-function_631650.json',
           inputQueryPath: testQueryPath,
@@ -171,7 +171,7 @@ describe('validateFixtureComplete', () => {
 
   describe('Error Handling', () => {
     it('should handle non-existent schema file', async () => {
-      const result = await validateFixtureComplete({
+      const result = await validateFixture({
         schemaPath: './non-existent-schema.graphql',
         fixturePath: './test-app/extensions/cart-validation-js/tests/fixtures/cda6d1.json',
         inputQueryPath: './test/temp-input-query.graphql', // Will fail before this is checked
@@ -189,7 +189,7 @@ describe('validateFixtureComplete', () => {
     });
 
     it('should handle non-existent fixture file', async () => {
-      const result = await validateFixtureComplete({
+      const result = await validateFixture({
         schemaPath: './test-app/extensions/cart-validation-js/schema.graphql',
         fixturePath: './non-existent-fixture.json',
         inputQueryPath: './test/temp-input-query.graphql', // Will fail before this is checked
@@ -212,7 +212,7 @@ describe('validateFixtureComplete', () => {
       await fs.writeFile(testQueryPath, testQuery);
 
       try {
-        const result = await validateFixtureComplete({
+        const result = await validateFixture({
           schemaPath: './test-app/extensions/cart-validation-js/schema.graphql',
           fixturePath: './test-app/extensions/cart-validation-js/tests/fixtures/cda6d1.json',
           inputQueryPath: testQueryPath,

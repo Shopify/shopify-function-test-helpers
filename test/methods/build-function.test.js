@@ -8,5 +8,5 @@ const buildFunction = require('../../src/methods/build-function.js');
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('output');
       expect(result).toHaveProperty('error');
-    });
+    }, 10000); // 10 second timeout for build operations
   });
