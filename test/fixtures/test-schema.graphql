@@ -29,8 +29,15 @@ type Metadata {
 }
 
 type Mutation {
+  """
+  Handles the Function result for the data.processing.generate.run target.
+  """
   processData(result: ProcessDataResult!): Boolean!
-  fetchData(result: FetchDataResult!): Boolean!
+  
+  """
+  Processes fetch requests for the data.fetching.generate.run target.
+  """
+  fetchData(input: FetchDataResult!): Boolean!
 }
 
 input ProcessDataResult {

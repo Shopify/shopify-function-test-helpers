@@ -17,11 +17,7 @@
         ]
       },
       "discount": {
-        "discountClasses": [
-          "PRODUCT",
-          "ORDER",
-          "SHIPPING"
-        ]
+        "discountClasses": ["PRODUCT", "ORDER", "SHIPPING"]
       }
     },
     "inputBytes": 126,

@@ -36,6 +36,30 @@ describe('validateFixture', () => {
       // Overall validation should pass
       expect(result.inputQuery.valid && result.inputFixture.valid && result.outputFixture.valid).toBe(true);
     });
+
+    it('should automatically determine mutation details from target', async () => {
+      const result = await validateFixture({
+        schemaPath: './test/fixtures/test-schema.graphql',
+        fixturePath: './test/fixtures/valid-test-fixture.json',
+        inputQueryPath: './test/fixtures/test-query.graphql'
+        // No mutationName or resultParameterName provided - should be auto-determined
+      });
+
+      // Should automatically determine the correct mutation details
+      expect(result.mutationName).toBe('processData');
+      expect(result.resultParameterName).toBe('result');
+
+      // Validation should still pass with auto-determined values
+      expect(result.inputQuery.valid).toBe(true);
+      expect(result.inputQuery.errors).toHaveLength(0);
+      expect(result.inputFixture.valid).toBe(true);
+      expect(result.inputFixture.errors).toHaveLength(0);
+      expect(result.outputFixture.valid).toBe(true);
+      expect(result.outputFixture.errors).toHaveLength(0);
+
+      // Overall validation should pass
+      expect(result.inputQuery.valid && result.inputFixture.valid && result.outputFixture.valid).toBe(true);
+    });
   });
 
   describe('Invalid Output Test Case', () => {
@@ -219,7 +243,8 @@ describe('validateFixture', () => {
         schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
         inputQueryPath: './test/fixtures/wrong-fields-query.graphql',
-        mutationName: 'processData'
+        mutationName: 'processData',
+        resultParameterName: 'result'
       });
 
       expect(result.inputQuery.valid).toBe(false);
@@ -232,7 +257,8 @@ describe('validateFixture', () => {
         schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
         inputQueryPath: './test/fixtures/test-query.graphql',
-        mutationName: 'nonExistentMutation'
+        mutationName: 'nonExistentMutation',
+        resultParameterName: 'result'
       });
 
       expect(result.inputQuery.valid && result.inputFixture.valid && result.outputFixture.valid).toBeFalsy();

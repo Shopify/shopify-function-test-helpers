@@ -1,6 +1,7 @@
 const validateInputQuery = require('./validate-input-query');
 const { validateFixtureInput } = require('./validate-fixture-input');
 const { validateFixtureOutput } = require('./validate-fixture-output');
+const { determineMutationFromTarget } = require('./determine-mutation-from-target');
 const { buildSchema } = require('graphql');
 const fs = require('fs').promises;
 
@@ -17,8 +18,8 @@ const fs = require('fs').promises;
  * @param {string} options.schemaPath - Path to the GraphQL schema file
  * @param {string} options.fixturePath - Path to the fixture JSON file
  * @param {string} options.inputQueryPath - Path to the input query file (required)
- * @param {string} options.mutationName - The mutation name for output validation (e.g., 'cartLinesDiscountsGenerateRun')
- * @param {string} options.resultParameterName - The mutation parameter name (default: 'result')
+ * @param {string} [options.mutationName] - The mutation name for output validation (auto-determined from target if not provided)
+ * @param {string} [options.resultParameterName] - The mutation parameter name (auto-determined from target if not provided)
  * @returns {Promise<Object>} Complete validation results
  */
 async function validateFixture({
@@ -26,7 +27,7 @@ async function validateFixture({
   fixturePath,
   inputQueryPath,
   mutationName,
-  resultParameterName = 'result'
+  resultParameterName
 }) {
   const results = {
     schemaPath,
@@ -48,7 +49,26 @@ async function validateFixture({
     const fixtureContent = await fs.readFile(fixturePath, 'utf8');
     const fixture = JSON.parse(fixtureContent);
 
-    // Step 3: Validate input query
+    // Step 3: Determine mutation details if not provided
+    let finalMutationName = mutationName;
+    let finalResultParameterName = resultParameterName;
+    
+    if (!finalMutationName || !finalResultParameterName) {
+      const target = fixture.payload?.target;
+      if (!target) {
+        throw new Error('Fixture must contain payload.target when mutationName and resultParameterName are not provided');
+      }
+      
+      const determined = determineMutationFromTarget(target, schema);
+      finalMutationName = finalMutationName || determined.mutationName;
+      finalResultParameterName = finalResultParameterName || determined.resultParameterName;
+    }
+
+    // Update results with final mutation details
+    results.mutationName = finalMutationName;
+    results.resultParameterName = finalResultParameterName;
+
+    // Step 4: Validate input query
     const inputQueryString = await fs.readFile(inputQueryPath, 'utf8');
     const inputQueryErrors = validateInputQuery(inputQueryString, schema);
     results.inputQuery = {
@@ -56,7 +76,7 @@ async function validateFixture({
       errors: inputQueryErrors
     };
 
-    // Step 4: Validate input fixture
+    // Step 5: Validate input fixture
     const inputFixtureResult = await validateFixtureInput(fixture.payload.input, schema);
     results.inputFixture = {
       valid: inputFixtureResult.valid,
@@ -64,12 +84,12 @@ async function validateFixture({
       data: inputFixtureResult.data
     };
 
-    // Step 5: Validate output fixture
+    // Step 6: Validate output fixture
     const outputFixtureResult = await validateFixtureOutput(
       fixture.payload.output, 
       schema, 
-      mutationName, 
-      resultParameterName
+      finalMutationName, 
+      finalResultParameterName
     );
     results.outputFixture = {
       valid: outputFixtureResult.valid,

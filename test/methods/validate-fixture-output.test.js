@@ -113,7 +113,7 @@ describe('validateFixtureOutput', () => {
         fetchOutputData, 
         schema, 
         'fetchData', 
-        'result'
+        'input'
       );
 
       expect(result.mutationName).toBe('fetchData');
