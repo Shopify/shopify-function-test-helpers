@@ -25,8 +25,6 @@ async function validateFixtureInput(inputFixtureData, originalSchema) {
     // The query directly matches the Input type structure (no field wrapper needed)
     const query = convertFixtureToQuery(inputFixtureData, '');
     
-    console.log('Generated query from input fixture:', query);
-    
     // Step 2: Execute the query against the original schema
     // The fixture data becomes the root value that resolvers will traverse
     const result = await graphql({

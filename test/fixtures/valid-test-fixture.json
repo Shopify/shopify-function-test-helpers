@@ -1,0 +1,32 @@
+{
+  "payload": {
+    "export": "test-validation-run",
+    "target": "test.validation.run",
+    "input": {
+      "cart": {
+        "lines": [
+          {
+            "id": "gid://shopify/CartLine/1",
+            "quantity": 2,
+            "merchandise": {
+              "id": "gid://shopify/ProductVariant/123",
+              "title": "Test Product"
+            }
+          }
+        ],
+        "buyerIdentity": {
+          "email": "test@example.com"
+        }
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "validationAdd": {
+            "errors": []
+          }
+        }
+      ]
+    }
+  }
+}

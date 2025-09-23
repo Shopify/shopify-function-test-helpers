@@ -11,10 +11,6 @@ describe('convertFixtureToQuery', () => {
       
       const query = convertFixtureToQuery(fixture, 'data');
       
-      console.log('\\n=== SIMPLE OBJECT CONVERSION ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
-      
       expect(query).toBe('query { data { message count } }');
     });
 
@@ -35,10 +31,6 @@ describe('convertFixtureToQuery', () => {
       };
 
       const query = convertFixtureToQuery(fixture, 'input');
-      
-      console.log('\\n=== NESTED OBJECTS CONVERSION ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
       
       expect(query).toContain('query { input {');
       expect(query).toContain('cart {');
@@ -64,10 +56,6 @@ describe('convertFixtureToQuery', () => {
 
       const query = convertFixtureToQuery(fixture, 'output');
       
-      console.log('\\n=== ARRAY WITH OBJECTS CONVERSION ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
-      
       expect(query).toContain('operations {');
       expect(query).toContain('validationAdd {');
       expect(query).toContain('errors {');
@@ -81,10 +69,6 @@ describe('convertFixtureToQuery', () => {
 
       const query = convertFixtureToQuery(fixture, 'output');
       
-      console.log('\\n=== EMPTY ARRAY CONVERSION ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
-      
       expect(query).toBe('query { output { operations } }');
     });
 
@@ -94,10 +78,6 @@ describe('convertFixtureToQuery', () => {
       };
 
       const query = convertFixtureToQuery(fixture, 'data');
-      
-      console.log('\\n=== SCALAR ARRAY CONVERSION ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
       
       expect(query).toBe('query { data { tags } }');
     });
@@ -110,11 +90,6 @@ describe('convertFixtureToQuery', () => {
       const queryWithData = convertFixtureToQuery(fixture, 'data');
       const queryWithInput = convertFixtureToQuery(fixture, 'input');
       const queryWithOutput = convertFixtureToQuery(fixture, 'output');
-      
-      console.log('\\n=== FIELD NAME VARIATIONS ===');
-      console.log('With "data":', queryWithData);
-      console.log('With "input":', queryWithInput);
-      console.log('With "output":', queryWithOutput);
       
       expect(queryWithData).toBe('query { data { test } }');
       expect(queryWithInput).toBe('query { input { test } }');
@@ -130,10 +105,6 @@ describe('convertFixtureToQuery', () => {
       
       const query = convertFixtureToQuery(fixture, '');
       
-      console.log('\\n=== EMPTY FIELD NAME ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
-      
       expect(query).toBe('query { cart { lines { quantity } } }');
     });
   });
@@ -146,10 +117,6 @@ describe('convertFixtureToQuery', () => {
       };
       
       const query = convertFixtureToQuery(fixture, 'data');
-      
-      console.log('\\n=== NULL VALUES ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
       
       // For mutation-based validation, we want to include all fields (including null)
       // so GraphQL can validate the complete structure
@@ -171,10 +138,6 @@ describe('convertFixtureToQuery', () => {
       
       const query = convertFixtureToQuery(fixture, 'data');
       
-      console.log('\\n=== MIXED DATA TYPES ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
-      
       expect(query).toContain('string number boolean');
       expect(query).toContain('object { nested }');
       expect(query).toContain('array { item }');
@@ -195,10 +158,6 @@ describe('convertFixtureToQuery', () => {
       
       const query = convertFixtureToQuery(fixture, 'data');
       
-      console.log('\\n=== DEEPLY NESTED STRUCTURES ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
-      
       expect(query).toBe('query { data { level1 { level2 { level3 { level4 { deepValue } } } } } }');
     });
 
@@ -209,10 +168,6 @@ describe('convertFixtureToQuery', () => {
       };
       
       const query = convertFixtureToQuery(fixture, 'data');
-      
-      console.log('\\n=== EMPTY OBJECTS ===');
-      console.log('Input:', JSON.stringify(fixture, null, 2));
-      console.log('Generated query:', query);
       
       // For mutation-based validation, we include empty objects in the query structure
       // GraphQL will handle validation of whether empty objects are allowed

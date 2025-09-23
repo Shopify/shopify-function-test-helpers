@@ -1,0 +1,50 @@
+schema {
+  query: Input
+  mutation: MutationRoot
+}
+
+type Input {
+  cart: Cart
+}
+
+type Cart {
+  lines: [CartLine!]!
+  buyerIdentity: BuyerIdentity
+}
+
+type CartLine {
+  id: ID
+  quantity: Int!
+  merchandise: ProductVariant
+}
+
+type ProductVariant {
+  id: ID!
+  title: String!
+}
+
+type BuyerIdentity {
+  email: String
+  phone: String
+}
+
+type MutationRoot {
+  testValidationRun(result: TestValidationRunResult!): Boolean
+}
+
+input TestValidationRunResult {
+  operations: [Operation!]!
+}
+
+input Operation {
+  validationAdd: ValidationAddOperation
+}
+
+input ValidationAddOperation {
+  errors: [ValidationError!]!
+}
+
+input ValidationError {
+  message: String!
+  target: String!
+}

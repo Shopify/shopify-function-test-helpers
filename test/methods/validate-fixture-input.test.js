@@ -18,13 +18,6 @@ describe('validateFixtureInput', () => {
 
   it('should validate input fixture against original schema', async () => {
     const result = await validateFixtureInput(fixture.input, schema);
-
-    console.log('\\n=== INPUT FIXTURE VALIDATION WITH ORIGINAL SCHEMA ===');
-    console.log('Input data:', JSON.stringify(fixture.input, null, 2));
-    console.log('Generated query:', result.query);
-    console.log('Valid:', result.valid);
-    console.log('Errors:', result.errors);
-    console.log('Result data keys:', result.data ? Object.keys(result.data) : 'No data');
     
     expect(result).toHaveProperty('valid');
     expect(result).toHaveProperty('errors');
@@ -44,13 +37,8 @@ describe('validateFixtureInput', () => {
 
     const result = await validateFixtureInput(invalidInput, schema);
 
-    console.log('\\n=== INVALID INPUT DETECTION ===');
-    console.log('Invalid input:', JSON.stringify(invalidInput, null, 2));
-    console.log('Valid:', result.valid);
-    console.log('Errors:', result.errors);
-
     expect(result.valid).toBe(false);
-    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors.length).toBe(1);
   });
 
   it('should handle missing required fields', async () => {
@@ -60,13 +48,8 @@ describe('validateFixtureInput', () => {
 
     const result = await validateFixtureInput(incompleteInput, schema);
 
-    console.log('\\n=== MISSING FIELDS DETECTION ===');
-    console.log('Incomplete input:', JSON.stringify(incompleteInput, null, 2));
-    console.log('Valid:', result.valid);
-    console.log('Errors:', result.errors);
-
     expect(result.valid).toBe(false);
-    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors.length).toBe(1);
   });
 
   it('should handle complex nested fixture data', async () => {
@@ -84,12 +67,6 @@ describe('validateFixtureInput', () => {
     };
 
     const result = await validateFixtureInput(complexInput, schema);
-
-    console.log('\\n=== COMPLEX NESTED DATA VALIDATION ===');
-    console.log('Complex input:', JSON.stringify(complexInput, null, 2));
-    console.log('Generated query:', result.query);
-    console.log('Valid:', result.valid);
-    console.log('Errors:', result.errors);
 
     expect(result).toHaveProperty('valid');
     expect(result).toHaveProperty('query');

@@ -1,4 +1,4 @@
-const { validate, parse, graphql } = require('graphql');
+const { validate, parse, graphql, isScalarType, isNonNullType } = require('graphql');
 
 /**
  * Validate output fixture by checking if it can be used as input to the corresponding mutation
@@ -35,14 +35,15 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
       throw new Error(`Parameter '${resultParameterName}' not found in mutation '${mutationName}'`);
     }
 
-    // Check if the return type is Void (which doesn't need selection set)
+    // Check if the return type is a scalar (which doesn't need selection set)
     const returnType = mutationField.type;
-    const isVoidType = returnType.name === 'Void' || returnType.toString() === 'Void!';
+    const actualType = isNonNullType(returnType) ? returnType.ofType : returnType;
+    const isScalar = isScalarType(actualType) || actualType.name === 'Void';
     
     // Create a mutation query with variables
     const mutationQuery = `
       mutation TestOutputFixture($${resultParameterName}: ${resultArg.type.toString()}) {
-        ${mutationName}(${resultParameterName}: $${resultParameterName})${isVoidType ? '' : ' { __typename }'}
+        ${mutationName}(${resultParameterName}: $${resultParameterName})${isScalar ? '' : ' { __typename }'}
       }
     `;
 

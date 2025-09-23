@@ -37,7 +37,7 @@ describe("Default Integration Test", () => {
       console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
       console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
       console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
-      console.log(`  Overall: ${validationResult.overall.valid ? '✅' : '❌'}`);
+      console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
 
       // Run the actual function
       const runResult = await runFunction(

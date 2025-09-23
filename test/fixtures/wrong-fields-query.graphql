@@ -1,0 +1,18 @@
+query Input {
+  cart {
+    lines {
+      id
+      quantity
+      nonExistentField
+      merchandise {
+        id
+        title
+        anotherInvalidField
+      }
+    }
+    buyerIdentity {
+      email
+      invalidBuyerField
+    }
+  }
+}

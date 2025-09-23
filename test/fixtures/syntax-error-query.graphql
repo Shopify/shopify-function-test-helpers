@@ -1,6 +1,7 @@
 query Input {
   cart {
     lines {
+      id
       quantity
       merchandise {
         id
@@ -10,5 +11,4 @@ query Input {
     buyerIdentity {
       email
     }
-  }
-}
+  # Missing closing brace here intentionally

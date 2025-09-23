@@ -30,15 +30,6 @@ describe('validateFixtureOutput', () => {
         'result'
       );
 
-      console.log('\n=== MUTATION-BASED OUTPUT VALIDATION ===');
-      console.log('Output data:', JSON.stringify(outputData, null, 2));
-      console.log('Mutation name:', result.mutationName);
-      console.log('Result parameter type:', result.resultParameterType);
-      console.log('Valid:', result.valid);
-      console.log('Errors:', result.errors);
-      console.log('Generated mutation query:', result.query);
-      console.log('Variables:', JSON.stringify(result.variables, null, 2));
-
       expect(result).toHaveProperty('valid');
       expect(result).toHaveProperty('errors');
       expect(result).toHaveProperty('query');
@@ -72,14 +63,6 @@ describe('validateFixtureOutput', () => {
         'result'
       );
 
-      console.log('\n=== VALIDATION WITH ERRORS ===');
-      console.log('Output with errors:', JSON.stringify(outputWithErrors, null, 2));
-      console.log('Valid:', result.valid);
-      console.log('Validation errors:', result.errors.length);
-      if (result.errors.length > 0) {
-        console.log('Error messages:', result.errors.map(e => e.message));
-      }
-
       expect(result).toHaveProperty('valid');
       expect(Array.isArray(result.errors)).toBe(true);
     });
@@ -93,10 +76,6 @@ describe('validateFixtureOutput', () => {
         'nonExistentMutation', 
         'result'
       );
-
-      console.log('\n=== INVALID MUTATION NAME ===');
-      console.log('Valid:', result.valid);
-      console.log('Error:', result.errors[0]?.message);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(1);
@@ -112,10 +91,6 @@ describe('validateFixtureOutput', () => {
         'cartValidationsGenerateRun', 
         'nonExistentParam'
       );
-
-      console.log('\n=== INVALID PARAMETER NAME ===');
-      console.log('Valid:', result.valid);
-      console.log('Error:', result.errors[0]?.message);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(1);
@@ -140,13 +115,6 @@ describe('validateFixtureOutput', () => {
         'result'
       );
 
-      console.log('\n=== DIFFERENT MUTATION VALIDATION ===');
-      console.log('Fetch output data:', JSON.stringify(fetchOutputData, null, 2));
-      console.log('Mutation:', result.mutationName);
-      console.log('Result parameter type:', result.resultParameterType);
-      console.log('Valid:', result.valid);
-      console.log('Errors:', result.errors.length);
-
       expect(result.mutationName).toBe('cartValidationsGenerateFetch');
       expect(result.resultParameterType).toBe('CartValidationsGenerateFetchResult!');
       expect(Array.isArray(result.errors)).toBe(true);
@@ -164,14 +132,6 @@ describe('validateFixtureOutput', () => {
         'cartValidationsGenerateRun', 
         'result'
       );
-
-      console.log('\n=== TYPE MISMATCH DETECTION ===');
-      console.log('Invalid output:', JSON.stringify(invalidOutputData, null, 2));
-      console.log('Valid:', result.valid);
-      console.log('Errors count:', result.errors.length);
-      if (result.errors.length > 0) {
-        console.log('First error:', result.errors[0].message);
-      }
 
       // Note: GraphQL validate() only validates query structure, not variable values
       // Type checking of variables happens during execution, not validation
@@ -209,20 +169,9 @@ describe('validateFixtureOutput', () => {
         'result'
       );
 
-      console.log('\n=== VALIDATION ADD OPERATION WITH EXTRA FIELDS ===');
-      console.log('Output with extra fields:', JSON.stringify(outputWithExtraFields, null, 2));
-      console.log('Valid:', result.valid);
-      console.log('Errors count:', result.errors.length);
-      if (result.errors.length > 0) {
-        console.log('Error messages:');
-        result.errors.forEach((error, index) => {
-          console.log(`  ${index + 1}. ${error.message}`);
-        });
-      }
-
       // Should detect the extra fields as invalid
       expect(result.valid).toBe(false);
-      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors.length).toBe(3);
       
       // Check that error mentions the extra fields
       const errorMessages = result.errors.map(e => e.message).join(' ');
@@ -238,12 +187,6 @@ describe('validateFixtureOutput', () => {
         'cartValidationsGenerateRun', 
         'result'
       );
-
-      console.log('\n=== COMPLETE MUTATION QUERY ===');
-      console.log('Generated query:');
-      console.log(result.query);
-      console.log('Variables:');
-      console.log(JSON.stringify(result.variables, null, 2));
 
       expect(result.query).toContain('mutation TestOutputFixture');
       expect(result.query).toContain('$result: CartValidationsGenerateRunResult!');
