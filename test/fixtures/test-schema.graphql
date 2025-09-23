@@ -1,0 +1,50 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  data: DataContainer
+}
+
+type DataContainer {
+  items: [Item!]!
+  metadata: Metadata
+}
+
+type Item {
+  id: ID
+  count: Int!
+  details: ItemDetails
+}
+
+type ItemDetails {
+  id: ID!
+  name: String!
+}
+
+type Metadata {
+  email: String
+  phone: String
+}
+
+type Mutation {
+  processData(result: ProcessDataResult!): Boolean
+}
+
+input ProcessDataResult {
+  operations: [DataOperation!]!
+}
+
+input DataOperation {
+  addValidation: AddValidationOperation
+}
+
+input AddValidationOperation {
+  errors: [ValidationError!]!
+}
+
+input ValidationError {
+  message: String!
+  target: String!
+}

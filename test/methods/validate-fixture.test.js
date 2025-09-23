@@ -5,10 +5,10 @@ describe('validateFixture', () => {
   describe('Valid Test Case', () => {
     it('should perform complete validation workflow with valid test fixture', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
-        inputQueryPath: './test/fixtures/complete-test-query.graphql',
-        mutationName: 'testValidationRun',
+        inputQueryPath: './test/fixtures/test-query.graphql',
+        mutationName: 'processData',
         resultParameterName: 'result'
       });
 
@@ -41,10 +41,10 @@ describe('validateFixture', () => {
   describe('Invalid Output Test Case', () => {
     it('should detect invalid output fixture with extra fields', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/invalid-output-fixture.json',
-        inputQueryPath: './test/fixtures/complete-test-query.graphql',
-        mutationName: 'testValidationRun',
+        inputQueryPath: './test/fixtures/test-query.graphql',
+        mutationName: 'processData',
         resultParameterName: 'result'
       });
 
@@ -64,10 +64,10 @@ describe('validateFixture', () => {
   describe('Invalid Input Cases', () => {
     it('should detect invalid input fixture with wrong data types', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/invalid-input-fixture.json',
-        inputQueryPath: './test/fixtures/complete-test-query.graphql',
-        mutationName: 'testValidationRun',
+        inputQueryPath: './test/fixtures/test-query.graphql',
+        mutationName: 'processData',
         resultParameterName: 'result'
       });
 
@@ -88,10 +88,10 @@ describe('validateFixture', () => {
 
     it('should handle input fixture with missing fields gracefully', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/missing-required-fields-fixture.json',
         inputQueryPath: './test/fixtures/query-for-missing-field.graphql',
-        mutationName: 'testValidationRun',
+        mutationName: 'processData',
         resultParameterName: 'result'
       });
 
@@ -113,10 +113,10 @@ describe('validateFixture', () => {
   describe('Invalid Query Cases', () => {
     it('should detect GraphQL syntax errors in input query', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
         inputQueryPath: './test/fixtures/syntax-error-query.graphql',
-        mutationName: 'testValidationRun',
+        mutationName: 'processData',
         resultParameterName: 'result'
       });
 
@@ -137,10 +137,10 @@ describe('validateFixture', () => {
 
     it('should detect invalid fields in input query', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
         inputQueryPath: './test/fixtures/wrong-fields-query.graphql',
-        mutationName: 'testValidationRun',
+        mutationName: 'processData',
         resultParameterName: 'result'
       });
 
@@ -155,10 +155,10 @@ describe('validateFixture', () => {
 
     it('should handle completely empty input query', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
         inputQueryPath: './test/fixtures/empty-query.graphql',
-        mutationName: 'testValidationRun',
+        mutationName: 'processData',
         resultParameterName: 'result'
       });
 
@@ -173,10 +173,10 @@ describe('validateFixture', () => {
 
     it('should handle query with valid syntax but schema mismatch', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
         inputQueryPath: './test/fixtures/wrong-fields-query.graphql', // Uses nonExistentField
-        mutationName: 'testValidationRun',
+        mutationName: 'processData',
         resultParameterName: 'result'
       });
 
@@ -194,8 +194,8 @@ describe('validateFixture', () => {
       const result = await validateFixture({
         schemaPath: './test/fixtures/non-existent-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
-        inputQueryPath: './test/fixtures/complete-test-query.graphql',
-        mutationName: 'testValidationRun'
+        inputQueryPath: './test/fixtures/test-query.graphql',
+        mutationName: 'processData'
       });
 
       expect(result.error).toBeDefined();
@@ -204,10 +204,10 @@ describe('validateFixture', () => {
 
     it('should handle non-existent fixture file', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/non-existent-fixture.json',
-        inputQueryPath: './test/fixtures/complete-test-query.graphql',
-        mutationName: 'testValidationRun'
+        inputQueryPath: './test/fixtures/test-query.graphql',
+        mutationName: 'processData'
       });
 
       expect(result.error).toBeDefined();
@@ -216,10 +216,10 @@ describe('validateFixture', () => {
 
     it('should handle invalid query file', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
         inputQueryPath: './test/fixtures/wrong-fields-query.graphql',
-        mutationName: 'testValidationRun'
+        mutationName: 'processData'
       });
 
       expect(result.inputQuery.valid).toBe(false);
@@ -229,9 +229,9 @@ describe('validateFixture', () => {
 
     it('should handle invalid mutation name', async () => {
       const result = await validateFixture({
-        schemaPath: './test/fixtures/complete-test-schema.graphql',
+        schemaPath: './test/fixtures/test-schema.graphql',
         fixturePath: './test/fixtures/valid-test-fixture.json',
-        inputQueryPath: './test/fixtures/complete-test-query.graphql',
+        inputQueryPath: './test/fixtures/test-query.graphql',
         mutationName: 'nonExistentMutation'
       });
 

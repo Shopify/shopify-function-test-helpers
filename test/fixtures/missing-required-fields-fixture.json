@@ -1,12 +1,12 @@
 {
   "payload": {
-    "export": "test-validation-run",
-    "target": "test.validation.run",
+    "export": "test-data-processing",
+    "target": "test.data.processing",
     "input": {
-      "cart": {
-        "lines": [
+      "data": {
+        "items": [
           {
-            "id": "gid://shopify/CartLine/1"
+            "id": "gid://test/Item/1"
           }
         ]
       }
@@ -14,7 +14,7 @@
     "output": {
       "operations": [
         {
-          "validationAdd": {
+          "addValidation": {
             "errors": []
           }
         }

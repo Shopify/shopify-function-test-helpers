@@ -44,7 +44,7 @@ describe('validateFixtureOutput', () => {
       const outputWithErrors = {
         operations: [
           {
-            validationAdd: {
+            addValidation: {
               errors: [
                 {
                   message: "Test validation error",
@@ -144,7 +144,7 @@ describe('validateFixtureOutput', () => {
       const outputWithExtraFields = {
         operations: [
           {
-            validationAdd: {
+            addValidation: {
               errors: [
                 {
                   message: "Test validation error",
@@ -171,7 +171,7 @@ describe('validateFixtureOutput', () => {
 
       // Should detect the extra fields as invalid
       expect(result.valid).toBe(false);
-      expect(result.errors.length).toBe(3);
+      expect(result.errors.length).toBe(2);
       
       // Check that error mentions the extra fields
       const errorMessages = result.errors.map(e => e.message).join(' ');

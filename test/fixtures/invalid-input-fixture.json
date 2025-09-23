@@ -1,20 +1,20 @@
 {
   "payload": {
-    "export": "test-validation-run",
-    "target": "test.validation.run",
+    "export": "test-data-processing",
+    "target": "test.data.processing",
     "input": {
-      "cart": {
-        "lines": [
+      "data": {
+        "items": [
           {
-            "id": "gid://shopify/CartLine/1",
-            "quantity": "invalid_string_instead_of_int",
-            "merchandise": {
-              "id": "gid://shopify/ProductVariant/123",
-              "title": "Test Product"
+            "id": "gid://test/Item/1",
+            "count": "invalid_string_instead_of_int",
+            "details": {
+              "id": "gid://test/ItemDetails/123",
+              "name": "Test Item"
             }
           }
         ],
-        "buyerIdentity": {
+        "metadata": {
           "email": "test@example.com"
         }
       }
@@ -22,7 +22,7 @@
     "output": {
       "operations": [
         {
-          "validationAdd": {
+          "addValidation": {
             "errors": []
           }
         }

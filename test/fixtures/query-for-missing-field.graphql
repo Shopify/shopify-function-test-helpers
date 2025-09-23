@@ -1,8 +1,8 @@
-query Input {
-  cart {
-    lines {
+query Query {
+  data {
+    items {
       id
-      quantity
+      count
     }
   }
 }

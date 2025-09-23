@@ -4,8 +4,8 @@ const fs = require('fs').promises;
 
 describe('validateInputQuery', () => {
   it('should validate a valid GraphQL query against schema', async () => {
-    const queryPath = './test/fixtures/complete-test-query.graphql';
-    const schemaPath = './test/fixtures/complete-test-schema.graphql';
+    const queryPath = './test/fixtures/test-query.graphql';
+    const schemaPath = './test/fixtures/test-schema.graphql';
     
     const queryString = await fs.readFile(queryPath, 'utf8');
     const schemaString = await fs.readFile(schemaPath, 'utf8');
@@ -18,7 +18,7 @@ describe('validateInputQuery', () => {
 
   it('should return validation errors for invalid GraphQL query', async () => {
     const queryPath = './test/fixtures/wrong-fields-query.graphql';
-    const schemaPath = './test/fixtures/complete-test-schema.graphql';
+    const schemaPath = './test/fixtures/test-schema.graphql';
     
     const queryString = await fs.readFile(queryPath, 'utf8');
     const schemaString = await fs.readFile(schemaPath, 'utf8');
@@ -32,7 +32,7 @@ describe('validateInputQuery', () => {
 
   it('should return errors for invalid query string', async () => {
     const invalidQueryString = 'invalid graphql syntax {{{';
-    const schemaPath = './test/fixtures/complete-test-schema.graphql';
+    const schemaPath = './test/fixtures/test-schema.graphql';
     
     const schemaString = await fs.readFile(schemaPath, 'utf8');
     const schema = buildSchema(schemaString);

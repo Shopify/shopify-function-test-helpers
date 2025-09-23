@@ -45,7 +45,7 @@ describe('convertFixtureToQuery', () => {
     it('should handle arrays with objects', () => {
       const fixture = {
         operations: [{
-          validationAdd: {
+          addValidation: {
             errors: [{
               message: "Error message",
               target: "$.cart"
@@ -57,7 +57,7 @@ describe('convertFixtureToQuery', () => {
       const query = convertFixtureToQuery(fixture, 'output');
       
       expect(query).toContain('operations {');
-      expect(query).toContain('validationAdd {');
+      expect(query).toContain('addValidation {');
       expect(query).toContain('errors {');
       expect(query).toContain('message target');
     });
