@@ -53,7 +53,6 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
     // Validate the query against the schema
     const validationErrors = validate(originalSchema, documentAST);
 
-
     // If query validation passes, validate the variable values against the input type
     let variableErrors = [];
     if (validationErrors.length === 0) {

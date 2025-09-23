@@ -235,7 +235,7 @@ describe('validateFixture', () => {
       });
 
       expect(result.error).toBeDefined();
-      expect(result.error).toContain('ENOENT');
+      expect(result.error).toContain('Unknown error loading fixture file');
     });
 
     it('should handle invalid query file', async () => {
