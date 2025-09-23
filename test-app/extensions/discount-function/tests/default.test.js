@@ -2,11 +2,19 @@ const path = require("path");
 const fs = require("fs");
 const { buildFunction, loadFixture, runFunction, validateFixture } = require("../../../../src/wasm-testing-helpers");
 
+function logValidationResults(fixtureFile, validationResult) {
+  console.log(`Validation for ${path.basename(fixtureFile)}:`);
+  console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
+  console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
+  console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
+  console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
+}
+
 describe("Default Integration Test", () => {
   beforeAll(async () => {
     const functionDir = path.dirname(__dirname);
     await buildFunction(functionDir);
-  }, 30000); // 30 second timeout for building the function
+  }, 10000); // 10 second timeout for building the function
 
   const fixturesDir = path.join(__dirname, "fixtures");
   const fixtureFiles = fs
@@ -27,17 +35,16 @@ describe("Default Integration Test", () => {
       const validationResult = await validateFixture({
         schemaPath,
         fixturePath: fixtureFile,
-        inputQueryPath,
-        mutationName: 'cartLinesDiscountsGenerateRun',
-        resultParameterName: 'result'
+        inputQueryPath
       });
 
       // Log validation results for debugging
-      console.log(`Validation for ${path.basename(fixtureFile)}:`);
-      console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
-      console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
-      console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
-      console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
+      // logValidationResults(fixtureFile, validationResult);
+
+      // Assert that all validation steps pass
+      expect(validationResult.inputQuery.valid).toBe(true);
+      expect(validationResult.inputFixture.valid).toBe(true);
+      expect(validationResult.outputFixture.valid).toBe(true);
 
       // Run the actual function
       const runResult = await runFunction(

@@ -1,4 +1,4 @@
-const { validate, parse, graphql, isScalarType, isNonNullType, coerceInputValue, isInputType } = require('graphql');
+const { validate, parse, isScalarType, isNonNullType, coerceInputValue, isInputType } = require('graphql');
 
 /**
  * Validate output fixture by checking if it can be used as input to the corresponding mutation
