@@ -8,12 +8,12 @@ describe('validateFixtureInput', () => {
   let fixture;
 
   beforeAll(async () => {
-    // Load the test-app schema
-    const schemaString = await fs.readFile('./test-app/extensions/cart-validation-js/schema.graphql', 'utf8');
+    // Load the test schema
+    const schemaString = await fs.readFile('./test/fixtures/test-schema.graphql', 'utf8');
     schema = buildSchema(schemaString);
 
     // Load the test fixture using loadFixture helper
-    fixture = await loadFixture('./test-app/extensions/cart-validation-js/tests/fixtures/cda6d1.json');
+    fixture = await loadFixture('./test/fixtures/valid-test-fixture.json');
   });
 
   it('should validate input fixture against original schema', async () => {
@@ -28,9 +28,9 @@ describe('validateFixtureInput', () => {
 
   it('should detect invalid fixture data', async () => {
     const invalidInput = {
-      cart: {
-        lines: [
-          { quantity: "not_a_number" } // Should be integer
+      data: {
+        items: [
+          { count: "not_a_number" } // Should be integer
         ]
       }
     };
@@ -43,7 +43,7 @@ describe('validateFixtureInput', () => {
 
   it('should handle missing required fields', async () => {
     const incompleteInput = {
-      // Missing cart field entirely
+      // Missing data field entirely
     };
 
     const result = await validateFixtureInput(incompleteInput, schema);
@@ -54,13 +54,13 @@ describe('validateFixtureInput', () => {
 
   it('should handle complex nested fixture data', async () => {
     const complexInput = {
-      cart: {
-        lines: [
-          { quantity: 1 },
-          { quantity: 2 },
-          { quantity: 3 }
+      data: {
+        items: [
+          { count: 1 },
+          { count: 2 },
+          { count: 3 }
         ],
-        buyerIdentity: {
+        metadata: {
           email: "test@example.com"
         }
       }
@@ -70,7 +70,7 @@ describe('validateFixtureInput', () => {
 
     expect(result).toHaveProperty('valid');
     expect(result).toHaveProperty('query');
-    expect(result.query).toContain('buyerIdentity');
+    expect(result.query).toContain('metadata');
     expect(result.query).toContain('email');
   });
 });
