@@ -64,7 +64,6 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
       try {
         
         // Validate the result parameter value against its expected type
-        const varValue = variables[resultParameterName];
         let inputType = resultArg.type;
         
         // Handle NonNull wrapper types
@@ -73,7 +72,7 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
         }
         
         if (isInputType(inputType)) {
-          const coercionResult = coerceInputValue(varValue, resultArg.type);
+          const coercionResult = coerceInputValue(variables[resultParameterName], resultArg.type);
           if (coercionResult.errors && coercionResult.errors.length > 0) {
             variableErrors.push(...coercionResult.errors);
           }
