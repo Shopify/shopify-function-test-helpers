@@ -1,5 +1,5 @@
 const { graphql } = require('graphql');
-const { convertFixtureToQuery } = require('./convert-fixture-to-query');
+const { convertFixtureToQuery } = require('../utils/convert-fixture-to-query');
 
 /**
  * Validate input fixture data using the original schema with Query root

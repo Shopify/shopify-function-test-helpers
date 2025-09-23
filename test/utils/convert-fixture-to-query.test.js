@@ -1,4 +1,4 @@
-const { convertFixtureToQuery } = require('../../src/methods/convert-fixture-to-query');
+const { convertFixtureToQuery } = require('../../src/utils/convert-fixture-to-query');
 
 describe('convertFixtureToQuery', () => {
 

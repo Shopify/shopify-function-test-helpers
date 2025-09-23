@@ -1,4 +1,4 @@
-const { determineMutationFromTarget } = require('../../src/methods/determine-mutation-from-target');
+const { determineMutationFromTarget } = require('../../src/utils/determine-mutation-from-target');
 const { buildSchema } = require('graphql');
 const fs = require('fs');
 const path = require('path');

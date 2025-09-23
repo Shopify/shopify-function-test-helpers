@@ -1,7 +1,7 @@
 const validateInputQuery = require('./validate-input-query');
 const { validateFixtureInput } = require('./validate-fixture-input');
 const { validateFixtureOutput } = require('./validate-fixture-output');
-const { determineMutationFromTarget } = require('./determine-mutation-from-target');
+const { determineMutationFromTarget } = require('../utils/determine-mutation-from-target');
 const loadFixture = require('./load-fixture');
 const { buildSchema } = require('graphql');
 const fs = require('fs').promises;
