@@ -42,7 +42,7 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
     
     // Create a mutation query with variables
     const mutationQuery = `
-      mutation TestOutputFixture($${resultParameterName}: ${resultArg.type.toString()}) {
+      mutation ($${resultParameterName}: ${resultArg.type.toString()}) {
         ${mutationName}(${resultParameterName}: $${resultParameterName})${isScalar ? '' : ' { __typename }'}
       }
     `;
@@ -53,10 +53,6 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
     // Validate the query against the schema
     const validationErrors = validate(originalSchema, documentAST);
 
-    // Create variables object
-    const variables = {
-      [resultParameterName]: outputFixtureData
-    };
 
     // If query validation passes, validate the variable values against the input type
     let variableErrors = [];
@@ -72,7 +68,7 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
         }
         
         if (isInputType(inputType)) {
-          const coercionResult = coerceInputValue(variables[resultParameterName], resultArg.type);
+          const coercionResult = coerceInputValue(outputFixtureData, resultArg.type);
           if (coercionResult.errors && coercionResult.errors.length > 0) {
             variableErrors.push(...coercionResult.errors);
           }
@@ -88,10 +84,8 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
       valid: allErrors.length === 0,
       errors: allErrors,
       query: mutationQuery,
-      variables: variables,
       mutationName: mutationName,
-      resultParameterType: resultArg.type.toString(),
-      executionResult: variableErrors.length === 0 && validationErrors.length === 0
+      resultParameterType: resultArg.type.toString()
     };
 
   } catch (error) {
@@ -99,7 +93,6 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
       valid: false,
       errors: [{ message: error.message }],
       query: null,
-      variables: null,
       mutationName: mutationName,
       resultParameterType: null
     };

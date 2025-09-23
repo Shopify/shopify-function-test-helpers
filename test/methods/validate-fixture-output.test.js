@@ -33,7 +33,6 @@ describe('validateFixtureOutput', () => {
       expect(result).toHaveProperty('valid');
       expect(result).toHaveProperty('errors');
       expect(result).toHaveProperty('query');
-      expect(result).toHaveProperty('variables');
       expect(result.mutationName).toBe('processData');
       expect(result.resultParameterType).toBe('ProcessDataResult!');
       expect(Array.isArray(result.errors)).toBe(true);
@@ -134,8 +133,6 @@ describe('validateFixtureOutput', () => {
         'result'
       );
 
-      // Note: GraphQL validate() only validates query structure, not variable values
-      // Type checking of variables happens during execution, not validation
       expect(result).toHaveProperty('valid');
       expect(result).toHaveProperty('errors');
     });
@@ -189,11 +186,9 @@ describe('validateFixtureOutput', () => {
         'result'
       );
 
-      expect(result.query).toContain('mutation TestOutputFixture');
+      expect(result.query).toContain('mutation');
       expect(result.query).toContain('$result: ProcessDataResult!');
       expect(result.query).toContain('processData(result: $result)');
-      expect(result.variables).toHaveProperty('result');
-      expect(result.variables.result).toEqual(outputData);
     });
   });
 });
