@@ -32,12 +32,7 @@ describe('convertFixtureToQuery', () => {
 
       const query = convertFixtureToQuery(fixture, 'input');
       
-      expect(query).toContain('query { input {');
-      expect(query).toContain('cart {');
-      expect(query).toContain('lines {');
-      expect(query).toContain('quantity merchandise');
-      expect(query).toContain('buyerIdentity {');
-      expect(query).toContain('email');
+      expect(query).toBe('query { input { cart { lines { quantity merchandise { id title } } buyerIdentity { email } } } }');
     });
   });
 
@@ -56,10 +51,7 @@ describe('convertFixtureToQuery', () => {
 
       const query = convertFixtureToQuery(fixture, 'output');
       
-      expect(query).toContain('operations {');
-      expect(query).toContain('addValidation {');
-      expect(query).toContain('errors {');
-      expect(query).toContain('message target');
+      expect(query).toBe('query { output { operations { addValidation { errors { message target } } } } }');
     });
 
     it('should handle empty arrays', () => {
@@ -121,8 +113,6 @@ describe('convertFixtureToQuery', () => {
       // For mutation-based validation, we want to include all fields (including null)
       // so GraphQL can validate the complete structure
       expect(query).toBe('query { data { value other } }');
-      expect(query).toContain('value');
-      expect(query).toContain('other');
     });
 
     it('should handle mixed data types', () => {
@@ -138,9 +128,7 @@ describe('convertFixtureToQuery', () => {
       
       const query = convertFixtureToQuery(fixture, 'data');
       
-      expect(query).toContain('string number boolean');
-      expect(query).toContain('object { nested }');
-      expect(query).toContain('array { item }');
+      expect(query).toBe('query { data { string number boolean object { nested } array { item } } }');
     });
 
     it('should handle deeply nested structures', () => {
@@ -172,8 +160,6 @@ describe('convertFixtureToQuery', () => {
       // For mutation-based validation, we include empty objects in the query structure
       // GraphQL will handle validation of whether empty objects are allowed
       expect(query).toBe('query { data { emptyObject normalField } }');
-      expect(query).toContain('emptyObject');
-      expect(query).toContain('normalField');
     });
   });
 });
