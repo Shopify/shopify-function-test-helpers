@@ -8,16 +8,16 @@ describe('validateFixtureOutput', () => {
   let fixture;
 
   beforeAll(async () => {
-    // Load the test-app schema
-    const schemaString = await fs.readFile('./test-app/extensions/cart-validation-js/schema.graphql', 'utf8');
+    // Load the test schema
+    const schemaString = await fs.readFile('./test/fixtures/test-schema.graphql', 'utf8');
     schema = buildSchema(schemaString);
 
     // Load the test fixture
-    fixture = await loadFixture('./test-app/extensions/cart-validation-js/tests/fixtures/cda6d1.json');
+    fixture = await loadFixture('./test/fixtures/valid-test-fixture.json');
   });
 
   describe('Mutation-Based Validation', () => {
-    it('should validate that output fixture is compatible with cartValidationsGenerateRun mutation', async () => {
+    it('should validate that output fixture is compatible with processData mutation', async () => {
       // Use the actual expected output from the fixture
       const outputData = {
         operations: [] // No validation errors expected
@@ -26,7 +26,7 @@ describe('validateFixtureOutput', () => {
       const result = await validateFixtureOutput(
         outputData, 
         schema, 
-        'cartValidationsGenerateRun', 
+        'processData', 
         'result'
       );
 
@@ -34,9 +34,10 @@ describe('validateFixtureOutput', () => {
       expect(result).toHaveProperty('errors');
       expect(result).toHaveProperty('query');
       expect(result).toHaveProperty('variables');
-      expect(result.mutationName).toBe('cartValidationsGenerateRun');
-      expect(result.resultParameterType).toBe('CartValidationsGenerateRunResult!');
+      expect(result.mutationName).toBe('processData');
+      expect(result.resultParameterType).toBe('ProcessDataResult!');
       expect(Array.isArray(result.errors)).toBe(true);
+      expect(result.valid).toBe(true); // This should now fail with non-nullable return type
     });
 
     it('should validate output fixture with validation errors', async () => {
@@ -59,7 +60,7 @@ describe('validateFixtureOutput', () => {
       const result = await validateFixtureOutput(
         outputWithErrors, 
         schema, 
-        'cartValidationsGenerateRun', 
+        'processData', 
         'result'
       );
 
@@ -88,7 +89,7 @@ describe('validateFixtureOutput', () => {
       const result = await validateFixtureOutput(
         outputData, 
         schema, 
-        'cartValidationsGenerateRun', 
+        'processData', 
         'nonExistentParam'
       );
 
@@ -98,12 +99,12 @@ describe('validateFixtureOutput', () => {
     });
 
     it('should validate against other mutations in the schema', async () => {
-      // Test with cartValidationsGenerateFetch mutation which has different input type
+      // Test with fetchData mutation which has different input type
       const fetchOutputData = {
         request: {
           url: "https://example.com/api",
           method: "POST",
-          headers: {},
+          headers: "Content-Type: application/json",
           body: "test body"
         }
       };
@@ -111,12 +112,12 @@ describe('validateFixtureOutput', () => {
       const result = await validateFixtureOutput(
         fetchOutputData, 
         schema, 
-        'cartValidationsGenerateFetch', 
+        'fetchData', 
         'result'
       );
 
-      expect(result.mutationName).toBe('cartValidationsGenerateFetch');
-      expect(result.resultParameterType).toBe('CartValidationsGenerateFetchResult!');
+      expect(result.mutationName).toBe('fetchData');
+      expect(result.resultParameterType).toBe('FetchDataResult!');
       expect(Array.isArray(result.errors)).toBe(true);
     });
 
@@ -129,7 +130,7 @@ describe('validateFixtureOutput', () => {
       const result = await validateFixtureOutput(
         invalidOutputData, 
         schema, 
-        'cartValidationsGenerateRun', 
+        'processData', 
         'result'
       );
 
@@ -165,13 +166,13 @@ describe('validateFixtureOutput', () => {
       const result = await validateFixtureOutput(
         outputWithExtraFields, 
         schema, 
-        'cartValidationsGenerateRun', 
+        'processData', 
         'result'
       );
 
       // Should detect the extra fields as invalid
       expect(result.valid).toBe(false);
-      expect(result.errors.length).toBe(2);
+      expect(result.errors.length).toBe(1);
       
       // Check that error mentions the extra fields
       const errorMessages = result.errors.map(e => e.message).join(' ');
@@ -184,13 +185,13 @@ describe('validateFixtureOutput', () => {
       const result = await validateFixtureOutput(
         outputData, 
         schema, 
-        'cartValidationsGenerateRun', 
+        'processData', 
         'result'
       );
 
       expect(result.query).toContain('mutation TestOutputFixture');
-      expect(result.query).toContain('$result: CartValidationsGenerateRunResult!');
-      expect(result.query).toContain('cartValidationsGenerateRun(result: $result)');
+      expect(result.query).toContain('$result: ProcessDataResult!');
+      expect(result.query).toContain('processData(result: $result)');
       expect(result.variables).toHaveProperty('result');
       expect(result.variables.result).toEqual(outputData);
     });

@@ -29,7 +29,8 @@ type Metadata {
 }
 
 type Mutation {
-  processData(result: ProcessDataResult!): Boolean
+  processData(result: ProcessDataResult!): Boolean!
+  fetchData(result: FetchDataResult!): Boolean!
 }
 
 input ProcessDataResult {
@@ -47,4 +48,15 @@ input AddValidationOperation {
 input ValidationError {
   message: String!
   target: String!
+}
+
+input FetchDataResult {
+  request: HttpRequest!
+}
+
+input HttpRequest {
+  url: String!
+  method: String!
+  headers: String
+  body: String
 }

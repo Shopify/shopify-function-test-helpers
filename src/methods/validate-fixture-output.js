@@ -1,4 +1,4 @@
-const { validate, parse, graphql, isScalarType, isNonNullType } = require('graphql');
+const { validate, parse, graphql, isScalarType, isNonNullType, coerceInputValue, isInputType } = require('graphql');
 
 /**
  * Validate output fixture by checking if it can be used as input to the corresponding mutation
@@ -58,25 +58,32 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
       [resultParameterName]: outputFixtureData
     };
 
-    // If query validation passes, also validate the variable values by executing
-    let executionErrors = [];
+    // If query validation passes, validate the variable values against the input type
+    let variableErrors = [];
     if (validationErrors.length === 0) {
       try {
-        const executionResult = await graphql({
-          schema: originalSchema,
-          source: mutationQuery,
-          variableValues: variables
-        });
-
-        if (executionResult.errors) {
-          executionErrors = executionResult.errors;
+        
+        // Validate the result parameter value against its expected type
+        const varValue = variables[resultParameterName];
+        let inputType = resultArg.type;
+        
+        // Handle NonNull wrapper types
+        if (isNonNullType(inputType)) {
+          inputType = inputType.ofType;
+        }
+        
+        if (isInputType(inputType)) {
+          const coercionResult = coerceInputValue(varValue, resultArg.type);
+          if (coercionResult.errors && coercionResult.errors.length > 0) {
+            variableErrors.push(...coercionResult.errors);
+          }
         }
       } catch (error) {
-        executionErrors = [{ message: error.message }];
+        variableErrors = [{ message: error.message }];
       }
     }
 
-    const allErrors = [...validationErrors, ...executionErrors];
+    const allErrors = [...validationErrors, ...variableErrors];
 
     return {
       valid: allErrors.length === 0,
@@ -85,7 +92,7 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
       variables: variables,
       mutationName: mutationName,
       resultParameterType: resultArg.type.toString(),
-      executionResult: executionErrors.length === 0 && validationErrors.length === 0
+      executionResult: variableErrors.length === 0 && validationErrors.length === 0
     };
 
   } catch (error) {
