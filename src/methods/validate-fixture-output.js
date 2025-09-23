@@ -5,14 +5,15 @@ const { validate, parse, isScalarType, isNonNullType, coerceInputValue, isInputT
  * 
  * This approach leverages the fact that function output fixtures are designed to be used
  * as input parameters to GraphQL mutations. We can validate them by:
- * 1. Creating a mutation query using the fixture data as variables
+ * 1. Creating a mutation query for the specified mutation
  * 2. Using GraphQL's native validate() function to check type compliance
+ * 3. Validating the fixture data against the expected input type
  * 
  * @param {Object} outputFixtureData - The output fixture data to validate
  * @param {GraphQLSchema} originalSchema - The original GraphQL schema
  * @param {string} mutationName - The mutation field name (e.g., 'cartValidationsGenerateRun')
  * @param {string} resultParameterName - The parameter name in the mutation (usually 'result')
- * @returns {Object} Validation result with { valid, errors, query, variables }
+ * @returns {Object} Validation result with { valid, errors, query, mutationName, resultParameterType }
  */
 async function validateFixtureOutput(outputFixtureData, originalSchema, mutationName, resultParameterName = 'result') {
   try {

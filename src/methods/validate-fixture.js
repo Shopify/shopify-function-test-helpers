@@ -38,7 +38,7 @@ async function validateFixture({
     resultParameterName,
     inputQuery: { valid: null, errors: [] },
     inputFixture: { valid: null, errors: [], data: null },
-    outputFixture: { valid: null, errors: [], query: null, variables: null }
+    outputFixture: { valid: null, errors: [], query: null, mutationName: null, resultParameterType: null }
   };
 
   try {
@@ -90,7 +90,8 @@ async function validateFixture({
       valid: outputFixtureResult.valid,
       errors: outputFixtureResult.errors,
       query: outputFixtureResult.query,
-      variables: outputFixtureResult.variables
+      mutationName: outputFixtureResult.mutationName,
+      resultParameterType: outputFixtureResult.resultParameterType
     };
 
     return results;
