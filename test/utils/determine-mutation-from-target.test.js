@@ -1,7 +1,7 @@
-const { determineMutationFromTarget } = require('../../src/utils/determine-mutation-from-target');
-const { buildSchema } = require('graphql');
-const fs = require('fs');
-const path = require('path');
+import { determineMutationFromTarget } from '../../src/utils/determine-mutation-from-target.js';
+import { buildSchema } from 'graphql';
+import fs from 'fs';
+import path from 'path';
 
 describe('determineMutationFromTarget', () => {
   let testSchema;

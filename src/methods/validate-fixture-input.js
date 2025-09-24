@@ -1,5 +1,5 @@
-const { graphql } = require('graphql');
-const { convertFixtureToQuery } = require('../utils/convert-fixture-to-query');
+import { graphql } from 'graphql';
+import { convertFixtureToQuery } from '../utils/convert-fixture-to-query.js';
 
 /**
  * Validate input fixture data using the original schema with Query root
@@ -23,7 +23,7 @@ const { convertFixtureToQuery } = require('../utils/convert-fixture-to-query');
  *   - query: string|null - The GraphQL query generated from fixture structure
  */
 
-async function validateFixtureInput(inputFixtureData, originalSchema) {
+export async function validateFixtureInput(inputFixtureData, originalSchema) {
   try {
     // Step 1: Convert fixture data structure to a GraphQL query
     // The query directly matches the Input type structure (no field wrapper needed)
@@ -65,6 +65,3 @@ async function validateFixtureInput(inputFixtureData, originalSchema) {
   }
 }
 
-module.exports = {
-  validateFixtureInput
-};

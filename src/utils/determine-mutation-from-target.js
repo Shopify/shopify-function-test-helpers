@@ -1,4 +1,4 @@
-const { buildSchema, isObjectType } = require('graphql');
+import { isObjectType } from 'graphql';
 
 /**
  * Determines the mutation name and result parameter name from a target string and GraphQL schema
@@ -11,7 +11,7 @@ const { buildSchema, isObjectType } = require('graphql');
  *   - resultParameterName: string - The name of the first parameter (typically 'result')
  * @throws {Error} If target cannot be matched to a mutation or schema has no mutations
  */
-function determineMutationFromTarget(target, schema) {
+export function determineMutationFromTarget(target, schema) {
   try {
     // Get the mutation type from the schema
     const mutationType = schema.getMutationType();
@@ -53,6 +53,3 @@ function determineMutationFromTarget(target, schema) {
   }
 }
 
-module.exports = {
-  determineMutationFromTarget
-};

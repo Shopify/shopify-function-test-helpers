@@ -1,4 +1,4 @@
-const buildFunction = require('../../src/methods/build-function.js');
+import { buildFunction } from '../../src/methods/build-function.js';
 
   describe('buildFunction', () => {
     it('should build a function using Shopify CLI', async () => {

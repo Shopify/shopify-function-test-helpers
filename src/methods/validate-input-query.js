@@ -1,4 +1,4 @@
-const { validate, parse } = require('graphql');
+import { validate, parse } from 'graphql';
 
 /**
  * Validate a GraphQL input query string against a schema
@@ -7,7 +7,7 @@ const { validate, parse } = require('graphql');
  * @returns {Array<Object>} Array of GraphQL validation errors (empty if valid).
  *   Each error has a 'message' property with the error description.
  */
-function validateInputQuery(queryString, schema) {
+export function validateInputQuery(queryString, schema) {
   try {
     const inputQueryAST = parse(queryString);
     const validationErrors = validate(schema, inputQueryAST);
@@ -17,4 +17,3 @@ function validateInputQuery(queryString, schema) {
   }
 }
 
-module.exports = validateInputQuery;

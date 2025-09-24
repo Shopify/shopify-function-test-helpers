@@ -1,6 +1,6 @@
-const validateInputQuery = require('../../src/methods/validate-input-query.js');
-const { buildSchema } = require('graphql');
-const fs = require('fs').promises;
+import { validateInputQuery } from '../../src/methods/validate-input-query.js';
+import { buildSchema } from 'graphql';
+import { promises as fs } from 'fs';
 
 describe('validateInputQuery', () => {
   it('should validate a valid GraphQL query against schema', async () => {

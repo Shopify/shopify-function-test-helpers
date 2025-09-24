@@ -2,8 +2,12 @@
  * Run a function with the given payload and return the result
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
+import { spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Run a function with the given payload and return the result
@@ -12,7 +16,7 @@ const path = require('path');
  * @param {String} [functionPath] - Optional path to the function directory
  * @returns {Object} The function run result
  */
-async function runFunction(exportName, input, functionPath) {
+export async function runFunction(exportName, input, functionPath) {
   try {
     const inputJson = JSON.stringify(input);
 
@@ -114,4 +118,3 @@ async function runFunction(exportName, input, functionPath) {
   }
 }
 
-module.exports = runFunction;

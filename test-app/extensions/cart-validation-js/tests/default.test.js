@@ -1,7 +1,7 @@
-const path = require("path");
-const fs = require("fs");
-const { buildFunction, loadFixture, runFunction, validateFixture } = require("@shopify/functions-test-helpers");
-const { buildSchema } = require('graphql');
+import path from "path";
+import fs from "fs";
+import { buildFunction, loadFixture, runFunction, validateFixture } from "@shopify/functions-test-helpers";
+import { buildSchema } from 'graphql';
 
 function logValidationResults(fixtureFile, validationResult) {
   console.log(`Validation for ${path.basename(fixtureFile)}:`);

@@ -1,4 +1,4 @@
-const { isNonNullType, coerceInputValue, isInputType } = require('graphql');
+import { isNonNullType, coerceInputValue, isInputType } from 'graphql';
 
 /**
  * Validate output fixture by checking if it can be used as input to the corresponding mutation
@@ -18,7 +18,7 @@ const { isNonNullType, coerceInputValue, isInputType } = require('graphql');
  *   - mutationName: string - The mutation name that was validated
  *   - resultParameterType: string|null - The GraphQL type of the result parameter
  */
-async function validateFixtureOutput(outputFixtureData, originalSchema, mutationName, resultParameterName = 'result') {
+export async function validateFixtureOutput(outputFixtureData, originalSchema, mutationName, resultParameterName = 'result') {
   try {
     // Get the mutation type from schema
     const mutationType = originalSchema.getMutationType();
@@ -77,6 +77,3 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
   }
 }
 
-module.exports = {
-  validateFixtureOutput
-};

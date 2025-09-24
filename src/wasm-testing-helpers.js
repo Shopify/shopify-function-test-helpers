@@ -6,13 +6,13 @@
  */
 
 // Import all methods from separate files
-const loadFixture = require('./methods/load-fixture');
-const { validateFixture } = require('./methods/validate-fixture');
-const buildFunction = require('./methods/build-function');
-const runFunction = require('./methods/run-function');
+import { loadFixture } from './methods/load-fixture.js';
+import { validateFixture } from './methods/validate-fixture.js';
+import { buildFunction } from './methods/build-function.js';
+import { runFunction } from './methods/run-function.js';
 
 // Export all methods
-module.exports = {
+export {
   loadFixture,
   validateFixture,
   buildFunction,

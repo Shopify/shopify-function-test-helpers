@@ -1,6 +1,6 @@
 // Import the integration tests
-require("../test-app/extensions/cart-validation-js/tests/default.test");
-require("../test-app/extensions/discount-function/tests/default.test");
+import "../test-app/extensions/cart-validation-js/tests/default.test.js";
+import "../test-app/extensions/discount-function/tests/default.test.js";
 
 describe("Integration Tests", () => {
   // This file imports and runs the default.test.js integration tests
