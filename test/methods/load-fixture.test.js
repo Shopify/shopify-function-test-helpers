@@ -1,4 +1,4 @@
-const loadFixture = require('../../src/methods/load-fixture.js');
+import { loadFixture } from '../../src/methods/load-fixture.js';
 
 describe('loadFixture', () => {
     it('should load fixture from a valid JSON file', async () => {

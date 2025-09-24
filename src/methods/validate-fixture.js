@@ -1,7 +1,7 @@
-const validateInputQuery = require('./validate-input-query');
-const { validateFixtureInput } = require('./validate-fixture-input');
-const { validateFixtureOutput } = require('./validate-fixture-output');
-const { determineMutationFromTarget } = require('../utils/determine-mutation-from-target');
+import { validateInputQuery } from './validate-input-query.js';
+import { validateFixtureInput } from './validate-fixture-input.js';
+import { validateFixtureOutput } from './validate-fixture-output.js';
+import { determineMutationFromTarget } from '../utils/determine-mutation-from-target.js';
 
 /**
  * Complete fixture validation - validates input query, input fixture, and output fixture
@@ -24,7 +24,7 @@ const { determineMutationFromTarget } = require('../utils/determine-mutation-fro
  *   - inputFixture: { valid: boolean, errors: Array, data: Object } - Input fixture validation results
  *   - outputFixture: { valid: boolean, errors: Array, mutationName: string, resultParameterType: string } - Output fixture validation results
  */
-async function validateFixture({
+export async function validateFixture({
   schema,
   fixture,
   inputQueryString,
@@ -95,6 +95,3 @@ async function validateFixture({
 }
 
 
-module.exports = {
-  validateFixture
-};

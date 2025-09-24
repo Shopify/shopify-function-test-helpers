@@ -2,8 +2,7 @@
  * Load and parse a fixture file
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
 
 /**
  * Load and parse a fixture file, extracting the payload data
@@ -14,7 +13,7 @@ const path = require('path');
  *   - expectedOutput: Object - The output data from payload.output  
  *   - target: string - The target string from payload.target
  */
-async function loadFixture(filename) {
+export async function loadFixture(filename) {
   try {
     const fixtureContent = await fs.promises.readFile(filename, 'utf-8');
     const fixture = JSON.parse(fixtureContent);
@@ -36,4 +35,3 @@ async function loadFixture(filename) {
   } 
 }
 
-module.exports = loadFixture;

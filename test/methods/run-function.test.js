@@ -1,5 +1,5 @@
-const runFunction = require('../../src/methods/run-function.js');
-const loadFixture = require('../../src/methods/load-fixture.js');
+import { runFunction } from '../../src/methods/run-function.js';
+import { loadFixture } from '../../src/methods/load-fixture.js';
 
   describe('runFunction', () => {
     it('should run a function using Shopify CLI', async () => {

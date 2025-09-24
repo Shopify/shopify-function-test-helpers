@@ -1,7 +1,7 @@
-const { validateFixture } = require('../../src/methods/validate-fixture');
-const loadFixture = require('../../src/methods/load-fixture');
-const { buildSchema } = require('graphql');
-const fs = require('fs').promises;
+import { validateFixture } from '../../src/methods/validate-fixture.js';
+import { loadFixture } from '../../src/methods/load-fixture.js';
+import { buildSchema } from 'graphql';
+import { promises as fs } from 'fs';
 
 describe('validateFixture', () => {
   // Helper function to load test data

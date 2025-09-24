@@ -2,15 +2,19 @@
  * Build a function run payload from a cart and options
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
+import { spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Build a function run payload from a cart and options
  * @param {string} functionPath - Optional path to the function directory
  * @returns {Object} A function run payload
  */
-async function buildFunction(functionPath) {
+export async function buildFunction(functionPath) {
   try {
     let functionDir, appRootDir, functionName;
     
@@ -83,4 +87,3 @@ async function buildFunction(functionPath) {
   }
 }
 
-module.exports = buildFunction;
