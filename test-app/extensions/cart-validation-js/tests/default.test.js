@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
-const { buildFunction, loadFixture, runFunction, validateFixture } = require("../../../../src/wasm-testing-helpers");
+const { buildFunction, loadFixture, runFunction, validateFixture } = require("@shopify/functions-test-helpers");
+const { buildSchema } = require('graphql');
 
 function logValidationResults(fixtureFile, validationResult) {
   console.log(`Validation for ${path.basename(fixtureFile)}:`);
@@ -11,9 +12,21 @@ function logValidationResults(fixtureFile, validationResult) {
 }
 
 describe("Default Integration Test", () => {
+  let schema;
+  let inputQueryString;
+  let functionDir;
+
   beforeAll(async () => {
-    const functionDir = path.dirname(__dirname);
+    functionDir = path.dirname(__dirname);
     await buildFunction(functionDir);
+    
+    // Load schema and input query once since they don't change across fixtures
+    const schemaPath = path.join(functionDir, "schema.graphql");
+    const inputQueryPath = path.join(functionDir, "src/cart_validations_generate_run.graphql");
+    
+    const schemaString = await fs.promises.readFile(schemaPath, 'utf8');
+    schema = buildSchema(schemaString);
+    inputQueryString = await fs.promises.readFile(inputQueryPath, 'utf8');
   }, 10000); // 10 second timeout for building the function
 
   const fixturesDir = path.join(__dirname, "fixtures");
@@ -26,16 +39,11 @@ describe("Default Integration Test", () => {
     test(`runs ${path.relative(fixturesDir, fixtureFile)}`, async () => {
       const fixture = await loadFixture(fixtureFile);
 
-      const functionDir = path.dirname(__dirname);
-
-      const schemaPath = path.join(functionDir, "schema.graphql");
-      const inputQueryPath = path.join(functionDir, "src/cart_validations_generate_run.graphql");
-
       // Validate fixture using our comprehensive validation system
       const validationResult = await validateFixture({
-        schemaPath,
-        fixturePath: fixtureFile,
-        inputQueryPath
+        schema,
+        fixture,
+        inputQueryString
       });
 
       // Log validation results for debugging

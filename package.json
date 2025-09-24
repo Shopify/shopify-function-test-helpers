@@ -1,32 +1,40 @@
 {
-  "name": "function-testing-helpers",
+  "name": "@shopify/functions-test-helpers",
   "version": "1.0.0",
-  "description": "A JavaScript library for testing Shopify Functions WASM modules, particularly cart-checkout-validation functions",
+  "description": "A JavaScript library for testing Shopify Functions WASM modules, with complete test-app examples",
   "main": "index.js",
   "files": [
     "index.js",
     "src/",
-    "test_data/",
-    "README.md"
+    "test-app/"
+  ],
+  "workspaces": [
+    "test-app",
+    "test-app/extensions/*",
+    "test-app/extensions/*/tests"
   ],
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:examples": "npm run test -w test-app/extensions/cart-validation-js/tests && npm run test -w test-app/extensions/discount-function/tests",
     "lint": "eslint index.js test/",
     "lint:fix": "eslint index.js test/ --fix",
+    "build": "npm run build -w test-app",
     "prepublishOnly": "npm run test && npm run lint"
   },
-  "author": "",
-  "license": "MIT",
+  "dependencies": {
+    "graphql": "^16.11.0"
+  },
   "devDependencies": {
     "jest": "^29.7.0",
-    "eslint": "^8.57.0",
-    "graphql": "^16.11.0"
+    "eslint": "^8.57.0"
   },
   "engines": {
     "node": ">=14.0.0"
   },
+  "author": "lopert",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/your-username/shopify-functions-wasm-testing-helpers.git"
@@ -34,8 +42,5 @@
   "bugs": {
     "url": "https://github.com/your-username/shopify-functions-wasm-testing-helpers/issues"
   },
-  "homepage": "https://github.com/your-username/shopify-functions-wasm-testing-helpers#readme",
-  "dependencies": {
-    "graphql": "^16.11.0"
-  }
+  "homepage": "https://github.com/your-username/shopify-functions-wasm-testing-helpers#readme"
 }
