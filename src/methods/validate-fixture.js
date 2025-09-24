@@ -2,29 +2,22 @@ const validateInputQuery = require('./validate-input-query');
 const { validateFixtureInput } = require('./validate-fixture-input');
 const { validateFixtureOutput } = require('./validate-fixture-output');
 const { determineMutationFromTarget } = require('../utils/determine-mutation-from-target');
-const loadFixture = require('./load-fixture');
-const { buildSchema } = require('graphql');
-const fs = require('fs').promises;
 
 /**
  * Complete fixture validation - validates input query, input fixture, and output fixture
  * 
  * This function provides a one-stop validation solution that:
- * 1. Loads schema and fixture files from paths
- * 2. Validates the input query against the schema
- * 3. Validates the input fixture data against the schema
- * 4. Validates the output fixture data against the specified mutation
+ * 1. Validates the input query against the schema
+ * 2. Validates the input fixture data against the schema
+ * 3. Validates the output fixture data against the specified mutation
  * 
  * @param {Object} options - Validation options
- * @param {string} options.schemaPath - Path to the GraphQL schema file
- * @param {string} options.fixturePath - Path to the fixture JSON file
- * @param {string} options.inputQueryPath - Path to the input query file
+ * @param {GraphQLSchema} options.schema - The built GraphQL schema
+ * @param {Object} options.fixture - The loaded fixture data (from loadFixture)
+ * @param {string} options.inputQueryString - The input query string content
  * @param {string} [options.mutationName] - The mutation name for output validation (auto-determined from target if not provided)
  * @param {string} [options.resultParameterName] - The mutation parameter name (auto-determined from target if not provided)
  * @returns {Promise<Object>} Complete validation results with structure:
- *   - schemaPath: string - Path to schema file
- *   - fixturePath: string - Path to fixture file  
- *   - inputQueryPath: string - Path to input query file
  *   - mutationName: string - Mutation name used for validation
  *   - resultParameterName: string - Parameter name used for validation
  *   - inputQuery: { valid: boolean, errors: Array } - Input query validation results
@@ -32,16 +25,13 @@ const fs = require('fs').promises;
  *   - outputFixture: { valid: boolean, errors: Array, mutationName: string, resultParameterType: string } - Output fixture validation results
  */
 async function validateFixture({
-  schemaPath,
-  fixturePath,
-  inputQueryPath,
+  schema,
+  fixture,
+  inputQueryString,
   mutationName,
   resultParameterName
 }) {
   const results = {
-    schemaPath,
-    fixturePath,
-    inputQueryPath,
     mutationName,
     resultParameterName,
     inputQuery: { valid: null, errors: [] },
@@ -50,22 +40,14 @@ async function validateFixture({
   };
 
   try {
-    // Step 1: Load schema
-    const schemaString = await fs.readFile(schemaPath, 'utf8');
-    const schema = buildSchema(schemaString);
-
-    // Step 2: Load fixture
-    const fixture = await loadFixture(fixturePath);
-
-    // Step 3: Validate input query
-    const inputQueryString = await fs.readFile(inputQueryPath, 'utf8');
+    // Step 1: Validate input query
     const inputQueryErrors = validateInputQuery(inputQueryString, schema);
     results.inputQuery = {
       valid: inputQueryErrors.length === 0,
       errors: inputQueryErrors
     };
 
-    // Step 4: Validate input fixture
+    // Step 2: Validate input fixture
     const inputFixtureResult = await validateFixtureInput(fixture.input, schema);
     results.inputFixture = {
       valid: inputFixtureResult.valid,
@@ -73,7 +55,7 @@ async function validateFixture({
       data: inputFixtureResult.data
     };
 
-    // Step 5: Determine mutation details for output validation
+    // Step 3: Determine mutation details for output validation
     let determined;
     if (!mutationName || !resultParameterName) {
       const target = fixture.target;
@@ -87,7 +69,7 @@ async function validateFixture({
     results.mutationName = mutationName || determined?.mutationName;
     results.resultParameterName = resultParameterName || determined?.resultParameterName;
 
-    // Step 6: Validate output fixture
+    // Step 4: Validate output fixture
     const outputFixtureResult = await validateFixtureOutput(
       fixture.expectedOutput, 
       schema, 
