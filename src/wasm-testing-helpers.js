@@ -10,11 +10,13 @@ import { loadFixture } from './methods/load-fixture.js';
 import { validateFixture } from './methods/validate-fixture.js';
 import { buildFunction } from './methods/build-function.js';
 import { runFunction } from './methods/run-function.js';
+import { loadSchema } from './methods/load-schema.js';
 
 // Export all methods
 export {
   loadFixture,
   validateFixture,
   buildFunction,
-  runFunction
+  runFunction,
+  loadSchema
 };
