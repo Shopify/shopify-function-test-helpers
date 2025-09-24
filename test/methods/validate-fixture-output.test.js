@@ -32,7 +32,6 @@ describe('validateFixtureOutput', () => {
 
       expect(result).toHaveProperty('valid');
       expect(result).toHaveProperty('errors');
-      expect(result).toHaveProperty('query');
       expect(result.mutationName).toBe('processData');
       expect(result.resultParameterType).toBe('ProcessDataResult!');
       expect(Array.isArray(result.errors)).toBe(true);
@@ -176,19 +175,5 @@ describe('validateFixtureOutput', () => {
       expect(errorMessages).toMatch(/(extraField1|extraField2|nestedExtra|unknown field|not defined)/i);
     });
 
-    it('should show the complete mutation query structure', async () => {
-      const outputData = { operations: [] };
-
-      const result = await validateFixtureOutput(
-        outputData, 
-        schema, 
-        'processData', 
-        'result'
-      );
-
-      expect(result.query).toContain('mutation');
-      expect(result.query).toContain('$result: ProcessDataResult!');
-      expect(result.query).toContain('processData(result: $result)');
-    });
   });
 });

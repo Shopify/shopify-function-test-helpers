@@ -1,13 +1,12 @@
-const { validate, parse, isScalarType, isNonNullType, coerceInputValue, isInputType } = require('graphql');
+const { isNonNullType, coerceInputValue, isInputType } = require('graphql');
 
 /**
  * Validate output fixture by checking if it can be used as input to the corresponding mutation
  * 
  * This approach leverages the fact that function output fixtures are designed to be used
  * as input parameters to GraphQL mutations. We can validate them by:
- * 1. Creating a mutation query for the specified mutation
- * 2. Using GraphQL's native validate() function to check type compliance
- * 3. Validating the fixture data against the expected input type
+ * 1. Finding the mutation field and its parameter type in the schema
+ * 2. Using GraphQL's coerceInputValue() to validate the fixture data against the expected input type
  * 
  * @param {Object} outputFixtureData - The output fixture data to validate
  * @param {GraphQLSchema} originalSchema - The original GraphQL schema
@@ -15,8 +14,7 @@ const { validate, parse, isScalarType, isNonNullType, coerceInputValue, isInputT
  * @param {string} resultParameterName - The parameter name in the mutation (usually 'result')
  * @returns {Object} Validation result with structure:
  *   - valid: boolean - Whether the fixture data is valid for the mutation
- *   - errors: Array<Object> - Array of GraphQL validation errors (empty if valid)
- *   - query: string|null - The mutation query generated for validation
+ *   - errors: Array<Object> - Array of GraphQL coercion errors (empty if valid)
  *   - mutationName: string - The mutation name that was validated
  *   - resultParameterType: string|null - The GraphQL type of the result parameter
  */
@@ -41,54 +39,30 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
       throw new Error(`Parameter '${resultParameterName}' not found in mutation '${mutationName}'`);
     }
 
-    // Check if the return type is a scalar (which doesn't need selection set)
-    const returnType = mutationField.type;
-    const actualType = isNonNullType(returnType) ? returnType.ofType : returnType;
-    const isScalar = isScalarType(actualType) || actualType.name === 'Void';
-    
-    // Create a mutation query with variables
-    const mutationQuery = `
-      mutation ($${resultParameterName}: ${resultArg.type.toString()}) {
-        ${mutationName}(${resultParameterName}: $${resultParameterName})${isScalar ? '' : ' { __typename }'}
+    // Validate the fixture data directly against the parameter type
+    let errors = [];
+    try {
+      // Validate the result parameter value against its expected type
+      let inputType = resultArg.type;
+      
+      // Handle NonNull wrapper types
+      if (isNonNullType(inputType)) {
+        inputType = inputType.ofType;
       }
-    `;
-
-    // Parse the query
-    const documentAST = parse(mutationQuery);
-
-    // Validate the query against the schema
-    const validationErrors = validate(originalSchema, documentAST);
-
-    // If query validation passes, validate the variable values against the input type
-    let variableErrors = [];
-    if (validationErrors.length === 0) {
-      try {
-        
-        // Validate the result parameter value against its expected type
-        let inputType = resultArg.type;
-        
-        // Handle NonNull wrapper types
-        if (isNonNullType(inputType)) {
-          inputType = inputType.ofType;
+      
+      if (isInputType(inputType)) {
+        const coercionResult = coerceInputValue(outputFixtureData, resultArg.type);
+        if (coercionResult.errors && coercionResult.errors.length > 0) {
+          errors.push(...coercionResult.errors);
         }
-        
-        if (isInputType(inputType)) {
-          const coercionResult = coerceInputValue(outputFixtureData, resultArg.type);
-          if (coercionResult.errors && coercionResult.errors.length > 0) {
-            variableErrors.push(...coercionResult.errors);
-          }
-        }
-      } catch (error) {
-        variableErrors = [{ message: error.message }];
       }
+    } catch (error) {
+      errors = [{ message: error.message }];
     }
 
-    const allErrors = [...validationErrors, ...variableErrors];
-
     return {
-      valid: allErrors.length === 0,
-      errors: allErrors,
-      query: mutationQuery,
+      valid: errors.length === 0,
+      errors: errors,
       mutationName: mutationName,
       resultParameterType: resultArg.type.toString()
     };
@@ -97,7 +71,6 @@ async function validateFixtureOutput(outputFixtureData, originalSchema, mutation
     return {
       valid: false,
       errors: [{ message: error.message }],
-      query: null,
       mutationName: mutationName,
       resultParameterType: null
     };

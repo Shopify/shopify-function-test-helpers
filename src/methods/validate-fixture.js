@@ -29,7 +29,7 @@ const fs = require('fs').promises;
  *   - resultParameterName: string - Parameter name used for validation
  *   - inputQuery: { valid: boolean, errors: Array } - Input query validation results
  *   - inputFixture: { valid: boolean, errors: Array, data: Object } - Input fixture validation results
- *   - outputFixture: { valid: boolean, errors: Array, query: string, mutationName: string, resultParameterType: string } - Output fixture validation results
+ *   - outputFixture: { valid: boolean, errors: Array, mutationName: string, resultParameterType: string } - Output fixture validation results
  */
 async function validateFixture({
   schemaPath,
@@ -46,7 +46,7 @@ async function validateFixture({
     resultParameterName,
     inputQuery: { valid: null, errors: [] },
     inputFixture: { valid: null, errors: [], data: null },
-    outputFixture: { valid: null, errors: [], query: null, mutationName: null, resultParameterType: null }
+    outputFixture: { valid: null, errors: [], mutationName: null, resultParameterType: null }
   };
 
   try {
@@ -97,7 +97,6 @@ async function validateFixture({
     results.outputFixture = {
       valid: outputFixtureResult.valid,
       errors: outputFixtureResult.errors,
-      query: outputFixtureResult.query,
       mutationName: outputFixtureResult.mutationName,
       resultParameterType: outputFixtureResult.resultParameterType
     };
