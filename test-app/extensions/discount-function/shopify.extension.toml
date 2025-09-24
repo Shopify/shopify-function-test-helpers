@@ -1,0 +1,23 @@
+api_version = "2025-04"
+
+[[extensions]]
+name = "t:name"
+handle = "discount-function"
+type = "function"
+uid = "630829f6-2180-df6b-6a08-656aa871d3f31c3e344a"
+description = "t:description"
+
+  [[extensions.targeting]]
+  target = "cart.lines.discounts.generate.run"
+  input_query = "src/cart_lines_discounts_generate_run.graphql"
+  export = "cart_lines_discounts_generate_run"
+
+  [[extensions.targeting]]
+  target = "cart.delivery-options.discounts.generate.run"
+  input_query = "src/cart_delivery_options_discounts_generate_run.graphql"
+  export = "cart_delivery_options_discounts_generate_run"
+
+  [extensions.build]
+  command = "cargo build --target=wasm32-wasip1 --release"
+  path = "target/wasm32-wasip1/release/discount-function.wasm"
+  watch = [ "src/**/*.rs" ]

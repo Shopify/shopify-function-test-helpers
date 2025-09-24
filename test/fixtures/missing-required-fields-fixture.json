@@ -1,0 +1,24 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "test.data.processing",
+    "input": {
+      "data": {
+        "items": [
+          {
+            "id": "gid://test/Item/1"
+          }
+        ]
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "addValidation": {
+            "errors": []
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,23 +1,15 @@
-const { validate, parse, buildSchema } = require('graphql');
-const fs = require('fs').promises;
+const { validate, parse } = require('graphql');
 
 /**
- * Validate a fixture to ensure it has the correct structure
+ * Validate a GraphQL input query string against a schema
+ * @param {string} queryString - The GraphQL query string content
+ * @param {GraphQLSchema} schema - Pre-built GraphQL schema
+ * @returns {Array<Object>} Array of GraphQL validation errors (empty if valid).
+ *   Each error has a 'message' property with the error description.
  */
-
-/**
- * Validate a GraphQL input query file against a schema file
- * @param {string} queryPath - Path to the GraphQL query file
- * @param {string} schemaPath - Path to the GraphQL schema file
- * @returns {Promise<Array>} Promise resolving to array of validation errors
- */
-async function validateInputQuery(queryPath, schemaPath) {
+function validateInputQuery(queryString, schema) {
   try {
-    const inputQueryString = await fs.readFile(queryPath, 'utf8');
-    const inputQueryAST = parse(inputQueryString);
-    const schemaString = await fs.readFile(schemaPath, 'utf8');
-    const schema = buildSchema(schemaString);
-    
+    const inputQueryAST = parse(queryString);
     const validationErrors = validate(schema, inputQueryAST);
     return validationErrors;
   } catch (error) {

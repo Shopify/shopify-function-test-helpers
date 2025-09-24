@@ -1,27 +1,69 @@
 schema {
-  query: Input
+  query: Query
+  mutation: Mutation
 }
 
-type Input {
-  cart: Cart
+type Query {
+  data: DataContainer
 }
 
-type Cart {
-  lines: [CartLine!]!
-  buyerIdentity: BuyerIdentity
+type DataContainer {
+  items: [Item!]!
+  metadata: Metadata
 }
 
-type CartLine {
-  quantity: Int!
-  merchandise: ProductVariant
+type Item {
+  id: ID
+  count: Int!
+  details: ItemDetails
 }
 
-type ProductVariant {
+type ItemDetails {
   id: ID!
-  title: String!
+  name: String!
 }
 
-type BuyerIdentity {
+type Metadata {
   email: String
   phone: String
+}
+
+type Mutation {
+  """
+  Handles the Function result for the data.processing.generate.run target.
+  """
+  processData(result: ProcessDataResult!): Boolean!
+  
+  """
+  Processes fetch requests for the data.fetching.generate.run target.
+  """
+  fetchData(input: FetchDataResult!): Boolean!
+}
+
+input ProcessDataResult {
+  operations: [DataOperation!]!
+}
+
+input DataOperation {
+  addValidation: AddValidationOperation
+}
+
+input AddValidationOperation {
+  errors: [ValidationError!]!
+}
+
+input ValidationError {
+  message: String!
+  target: String!
+}
+
+input FetchDataResult {
+  request: HttpRequest!
+}
+
+input HttpRequest {
+  url: String!
+  method: String!
+  headers: String
+  body: String
 }

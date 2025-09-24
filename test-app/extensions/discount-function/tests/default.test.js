@@ -29,7 +29,7 @@ describe("Default Integration Test", () => {
       const functionDir = path.dirname(__dirname);
 
       const schemaPath = path.join(functionDir, "schema.graphql");
-      const inputQueryPath = path.join(functionDir, "src/cart_validations_generate_run.graphql");
+      const inputQueryPath = path.join(functionDir, "src/cart_lines_discounts_generate_run.graphql");
 
       // Validate fixture using our comprehensive validation system
       const validationResult = await validateFixture({

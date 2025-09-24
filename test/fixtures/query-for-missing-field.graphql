@@ -1,0 +1,8 @@
+query Query {
+  data {
+    items {
+      id
+      count
+    }
+  }
+}

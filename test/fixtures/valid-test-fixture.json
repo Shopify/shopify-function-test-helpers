@@ -1,0 +1,32 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "data.processing.generate.run",
+    "input": {
+      "data": {
+        "items": [
+          {
+            "id": "gid://test/Item/1",
+            "count": 2,
+            "details": {
+              "id": "gid://test/ItemDetails/123",
+              "name": "Test Item"
+            }
+          }
+        ],
+        "metadata": {
+          "email": "test@example.com"
+        }
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "addValidation": {
+            "errors": []
+          }
+        }
+      ]
+    }
+  }
+}

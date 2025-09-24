@@ -1,0 +1,14 @@
+query Input {
+  cart {
+    lines {
+      id
+      quantity
+      merchandise {
+        id
+        title
+      }
+    }
+    buyerIdentity {
+      email
+    }
+  # Missing closing brace here intentionally

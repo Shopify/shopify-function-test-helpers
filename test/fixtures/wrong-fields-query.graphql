@@ -3,13 +3,16 @@ query Query {
     items {
       id
       count
+      nonExistentField
       details {
         id
         name
+        anotherInvalidField
       }
     }
     metadata {
       email
+      invalidMetadataField
     }
   }
 }

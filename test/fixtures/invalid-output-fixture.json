@@ -1,0 +1,26 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "test.data.processing",
+    "input": {
+      "data": {
+        "items": [
+          {
+            "id": "gid://test/Item/1",
+            "count": 1
+          }
+        ]
+      }
+    },
+    "output": {
+      "operations": [
+        {
+          "addValidation": {
+            "errors": [],
+            "extraInvalidField": "this should not be allowed"
+          }
+        }
+      ]
+    }
+  }
+}
