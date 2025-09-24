@@ -1,7 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { buildFunction, loadFixture, runFunction, validateFixture } from "@shopify/functions-test-helpers";
-import { buildSchema } from 'graphql';
+import { buildFunction, loadFixture, runFunction, validateFixture, loadSchema } from "@shopify/functions-test-helpers";
 
 function logValidationResults(fixtureFile, validationResult) {
   console.log(`Validation for ${path.basename(fixtureFile)}:`);
@@ -24,8 +23,7 @@ describe("Default Integration Test", () => {
     const schemaPath = path.join(functionDir, "schema.graphql");
     const inputQueryPath = path.join(functionDir, "src/cart_validations_generate_run.graphql");
     
-    const schemaString = await fs.promises.readFile(schemaPath, 'utf8');
-    schema = buildSchema(schemaString);
+    schema = await loadSchema(schemaPath);
     inputQueryString = await fs.promises.readFile(inputQueryPath, 'utf8');
   }, 10000); // 10 second timeout for building the function
 
