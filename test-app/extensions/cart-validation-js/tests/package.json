@@ -1,0 +1,13 @@
+{
+  "name": "cart-validation-js-tests",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "function-testing-helpers": "file:../../../..",
+    "graphql": "^16.11.0",
+    "vitest": "^2.1.9"
+  }
+}
