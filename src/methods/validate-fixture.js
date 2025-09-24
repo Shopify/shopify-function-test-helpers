@@ -21,7 +21,15 @@ const fs = require('fs').promises;
  * @param {string} options.inputQueryPath - Path to the input query file
  * @param {string} [options.mutationName] - The mutation name for output validation (auto-determined from target if not provided)
  * @param {string} [options.resultParameterName] - The mutation parameter name (auto-determined from target if not provided)
- * @returns {Promise<Object>} Complete validation results
+ * @returns {Promise<Object>} Complete validation results with structure:
+ *   - schemaPath: string - Path to schema file
+ *   - fixturePath: string - Path to fixture file  
+ *   - inputQueryPath: string - Path to input query file
+ *   - mutationName: string - Mutation name used for validation
+ *   - resultParameterName: string - Parameter name used for validation
+ *   - inputQuery: { valid: boolean, errors: Array } - Input query validation results
+ *   - inputFixture: { valid: boolean, errors: Array, data: Object } - Input fixture validation results
+ *   - outputFixture: { valid: boolean, errors: Array, query: string, mutationName: string, resultParameterType: string } - Output fixture validation results
  */
 async function validateFixture({
   schemaPath,

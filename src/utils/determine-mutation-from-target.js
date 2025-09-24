@@ -6,8 +6,10 @@ const { buildSchema, isObjectType } = require('graphql');
  * 
  * @param {string} target - The target string (e.g., "cart.validations.generate.run")
  * @param {GraphQL.GraphQLSchema} schema - The GraphQL schema to analyze
- * @returns {Object} Object containing mutationName and resultParameterName
- * @throws {Error} If target cannot be matched to a mutation
+ * @returns {Object} Object with structure:
+ *   - mutationName: string - The name of the matching mutation field
+ *   - resultParameterName: string - The name of the first parameter (typically 'result')
+ * @throws {Error} If target cannot be matched to a mutation or schema has no mutations
  */
 function determineMutationFromTarget(target, schema) {
   try {

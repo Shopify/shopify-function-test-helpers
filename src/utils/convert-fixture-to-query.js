@@ -5,13 +5,10 @@
  * a GraphQL query that selects all the fields present in the fixture.
  * This is useful for validating fixture data against GraphQL schemas by 
  * executing the generated query with the fixture as root value.
- */
-
-/**
- * Convert fixture data structure to a GraphQL query string
+ * 
  * @param {Object} fixtureData - The fixture data to convert
  * @param {string} fieldName - The root field name (e.g., 'input', 'output', 'data') 
- * @returns {string} GraphQL query string
+ * @returns {string} GraphQL query string that matches the fixture structure
  */
 function convertFixtureToQuery(fixtureData, fieldName = 'data') {
   function buildSelectionSet(obj) {

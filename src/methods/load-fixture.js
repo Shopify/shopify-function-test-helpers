@@ -1,14 +1,18 @@
 /**
- * Load a fixture from the test_data directory
+ * Load and parse a fixture file
  */
 
 const fs = require('fs');
 const path = require('path');
 
 /**
- * Load a fixture from the test_data directory
- * @param {string} filename - The name of the fixture file
- * @returns {Object} The parsed fixture data
+ * Load and parse a fixture file, extracting the payload data
+ * @param {string} filename - The path to the fixture JSON file
+ * @returns {Promise<Object>} The parsed fixture data with structure:
+ *   - export: Object - The export data from payload.export
+ *   - input: Object - The input data from payload.input
+ *   - expectedOutput: Object - The output data from payload.output  
+ *   - target: string - The target string from payload.target
  */
 async function loadFixture(filename) {
   try {

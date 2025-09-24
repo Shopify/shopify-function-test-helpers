@@ -13,7 +13,12 @@ const { validate, parse, isScalarType, isNonNullType, coerceInputValue, isInputT
  * @param {GraphQLSchema} originalSchema - The original GraphQL schema
  * @param {string} mutationName - The mutation field name (e.g., 'cartValidationsGenerateRun')
  * @param {string} resultParameterName - The parameter name in the mutation (usually 'result')
- * @returns {Object} Validation result with { valid, errors, query, mutationName, resultParameterType }
+ * @returns {Object} Validation result with structure:
+ *   - valid: boolean - Whether the fixture data is valid for the mutation
+ *   - errors: Array<Object> - Array of GraphQL validation errors (empty if valid)
+ *   - query: string|null - The mutation query generated for validation
+ *   - mutationName: string - The mutation name that was validated
+ *   - resultParameterType: string|null - The GraphQL type of the result parameter
  */
 async function validateFixtureOutput(outputFixtureData, originalSchema, mutationName, resultParameterName = 'result') {
   try {
