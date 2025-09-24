@@ -1,6 +1,6 @@
 const path = require("path");
 const fs = require("fs");
-const { buildFunction, loadFixture, runFunction, validateFixture } = require("function-testing-helpers");
+const { buildFunction, loadFixture, runFunction, validateFixture } = require("@shopify/functions-test-helpers");
 const { buildSchema } = require('graphql');
 
 function logValidationResults(fixtureFile, validationResult) {
