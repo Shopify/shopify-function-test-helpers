@@ -1,18 +1,19 @@
 import path from "path";
 import fs from "fs";
-import { buildFunction, loadFixture, runFunction, validateFixture, loadSchema } from "@shopify/functions-test-helpers";
+import { buildFunction, loadFixture, runFunction, validateFixture, loadSchema, loadInputQuery } from "@shopify/functions-test-helpers";
 
 function logValidationResults(fixtureFile, validationResult) {
   console.log(`Validation for ${path.basename(fixtureFile)}:`);
   console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
   console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
+  console.log(`  Input Query-Fixture Match: ${validationResult.inputQueryFixtureMatch.valid ? '✅' : '❌'}`);
   console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
-  console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
+  console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.inputQueryFixtureMatch.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
 }
 
 describe("Default Integration Test", () => {
   let schema;
-  let inputQueryString;
+  let inputQueryAST;
   let functionDir;
 
   beforeAll(async () => {
@@ -24,7 +25,7 @@ describe("Default Integration Test", () => {
     const inputQueryPath = path.join(functionDir, "src/cart_validations_generate_run.graphql");
     
     schema = await loadSchema(schemaPath);
-    inputQueryString = await fs.promises.readFile(inputQueryPath, 'utf8');
+    inputQueryAST = await loadInputQuery(inputQueryPath);
   }, 10000); // 10 second timeout for building the function
 
   const fixturesDir = path.join(__dirname, "fixtures");
@@ -41,7 +42,7 @@ describe("Default Integration Test", () => {
       const validationResult = await validateFixture({
         schema,
         fixture,
-        inputQueryString
+        inputQueryAST
       });
 
       // Log validation results for debugging
@@ -50,6 +51,7 @@ describe("Default Integration Test", () => {
       // Assert that all validation steps pass
       expect(validationResult.inputQuery.valid).toBe(true);
       expect(validationResult.inputFixture.valid).toBe(true);
+      expect(validationResult.inputQueryFixtureMatch.valid).toBe(true);
       expect(validationResult.outputFixture.valid).toBe(true);
 
       // Run the actual function

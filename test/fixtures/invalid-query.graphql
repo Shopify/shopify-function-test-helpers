@@ -1,0 +1,8 @@
+query InvalidQuery {
+  cart {
+    lines {
+      invalidField missing closing brace and syntax errors
+    }
+  }
+  missingClosingBrace {
+    field

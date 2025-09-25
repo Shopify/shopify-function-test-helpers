@@ -1,0 +1,15 @@
+query DifferentName {
+  data {
+    items {
+      id
+      count
+      details {
+        id
+        name
+      }
+    }
+    metadata {
+      email
+    }
+  }
+}

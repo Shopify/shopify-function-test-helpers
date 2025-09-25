@@ -1,8 +1,9 @@
 import { validateInputQuery } from './validate-input-query.js';
 import { validateFixtureInput } from './validate-fixture-input.js';
 import { validateFixtureOutput } from './validate-fixture-output.js';
+import { validateInputQueryFixtureMatch } from './validate-input-query-fixture-match.js';
 import { determineMutationFromTarget } from '../utils/determine-mutation-from-target.js';
-import { GraphQLSchema, GraphQLError } from 'graphql';
+import { GraphQLSchema, GraphQLError, DocumentNode, print } from 'graphql';
 import { FixtureData } from './load-fixture.js';
 
 /**
@@ -11,7 +12,7 @@ import { FixtureData } from './load-fixture.js';
 export interface ValidateFixtureOptions {
   schema: GraphQLSchema;
   fixture: FixtureData;
-  inputQueryString: string;
+  inputQueryAST: DocumentNode;
   mutationName?: string;
   resultParameterName?: string;
 }
@@ -31,6 +32,10 @@ export interface CompleteValidationResult {
     errors: string[];
     data: any;
   };
+  inputQueryFixtureMatch: {
+    valid: boolean;
+    errors: string[];
+  };
   outputFixture: {
     valid: boolean;
     errors: Array<{ message: string }>;
@@ -41,17 +46,18 @@ export interface CompleteValidationResult {
 }
 
 /**
- * Complete fixture validation - validates input query, input fixture, and output fixture
+ * Complete fixture validation - validates input query, input fixture, query-fixture match, and output fixture
  * 
  * This function provides a one-stop validation solution that:
  * 1. Validates the input query against the schema
  * 2. Validates the input fixture data against the schema
- * 3. Validates the output fixture data against the specified mutation
+ * 3. Validates that the query structure matches the fixture data structure
+ * 4. Validates the output fixture data against the specified mutation
  * 
  * @param {Object} options - Validation options
  * @param {GraphQLSchema} options.schema - The built GraphQL schema
  * @param {Object} options.fixture - The loaded fixture data (from loadFixture)
- * @param {string} options.inputQueryString - The input query string content
+ * @param {DocumentNode} options.inputQueryAST - The parsed input query AST (from loadInputQuery)
  * @param {string} [options.mutationName] - The mutation name for output validation (auto-determined from target if not provided)
  * @param {string} [options.resultParameterName] - The mutation parameter name (auto-determined from target if not provided)
  * @returns {Promise<Object>} Complete validation results with structure:
@@ -59,12 +65,13 @@ export interface CompleteValidationResult {
  *   - resultParameterName: string - Parameter name used for validation
  *   - inputQuery: { valid: boolean, errors: Array } - Input query validation results
  *   - inputFixture: { valid: boolean, errors: Array, data: Object } - Input fixture validation results
+ *   - inputQueryFixtureMatch: { valid: boolean, errors: Array } - Input query-fixture structure match results
  *   - outputFixture: { valid: boolean, errors: Array, mutationName: string, resultParameterType: string } - Output fixture validation results
  */
 export async function validateFixture({
   schema,
   fixture,
-  inputQueryString,
+  inputQueryAST,
   mutationName,
   resultParameterName
 }: ValidateFixtureOptions): Promise<CompleteValidationResult> {
@@ -73,12 +80,13 @@ export async function validateFixture({
     resultParameterName,
     inputQuery: { valid: false, errors: [] },
     inputFixture: { valid: false, errors: [], data: null },
+    inputQueryFixtureMatch: { valid: false, errors: [] },
     outputFixture: { valid: false, errors: [], mutationName: null, resultParameterType: null }
   };
 
   try {
     // Step 1: Validate input query
-    const inputQueryErrors = validateInputQuery(inputQueryString, schema);
+    const inputQueryErrors = validateInputQuery(inputQueryAST, schema);
     results.inputQuery = {
       valid: inputQueryErrors.length === 0,
       errors: inputQueryErrors
@@ -92,7 +100,14 @@ export async function validateFixture({
       data: inputFixtureResult.data
     };
 
-    // Step 3: Determine mutation details for output validation
+    // Step 3: Validate input query-fixture match
+    const inputQueryFixtureMatchResult = await validateInputQueryFixtureMatch(inputQueryAST, fixture.input, schema);
+    results.inputQueryFixtureMatch = {
+      valid: inputQueryFixtureMatchResult.valid,
+      errors: inputQueryFixtureMatchResult.errors
+    };
+
+    // Step 4: Determine mutation details for output validation
     let determined;
     if (!mutationName || !resultParameterName) {
       const target = fixture.target;
@@ -106,7 +121,7 @@ export async function validateFixture({
     results.mutationName = mutationName || determined?.mutationName;
     results.resultParameterName = resultParameterName || determined?.resultParameterName;
 
-    // Step 4: Validate output fixture
+    // Step 5: Validate output fixture
     if (!results.mutationName || !results.resultParameterName) {
       throw new Error('Unable to determine mutation name or result parameter name for output fixture validation');
     }

@@ -1,18 +1,12 @@
 import { validateFixtureOutput } from '../../src/methods/validate-fixture-output.ts';
-import { loadFixture } from '../../src/methods/load-fixture.ts';
-import { buildSchema } from 'graphql';
-import { promises as fs } from 'fs';
+import { loadFixture, loadSchema } from '../../src/wasm-testing-helpers.ts';
 
 describe('validateFixtureOutput', () => {
   let schema;
   let fixture;
 
   beforeAll(async () => {
-    // Load the test schema
-    const schemaString = await fs.readFile('./test/fixtures/test-schema.graphql', 'utf8');
-    schema = buildSchema(schemaString);
-
-    // Load the test fixture
+    schema = await loadSchema('./test/fixtures/test-schema.graphql');
     fixture = await loadFixture('./test/fixtures/valid-test-fixture.json');
   });
 
