@@ -7,41 +7,32 @@ import { convertFixtureToQuery } from '../utils/convert-fixture-to-query.js';
 export interface QueryFixtureMatchResult {
   valid: boolean;
   errors: string[];
-  inputQuery: string;
-  fixtureQuery: string;
 }
 
 /**
- * Validates that an input query's selection set matches the shape of fixture input data
+ * Validates that an input query AST's selection set matches the shape of fixture input data
  * 
  * This approach generates a query from the fixture structure using convertFixtureToQuery,
  * then compares the selection sets of both queries using AST comparison.
  * 
- * This ensures that the fixture data is realistic for the given query - the fixture
- * should contain data for all fields selected in the query, and ideally shouldn't
- * contain extra fields that the query doesn't select.
- * 
- * @param {string} inputQueryString - The GraphQL query string
+ * @param {DocumentNode} inputQueryAST - The GraphQL query AST
  * @param {Object} fixtureInputData - The input fixture data
  * @param {GraphQLSchema} schema - The GraphQL schema for query validation
  * @returns {Promise<QueryFixtureMatchResult>} Validation result indicating whether query and fixture match
  */
-export async function validateQueryFixtureMatch(
-  inputQueryString: string,
+export async function validateInputQueryFixtureMatch(
+  inputQueryAST: DocumentNode,
   fixtureInputData: Record<string, any>,
   schema: GraphQLSchema
 ): Promise<QueryFixtureMatchResult> {
   const result: QueryFixtureMatchResult = {
     valid: false,
-    errors: [],
-    inputQuery: inputQueryString,
-    fixtureQuery: ''
+    errors: []
   };
 
   try {
-    // Step 1: Validate the input query
-    const inputDocument = parse(inputQueryString);
-    const validationErrors = validate(schema, inputDocument);
+    // Step 1: Validate the input query AST (already parsed)
+    const validationErrors = validate(schema, inputQueryAST);
     
     if (validationErrors.length > 0) {
       result.errors.push(`Input query validation failed: ${validationErrors.map(e => e.message).join(', ')}`);
@@ -49,10 +40,10 @@ export async function validateQueryFixtureMatch(
     }
 
     // Step 2: Generate a query from the fixture structure
-    result.fixtureQuery = convertFixtureToQuery(fixtureInputData, '');
+    const fixtureQuery = convertFixtureToQuery(fixtureInputData, '');
     
     // Step 3: Parse and validate the fixture-generated query
-    const fixtureDocument = parse(result.fixtureQuery);
+    const fixtureDocument = parse(fixtureQuery);
     const fixtureValidationErrors = validate(schema, fixtureDocument);
     
     if (fixtureValidationErrors.length > 0) {
@@ -62,7 +53,7 @@ export async function validateQueryFixtureMatch(
 
     // Step 4: Compare queries using canonical print format
     // GraphQL's print() function produces a canonical representation
-    const canonicalInput = removeQueryName(print(inputDocument));
+    const canonicalInput = removeQueryName(print(inputQueryAST));
     const canonicalFixture = removeQueryName(print(fixtureDocument));
     
     if (canonicalInput === canonicalFixture) {

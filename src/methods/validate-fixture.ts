@@ -1,7 +1,7 @@
 import { validateInputQuery } from './validate-input-query.js';
 import { validateFixtureInput } from './validate-fixture-input.js';
 import { validateFixtureOutput } from './validate-fixture-output.js';
-import { validateQueryFixtureMatch } from './validate-input-query-fixture-match.js';
+import { validateInputQueryFixtureMatch } from './validate-input-query-fixture-match.js';
 import { determineMutationFromTarget } from '../utils/determine-mutation-from-target.js';
 import { GraphQLSchema, GraphQLError, DocumentNode, print } from 'graphql';
 import { FixtureData } from './load-fixture.js';
@@ -86,8 +86,7 @@ export async function validateFixture({
 
   try {
     // Step 1: Validate input query
-    const inputQueryString = print(inputQueryAST);
-    const inputQueryErrors = validateInputQuery(inputQueryString, schema);
+    const inputQueryErrors = validateInputQuery(inputQueryAST, schema);
     results.inputQuery = {
       valid: inputQueryErrors.length === 0,
       errors: inputQueryErrors
@@ -102,7 +101,7 @@ export async function validateFixture({
     };
 
     // Step 3: Validate input query-fixture match
-    const inputQueryFixtureMatchResult = await validateQueryFixtureMatch(inputQueryString, fixture.input, schema);
+    const inputQueryFixtureMatchResult = await validateInputQueryFixtureMatch(inputQueryAST, fixture.input, schema);
     results.inputQueryFixtureMatch = {
       valid: inputQueryFixtureMatchResult.valid,
       errors: inputQueryFixtureMatchResult.errors
