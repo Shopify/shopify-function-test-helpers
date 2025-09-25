@@ -6,6 +6,15 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+/**
+ * Interface for the build function result
+ */
+export interface BuildFunctionResult {
+  success: boolean;
+  output: string | null;
+  error: string | null;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -14,7 +23,7 @@ const __dirname = path.dirname(__filename);
  * @param {string} functionPath - Optional path to the function directory
  * @returns {Object} A function run payload
  */
-export async function buildFunction(functionPath) {
+export async function buildFunction(functionPath?: string): Promise<BuildFunctionResult> {
   try {
     let functionDir, appRootDir, functionName;
     

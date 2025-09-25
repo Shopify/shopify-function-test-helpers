@@ -6,6 +6,14 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+/**
+ * Interface for the run function result
+ */
+export interface RunFunctionResult {
+  result: { output: any } | null;
+  error: string | null;
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -16,7 +24,11 @@ const __dirname = path.dirname(__filename);
  * @param {String} [functionPath] - Optional path to the function directory
  * @returns {Object} The function run result
  */
-export async function runFunction(exportName, input, functionPath) {
+export async function runFunction(
+  exportName: string,
+  input: Record<string, any>,
+  functionPath?: string
+): Promise<RunFunctionResult> {
   try {
     const inputJson = JSON.stringify(input);
 

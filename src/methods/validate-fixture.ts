@@ -2,6 +2,43 @@ import { validateInputQuery } from './validate-input-query.js';
 import { validateFixtureInput } from './validate-fixture-input.js';
 import { validateFixtureOutput } from './validate-fixture-output.js';
 import { determineMutationFromTarget } from '../utils/determine-mutation-from-target.js';
+import { GraphQLSchema, GraphQLError } from 'graphql';
+import { FixtureData } from './load-fixture.js';
+
+/**
+ * Interface for validate fixture options
+ */
+export interface ValidateFixtureOptions {
+  schema: GraphQLSchema;
+  fixture: FixtureData;
+  inputQueryString: string;
+  mutationName?: string;
+  resultParameterName?: string;
+}
+
+/**
+ * Interface for complete validation results
+ */
+export interface CompleteValidationResult {
+  mutationName?: string;
+  resultParameterName?: string;
+  inputQuery: {
+    valid: boolean;
+    errors: GraphQLError[];
+  };
+  inputFixture: {
+    valid: boolean;
+    errors: string[];
+    data: any;
+  };
+  outputFixture: {
+    valid: boolean;
+    errors: Array<{ message: string }>;
+    mutationName: string | null;
+    resultParameterType: string | null;
+  };
+  error?: string;
+}
 
 /**
  * Complete fixture validation - validates input query, input fixture, and output fixture
@@ -30,13 +67,13 @@ export async function validateFixture({
   inputQueryString,
   mutationName,
   resultParameterName
-}) {
-  const results = {
+}: ValidateFixtureOptions): Promise<CompleteValidationResult> {
+  const results: CompleteValidationResult = {
     mutationName,
     resultParameterName,
-    inputQuery: { valid: null, errors: [] },
-    inputFixture: { valid: null, errors: [], data: null },
-    outputFixture: { valid: null, errors: [], mutationName: null, resultParameterType: null }
+    inputQuery: { valid: false, errors: [] },
+    inputFixture: { valid: false, errors: [], data: null },
+    outputFixture: { valid: false, errors: [], mutationName: null, resultParameterType: null }
   };
 
   try {
@@ -70,6 +107,10 @@ export async function validateFixture({
     results.resultParameterName = resultParameterName || determined?.resultParameterName;
 
     // Step 4: Validate output fixture
+    if (!results.mutationName || !results.resultParameterName) {
+      throw new Error('Unable to determine mutation name or result parameter name for output fixture validation');
+    }
+    
     const outputFixtureResult = await validateFixtureOutput(
       fixture.expectedOutput, 
       schema, 
@@ -87,9 +128,10 @@ export async function validateFixture({
 
   } catch (error) {
     // Handle file loading or parsing errors
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       ...results,
-      error: error.message
+      error: errorMessage
     };
   }
 }

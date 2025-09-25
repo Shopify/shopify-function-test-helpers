@@ -1,4 +1,4 @@
-import { validateInputQuery } from '../../src/methods/validate-input-query.js';
+import { validateInputQuery } from '../../src/methods/validate-input-query.ts';
 import { buildSchema } from 'graphql';
 import { promises as fs } from 'fs';
 

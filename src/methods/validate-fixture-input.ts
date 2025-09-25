@@ -1,5 +1,15 @@
-import { graphql } from 'graphql';
+import { graphql, GraphQLSchema } from 'graphql';
 import { convertFixtureToQuery } from '../utils/convert-fixture-to-query.js';
+
+/**
+ * Interface for validation result
+ */
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  data: any;
+  query: string | null;
+}
 
 /**
  * Validate input fixture data using the original schema with Query root
@@ -23,7 +33,10 @@ import { convertFixtureToQuery } from '../utils/convert-fixture-to-query.js';
  *   - query: string|null - The GraphQL query generated from fixture structure
  */
 
-export async function validateFixtureInput(inputFixtureData, originalSchema) {
+export async function validateFixtureInput(
+  inputFixtureData: Record<string, any>,
+  originalSchema: GraphQLSchema
+): Promise<ValidationResult> {
   try {
     // Step 1: Convert fixture data structure to a GraphQL query
     // The query directly matches the Input type structure (no field wrapper needed)
@@ -56,9 +69,10 @@ export async function validateFixtureInput(inputFixtureData, originalSchema) {
     };
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       valid: false,
-      errors: [`Input fixture validation failed: ${error.message}`],
+      errors: [`Input fixture validation failed: ${errorMessage}`],
       data: null,
       query: null
     };

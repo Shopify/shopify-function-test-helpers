@@ -1,5 +1,5 @@
-import { validateFixtureInput } from '../../src/methods/validate-fixture-input.js';
-import { loadFixture } from '../../src/methods/load-fixture.js';
+import { validateFixtureInput } from '../../src/methods/validate-fixture-input.ts';
+import { loadFixture } from '../../src/methods/load-fixture.ts';
 import { buildSchema } from 'graphql';
 import { promises as fs } from 'fs';
 

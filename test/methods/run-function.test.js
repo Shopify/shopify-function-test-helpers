@@ -1,5 +1,5 @@
-import { runFunction } from '../../src/methods/run-function.js';
-import { loadFixture } from '../../src/methods/load-fixture.js';
+import { runFunction } from '../../src/methods/run-function.ts';
+import { loadFixture } from '../../src/methods/load-fixture.ts';
 
   describe('runFunction', () => {
     it('should run a function using Shopify CLI', async () => {

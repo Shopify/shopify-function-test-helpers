@@ -5,6 +5,16 @@
 import fs from 'fs';
 
 /**
+ * Interface for the parsed fixture data structure
+ */
+export interface FixtureData {
+  export: Record<string, any>;
+  input: Record<string, any>;
+  expectedOutput: Record<string, any>;
+  target: string;
+}
+
+/**
  * Load and parse a fixture file, extracting the payload data
  * @param {string} filename - The path to the fixture JSON file
  * @returns {Promise<Object>} The parsed fixture data with structure:
@@ -13,7 +23,7 @@ import fs from 'fs';
  *   - expectedOutput: Object - The output data from payload.output  
  *   - target: string - The target string from payload.target
  */
-export async function loadFixture(filename) {
+export async function loadFixture(filename: string): Promise<FixtureData> {
   try {
     const fixtureContent = await fs.promises.readFile(filename, 'utf-8');
     const fixture = JSON.parse(fixtureContent);

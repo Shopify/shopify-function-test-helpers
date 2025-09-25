@@ -1,4 +1,4 @@
-import { determineMutationFromTarget } from '../../src/utils/determine-mutation-from-target.js';
+import { determineMutationFromTarget } from '../../src/utils/determine-mutation-from-target.ts';
 import { buildSchema } from 'graphql';
 import fs from 'fs';
 import path from 'path';

@@ -1,4 +1,4 @@
-import { validate, parse } from 'graphql';
+import { validate, parse, GraphQLSchema, GraphQLError } from 'graphql';
 
 /**
  * Validate a GraphQL input query string against a schema
@@ -7,13 +7,14 @@ import { validate, parse } from 'graphql';
  * @returns {Array<Object>} Array of GraphQL validation errors (empty if valid).
  *   Each error has a 'message' property with the error description.
  */
-export function validateInputQuery(queryString, schema) {
+export function validateInputQuery(queryString: string, schema: GraphQLSchema): GraphQLError[] {
   try {
     const inputQueryAST = parse(queryString);
     const validationErrors = validate(schema, inputQueryAST);
-    return validationErrors;
+    return [...validationErrors];
   } catch (error) {
-    return [{ message: `Failed to validate query: ${error.message}` }];
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return [new GraphQLError(`Failed to validate query: ${errorMessage}`)];
   }
 }
 
