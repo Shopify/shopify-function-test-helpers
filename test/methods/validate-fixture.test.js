@@ -1,26 +1,22 @@
-import { validateFixture } from '../../src/methods/validate-fixture.ts';
-import { loadFixture } from '../../src/methods/load-fixture.ts';
-import { buildSchema } from 'graphql';
-import { promises as fs } from 'fs';
+import { validateFixture, loadFixture, loadInputQuery, loadSchema } from '../../src/wasm-testing-helpers.ts';
 
 describe('validateFixture', () => {
   // Helper function to load test data
   async function loadTestData() {
-    const schemaString = await fs.readFile('./test/fixtures/test-schema.graphql', 'utf8');
-    const schema = buildSchema(schemaString);
+    const schema = await loadSchema('./test/fixtures/test-schema.graphql');
     const fixture = await loadFixture('./test/fixtures/valid-test-fixture.json');
-    const inputQueryString = await fs.readFile('./test/fixtures/test-query.graphql', 'utf8');
-    return { schema, fixture, inputQueryString };
+    const inputQueryAST = await loadInputQuery('./test/fixtures/test-query.graphql');
+    return { schema, fixture, inputQueryAST };
   }
 
   describe('Valid Test Case', () => {
     it('should perform complete validation workflow with valid test fixture', async () => {
-      const { schema, fixture, inputQueryString } = await loadTestData();
+      const { schema, fixture, inputQueryAST } = await loadTestData();
 
       const result = await validateFixture({
         schema,
         fixture,
-        inputQueryString,
+        inputQueryAST,
         mutationName: 'processData',
         resultParameterName: 'result'
       });
@@ -30,6 +26,7 @@ describe('validateFixture', () => {
       expect(result).toHaveProperty('resultParameterName');
       expect(result).toHaveProperty('inputQuery');
       expect(result).toHaveProperty('inputFixture');
+      expect(result).toHaveProperty('inputQueryFixtureMatch');
       expect(result).toHaveProperty('outputFixture');
 
       // Input query validation should pass
@@ -40,22 +37,26 @@ describe('validateFixture', () => {
       expect(result.inputFixture.valid).toBe(true);
       expect(result.inputFixture.errors).toHaveLength(0);
 
+      // Input query-fixture match validation should pass
+      expect(result.inputQueryFixtureMatch.valid).toBe(true);
+      expect(result.inputQueryFixtureMatch.errors).toHaveLength(0);
+
       // Output fixture validation should pass
       expect(result.outputFixture.valid).toBe(true);
       expect(result.outputFixture.errors).toHaveLength(0);
 
       // Overall validation should pass
-      expect(result.inputQuery.valid && result.inputFixture.valid && result.outputFixture.valid).toBe(true);
+      expect(result.inputQuery.valid && result.inputFixture.valid && result.inputQueryFixtureMatch.valid && result.outputFixture.valid).toBe(true);
     });
 
     it('should automatically determine mutation details from target', async () => {
-      const { schema, fixture, inputQueryString } = await loadTestData();
+      const { schema, fixture, inputQueryAST } = await loadTestData();
 
       // Don't provide mutationName or resultParameterName - let it auto-determine
       const result = await validateFixture({
         schema,
         fixture,
-        inputQueryString
+        inputQueryAST
       });
 
       // Should automatically determine the correct mutation details
@@ -71,7 +72,7 @@ describe('validateFixture', () => {
 
   describe('Invalid Output Test Case', () => {
     it('should detect invalid output fixture with extra fields', async () => {
-      const { schema, inputQueryString } = await loadTestData();
+      const { schema, inputQueryAST } = await loadTestData();
       
       // Create fixture with invalid output data (extra fields)
       const invalidFixture = {
@@ -90,7 +91,7 @@ describe('validateFixture', () => {
       const result = await validateFixture({
         schema,
         fixture: invalidFixture,
-        inputQueryString,
+        inputQueryAST,
         mutationName: 'processData',
         resultParameterName: 'result'
       });
@@ -106,7 +107,7 @@ describe('validateFixture', () => {
 
   describe('Invalid Input Cases', () => {
     it('should detect invalid input fixture with wrong data types', async () => {
-      const { schema, inputQueryString } = await loadTestData();
+      const { schema, inputQueryAST } = await loadTestData();
       
       // Create fixture with wrong data types in input
       const invalidFixture = {
@@ -118,7 +119,7 @@ describe('validateFixture', () => {
       const result = await validateFixture({
         schema,
         fixture: invalidFixture,
-        inputQueryString,
+        inputQueryAST,
         mutationName: 'processData',
         resultParameterName: 'result'
       });
@@ -133,7 +134,7 @@ describe('validateFixture', () => {
     });
 
     it('should handle input fixture with missing fields gracefully', async () => {
-      const { schema, inputQueryString } = await loadTestData();
+      const { schema, inputQueryAST } = await loadTestData();
       
       // Create fixture with missing fields
       const incompleteFixture = {
@@ -145,7 +146,7 @@ describe('validateFixture', () => {
       const result = await validateFixture({
         schema,
         fixture: incompleteFixture,
-        inputQueryString,
+        inputQueryAST,
         mutationName: 'processData',
         resultParameterName: 'result'
       });
@@ -171,7 +172,7 @@ describe('validateFixture', () => {
       const result = await validateFixture({
         schema,
         fixture,
-        inputQueryString: invalidQuery,
+        inputQueryAST: invalidQuery,
         mutationName: 'processData',
         resultParameterName: 'result'
       });
@@ -197,7 +198,7 @@ describe('validateFixture', () => {
       const result = await validateFixture({
         schema,
         fixture,
-        inputQueryString: invalidQuery,
+        inputQueryAST: invalidQuery,
         mutationName: 'processData',
         resultParameterName: 'result'
       });
@@ -217,7 +218,7 @@ describe('validateFixture', () => {
       const result = await validateFixture({
         schema,
         fixture,
-        inputQueryString: "",
+        inputQueryAST: "",
         mutationName: 'processData',
         resultParameterName: 'result'
       });
@@ -240,7 +241,7 @@ describe('validateFixture', () => {
       const result = await validateFixture({
         schema,
         fixture,
-        inputQueryString: mismatchQuery,
+        inputQueryAST: mismatchQuery,
         mutationName: 'processData',
         resultParameterName: 'result'
       });
@@ -256,12 +257,12 @@ describe('validateFixture', () => {
 
   describe('Error Handling', () => {
     it('should handle invalid mutation name', async () => {
-      const { schema, fixture, inputQueryString } = await loadTestData();
+      const { schema, fixture, inputQueryAST } = await loadTestData();
 
       const result = await validateFixture({
         schema,
         fixture,
-        inputQueryString,
+        inputQueryAST,
         mutationName: 'nonExistentMutation',
         resultParameterName: 'result'
       });
