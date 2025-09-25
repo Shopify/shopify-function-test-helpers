@@ -1,7 +1,8 @@
+import { describe, it, expect } from 'vitest';
 import { runFunction } from '../../src/methods/run-function.ts';
 import { loadFixture } from '../../src/methods/load-fixture.ts';
 
-  describe('runFunction', () => {
+describe('runFunction', () => {
     it('should run a function using Shopify CLI', async () => {
       const exportName = 'cart-validations-generate-run';
       const input = {

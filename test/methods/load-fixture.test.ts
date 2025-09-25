@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { loadFixture } from '../../src/methods/load-fixture.ts';
 
 describe('loadFixture', () => {

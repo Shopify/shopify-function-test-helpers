@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import path from 'path';
+import { OperationDefinitionNode } from 'graphql';
 import { loadInputQuery } from '../../src/wasm-testing-helpers.ts';
 
 describe('loadInputQuery', () => {
@@ -12,7 +13,7 @@ describe('loadInputQuery', () => {
     expect(document.kind).toBe('Document');
     expect(document.definitions).toHaveLength(1);
     expect(document.definitions[0].kind).toBe('OperationDefinition');
-    expect(document.definitions[0].operation).toBe('query');
+    expect((document.definitions[0] as OperationDefinitionNode).operation).toBe('query');
   });
 
   it('should throw an error for non-existent file', async () => {

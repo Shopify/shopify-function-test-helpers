@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { convertFixtureToQuery } from '../../src/utils/convert-fixture-to-query.ts';
 
 describe('convertFixtureToQuery', () => {

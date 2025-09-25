@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { validateFixture, loadFixture, loadInputQuery, loadSchema } from '../../src/wasm-testing-helpers.ts';
 
 describe('validateFixture', () => {

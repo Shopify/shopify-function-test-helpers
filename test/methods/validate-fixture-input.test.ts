@@ -1,9 +1,11 @@
+import { describe, it, expect, beforeAll } from 'vitest';
 import { validateFixtureInput } from '../../src/methods/validate-fixture-input.ts';
-import { loadFixture, loadSchema } from '../../src/wasm-testing-helpers.ts';
+import { loadFixture, loadSchema, FixtureData } from '../../src/wasm-testing-helpers.ts';
+import { GraphQLSchema } from 'graphql';
 
 describe('validateFixtureInput', () => {
-  let schema;
-  let fixture;
+  let schema: GraphQLSchema;
+  let fixture: FixtureData;
 
   beforeAll(async () => {
     schema = await loadSchema('./test/fixtures/test-schema.graphql');
