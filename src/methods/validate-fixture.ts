@@ -25,7 +25,7 @@ export interface CompleteValidationResult {
   resultParameterName?: string;
   inputQuery: {
     valid: boolean;
-    errors: GraphQLError[];
+    errors: readonly GraphQLError[];
   };
   inputFixture: {
     valid: boolean;
