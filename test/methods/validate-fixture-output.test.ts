@@ -130,7 +130,9 @@ describe("validateFixtureOutput", () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0].message).toBe("Invalid value \"this should be an array\" at \"value.operations\": Expected type \"DataOperation\" to be an object.");
+      expect(result.errors[0].message).toBe(
+        'Expected type "DataOperation" to be an object. At "operations"'
+      );
     });
 
     it("should detect extra fields in ValidationAddOperation", async () => {
@@ -164,12 +166,19 @@ describe("validateFixtureOutput", () => {
         "result"
       );
 
-      // Should detect the extra fields as invalid
+      // Should detect each extra field as a separate error
       expect(result.valid).toBe(false);
-      expect(result.errors).toHaveLength(1);
+      expect(result.errors).toHaveLength(3);
+
+      // Check each extra field gets its own specific error
       expect(result.errors[0].message).toBe(
-        'Invalid value { errors: [[Object]], extraField1: "this should not be allowed", extraField2: 123, nestedExtra: { invalidNested: "also invalid" } } ' +
-        'at "value.operations[0].addValidation": Field "extraField1" is not defined by type "AddValidationOperation".'
+        'Field "extraField1" is not defined by type "AddValidationOperation". At "operations.0.addValidation"'
+      );
+      expect(result.errors[1].message).toBe(
+        'Field "extraField2" is not defined by type "AddValidationOperation". At "operations.0.addValidation"'
+      );
+      expect(result.errors[2].message).toBe(
+        'Field "nestedExtra" is not defined by type "AddValidationOperation". At "operations.0.addValidation"'
       );
     });
   });
