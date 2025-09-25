@@ -38,7 +38,7 @@ export interface CompleteValidationResult {
   };
   outputFixture: {
     valid: boolean;
-    errors: Array<{ message: string }>;
+    errors: { message: string }[];
     mutationName: string | null;
     resultParameterType: string | null;
   };
