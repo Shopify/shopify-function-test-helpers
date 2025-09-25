@@ -1,4 +1,14 @@
-import { isNonNullType, coerceInputValue, isInputType } from 'graphql';
+import { isNonNullType, coerceInputValue, isInputType, GraphQLSchema } from 'graphql';
+
+/**
+ * Interface for output fixture validation result
+ */
+export interface OutputValidationResult {
+  valid: boolean;
+  errors: Array<{ message: string }>;
+  mutationName: string;
+  resultParameterType: string | null;
+}
 
 /**
  * Validate output fixture by checking if it can be used as input to the corresponding mutation
@@ -18,7 +28,12 @@ import { isNonNullType, coerceInputValue, isInputType } from 'graphql';
  *   - mutationName: string - The mutation name that was validated
  *   - resultParameterType: string|null - The GraphQL type of the result parameter
  */
-export async function validateFixtureOutput(outputFixtureData, originalSchema, mutationName, resultParameterName = 'result') {
+export async function validateFixtureOutput(
+  outputFixtureData: Record<string, any>,
+  originalSchema: GraphQLSchema,
+  mutationName: string,
+  resultParameterName: string = 'result'
+): Promise<OutputValidationResult> {
   try {
     // Get the mutation type from schema
     const mutationType = originalSchema.getMutationType();
@@ -40,7 +55,7 @@ export async function validateFixtureOutput(outputFixtureData, originalSchema, m
     }
 
     // Validate the fixture data directly against the parameter type
-    let errors = [];
+    let errors: Array<{ message: string }> = [];
     try {
       // Validate the result parameter value against its expected type
       let inputType = resultArg.type;
@@ -52,12 +67,13 @@ export async function validateFixtureOutput(outputFixtureData, originalSchema, m
       
       if (isInputType(inputType)) {
         const coercionResult = coerceInputValue(outputFixtureData, resultArg.type);
-        if (coercionResult.errors && coercionResult.errors.length > 0) {
-          errors.push(...coercionResult.errors);
+        if (coercionResult && typeof coercionResult === 'object' && 'errors' in coercionResult && Array.isArray(coercionResult.errors) && coercionResult.errors.length > 0) {
+          errors.push(...coercionResult.errors.map((err: any) => ({ message: err.message || String(err) })));
         }
       }
     } catch (error) {
-      errors = [{ message: error.message }];
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      errors = [{ message: errorMessage }];
     }
 
     return {
@@ -68,9 +84,10 @@ export async function validateFixtureOutput(outputFixtureData, originalSchema, m
     };
 
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       valid: false,
-      errors: [{ message: error.message }],
+      errors: [{ message: errorMessage }],
       mutationName: mutationName,
       resultParameterType: null
     };

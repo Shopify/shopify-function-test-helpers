@@ -1,4 +1,12 @@
-import { isObjectType } from 'graphql';
+import { isObjectType, GraphQLSchema } from 'graphql';
+
+/**
+ * Interface for mutation determination result
+ */
+export interface MutationTarget {
+  mutationName: string;
+  resultParameterName: string;
+}
 
 /**
  * Determines the mutation name and result parameter name from a target string and GraphQL schema
@@ -11,7 +19,7 @@ import { isObjectType } from 'graphql';
  *   - resultParameterName: string - The name of the first parameter (typically 'result')
  * @throws {Error} If target cannot be matched to a mutation or schema has no mutations
  */
-export function determineMutationFromTarget(target, schema) {
+export function determineMutationFromTarget(target: string, schema: GraphQLSchema): MutationTarget {
   try {
     // Get the mutation type from the schema
     const mutationType = schema.getMutationType();
@@ -49,7 +57,8 @@ export function determineMutationFromTarget(target, schema) {
     throw new Error(`No mutation found for target '${target}'. Make sure the schema contains a mutation with a description that includes this target.`);
     
   } catch (error) {
-    throw new Error(`Failed to determine mutation from target '${target}': ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to determine mutation from target '${target}': ${errorMessage}`);
   }
 }
 

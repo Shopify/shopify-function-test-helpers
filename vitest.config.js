@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     include: ['**/test/**/*.test.js'],
     coverage: {
-      include: ['src/**/*.js'],
+      include: ['src/**/*.ts'],
       exclude: ['**/node_modules/**', '**/test/**']
     }
   }

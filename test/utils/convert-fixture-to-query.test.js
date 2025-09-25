@@ -1,4 +1,4 @@
-import { convertFixtureToQuery } from '../../src/utils/convert-fixture-to-query.js';
+import { convertFixtureToQuery } from '../../src/utils/convert-fixture-to-query.ts';
 
 describe('convertFixtureToQuery', () => {
 

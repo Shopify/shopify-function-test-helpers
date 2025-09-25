@@ -10,8 +10,8 @@
  * @param {string} fieldName - The root field name (e.g., 'input', 'output', 'data') 
  * @returns {string} GraphQL query string that matches the fixture structure
  */
-export function convertFixtureToQuery(fixtureData, fieldName = 'data') {
-  function buildSelectionSet(obj) {
+export function convertFixtureToQuery(fixtureData: Record<string, any>, fieldName: string = 'data'): string {
+  function buildSelectionSet(obj: any): string {
     if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) {
       return '';
     }
