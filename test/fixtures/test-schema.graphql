@@ -41,20 +41,14 @@ type Mutation {
 }
 
 input ProcessDataResult {
-  operations: [DataOperation!]!
+  title: String!
+  count: Int!
+  items: [ProcessingItem!]!
 }
 
-input DataOperation {
-  addValidation: AddValidationOperation
-}
-
-input AddValidationOperation {
-  errors: [ValidationError!]!
-}
-
-input ValidationError {
-  message: String!
-  target: String!
+input ProcessingItem {
+  name: String!
+  value: Int!
 }
 
 input FetchDataResult {

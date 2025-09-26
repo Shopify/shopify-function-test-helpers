@@ -40,29 +40,25 @@ describe('convertFixtureToQuery', () => {
   describe('Array Handling', () => {
     it('should handle arrays with objects', () => {
       const fixture = {
-        operations: [{
-          addValidation: {
-            errors: [{
-              message: "Error message",
-              target: "$.cart"
-            }]
-          }
+        items: [{
+          name: "Test Item",
+          value: 100
         }]
       };
 
       const query = convertFixtureToQuery(fixture, 'output');
       
-      expect(query).toBe('query { output { operations { addValidation { errors { message target } } } } }');
+      expect(query).toBe('query { output { items { name value } } }');
     });
 
     it('should handle empty arrays', () => {
       const fixture = {
-        operations: []
+        items: []
       };
 
       const query = convertFixtureToQuery(fixture, 'output');
       
-      expect(query).toBe('query { output { operations } }');
+      expect(query).toBe('query { output { items } }');
     });
 
     it('should handle arrays with scalar values', () => {

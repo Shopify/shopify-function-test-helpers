@@ -29,25 +29,27 @@ describe("validateFixtureOutput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it("should validate output fixture with validation errors", async () => {
-      const outputWithErrors = {
+    it("should validate output fixture with complex data", async () => {
+      const outputWithComplexData = {
         ...fixture.expectedOutput,
-        operations: [
+        items: [
           {
-            addValidation: {
-              errors: [
-                {
-                  message: "Test validation error",
-                  target: "$.cart.lines[0].quantity",
-                },
-              ],
-            },
+            name: "Complex Item 1",
+            value: 150,
+          },
+          {
+            name: "Complex Item 2",
+            value: 300,
+          },
+          {
+            name: "Complex Item 3",
+            value: 450,
           },
         ],
       };
 
       const result = await validateFixtureOutput(
-        outputWithErrors,
+        outputWithComplexData,
         schema,
         "processData",
         "result"
@@ -118,7 +120,7 @@ describe("validateFixtureOutput", () => {
       // Start with fixture output and modify it to have wrong data types
       const invalidOutputData = {
         ...fixture.expectedOutput,
-        operations: "this should be an array", // Wrong type
+        count: "this should be a number", // Wrong type
       };
 
       const result = await validateFixtureOutput(
@@ -131,32 +133,20 @@ describe("validateFixtureOutput", () => {
       expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toBe(
-        'Expected type "DataOperation" to be an object. At "operations"'
+        'Int cannot represent non-integer value: "this should be a number" At "count"'
       );
     });
 
-    it("should detect extra fields in ValidationAddOperation", async () => {
+    it("should detect extra fields in ProcessDataResult", async () => {
       // Start with loaded fixture output and add extra fields that shouldn't be allowed
       const outputWithExtraFields = {
         ...fixture.expectedOutput,
-        operations: [
-          {
-            addValidation: {
-              errors: [
-                {
-                  message: "Test validation error",
-                  target: "$.cart.lines[0].quantity",
-                },
-              ],
-              // These fields don't exist in the ValidationAddOperation schema
-              extraField1: "this should not be allowed",
-              extraField2: 123,
-              nestedExtra: {
-                invalidNested: "also invalid",
-              },
-            },
-          },
-        ],
+        // These fields don't exist in the ProcessDataResult schema
+        extraField1: "this should not be allowed",
+        extraField2: 123,
+        nestedExtra: {
+          invalidNested: "also invalid",
+        },
       };
 
       const result = await validateFixtureOutput(
@@ -172,13 +162,13 @@ describe("validateFixtureOutput", () => {
 
       // Check each extra field gets its own specific error
       expect(result.errors[0].message).toBe(
-        'Field "extraField1" is not defined by type "AddValidationOperation". At "operations.0.addValidation"'
+        'Field "extraField1" is not defined by type "ProcessDataResult". At ""'
       );
       expect(result.errors[1].message).toBe(
-        'Field "extraField2" is not defined by type "AddValidationOperation". At "operations.0.addValidation"'
+        'Field "extraField2" is not defined by type "ProcessDataResult". At ""'
       );
       expect(result.errors[2].message).toBe(
-        'Field "nestedExtra" is not defined by type "AddValidationOperation". At "operations.0.addValidation"'
+        'Field "nestedExtra" is not defined by type "ProcessDataResult". At ""'
       );
     });
   });
