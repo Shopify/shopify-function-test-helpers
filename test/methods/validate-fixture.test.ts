@@ -73,12 +73,8 @@ describe('validateFixture', () => {
       const invalidFixture = {
         ...fixture,
         expectedOutput: {
-          operations: [{
-            addValidation: {
-              errors: [{ message: "Test error", target: "$.data" }],
-              extraField: "should not exist"
-            }
-          }]
+          ...fixture.expectedOutput,
+          extraField: "should not exist"
         }
       };
 
@@ -96,7 +92,7 @@ describe('validateFixture', () => {
 
       expect(result.outputFixture.valid).toBe(false);
       expect(result.outputFixture.errors.length).toBe(1);
-      expect(result.outputFixture.errors[0].message).toContain('Field "extraField" is not defined by type "AddValidationOperation"');
+      expect(result.outputFixture.errors[0].message).toContain('Field "extraField" is not defined by type "ProcessDataResult"');
     });
   });
 

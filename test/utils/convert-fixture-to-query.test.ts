@@ -1,123 +1,108 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { convertFixtureToQuery } from '../../src/utils/convert-fixture-to-query.ts';
+import { loadFixture, FixtureData } from '../../src/wasm-testing-helpers.ts';
 
 describe('convertFixtureToQuery', () => {
+  let testFixture: FixtureData;
+
+  beforeAll(async () => {
+    testFixture = await loadFixture('./test/fixtures/valid-test-fixture.json');
+  });
 
   describe('Basic Structure Conversion', () => {
     it('should convert simple object to query', () => {
-      const fixture = {
-        message: "Hello",
-        count: 42
+      // Use a subset of the loaded fixture for this test
+      const simpleFixture = {
+        title: testFixture.expectedOutput.title,
+        count: testFixture.expectedOutput.count
       };
       
-      const query = convertFixtureToQuery(fixture, 'data');
+      const query = convertFixtureToQuery(simpleFixture, 'data');
       
-      expect(query).toBe('query { data { message count } }');
+      expect(query).toBe('query { data { title count } }');
     });
 
     it('should handle nested objects', () => {
-      const fixture = {
-        cart: {
-          lines: [{
-            quantity: 1,
-            merchandise: {
-              id: "123",
-              title: "Product"
-            }
-          }],
-          buyerIdentity: {
-            email: "test@example.com"
-          }
-        }
-      };
+      const inputFixture = testFixture.input;
 
-      const query = convertFixtureToQuery(fixture, 'input');
+      const query = convertFixtureToQuery(inputFixture, 'input');
       
-      expect(query).toBe('query { input { cart { lines { quantity merchandise { id title } } buyerIdentity { email } } } }');
+      expect(query).toBe('query { input { data { items { id count details { id name } } metadata { email } } } }');
     });
   });
 
   describe('Array Handling', () => {
     it('should handle arrays with objects', () => {
-      const fixture = {
-        operations: [{
-          addValidation: {
-            errors: [{
-              message: "Error message",
-              target: "$.cart"
-            }]
-          }
-        }]
-      };
+      const outputFixture = testFixture.expectedOutput;
 
-      const query = convertFixtureToQuery(fixture, 'output');
+      const query = convertFixtureToQuery(outputFixture, 'output');
       
-      expect(query).toBe('query { output { operations { addValidation { errors { message target } } } } }');
+      expect(query).toBe('query { output { title count items { name value } } }');
     });
 
     it('should handle empty arrays', () => {
-      const fixture = {
-        operations: []
+      const modifiedOutput = {
+        ...testFixture.expectedOutput,
+        items: []
       };
 
-      const query = convertFixtureToQuery(fixture, 'output');
+      const query = convertFixtureToQuery(modifiedOutput, 'output');
       
-      expect(query).toBe('query { output { operations } }');
+      expect(query).toBe('query { output { title count items } }');
     });
 
     it('should handle arrays with scalar values', () => {
-      const fixture = {
+      // Add scalar array to loaded fixture data
+      const fixtureWithTags = {
+        ...testFixture.expectedOutput,
         tags: ["tag1", "tag2", "tag3"]
       };
 
-      const query = convertFixtureToQuery(fixture, 'data');
+      const query = convertFixtureToQuery(fixtureWithTags, 'data');
       
-      expect(query).toBe('query { data { tags } }');
+      expect(query).toBe('query { data { title count items { name value } tags } }');
     });
   });
 
   describe('Field Name Variations', () => {
     it('should handle different field names', () => {
-      const fixture = { test: "value" };
+      // Use just the title field from loaded fixture for this test
+      const fixture = { title: testFixture.expectedOutput.title };
       
       const queryWithData = convertFixtureToQuery(fixture, 'data');
       const queryWithInput = convertFixtureToQuery(fixture, 'input');
       const queryWithOutput = convertFixtureToQuery(fixture, 'output');
       
-      expect(queryWithData).toBe('query { data { test } }');
-      expect(queryWithInput).toBe('query { input { test } }');
-      expect(queryWithOutput).toBe('query { output { test } }');
+      expect(queryWithData).toBe('query { data { title } }');
+      expect(queryWithInput).toBe('query { input { title } }');
+      expect(queryWithOutput).toBe('query { output { title } }');
     });
 
     it('should handle empty field name', () => {
-      const fixture = {
-        cart: {
-          lines: [{ quantity: 1 }]
-        }
-      };
+      const inputFixture = testFixture.input;
       
-      const query = convertFixtureToQuery(fixture, '');
+      const query = convertFixtureToQuery(inputFixture, '');
       
-      expect(query).toBe('query { cart { lines { quantity } } }');
+      expect(query).toBe('query { data { items { id count details { id name } } metadata { email } } }');
     });
   });
 
   describe('Edge Cases', () => {
     it('should handle null values', () => {
-      const fixture = {
+      const fixtureWithNull = {
+        ...testFixture.expectedOutput,
         value: null,
         other: "test"
       };
       
-      const query = convertFixtureToQuery(fixture, 'data');
-      
-      // For mutation-based validation, we want to include all fields (including null)
-      // so GraphQL can validate the complete structure
-      expect(query).toBe('query { data { value other } }');
+      const query = convertFixtureToQuery(fixtureWithNull, 'data');
+
+      expect(query).toBe('query { data { title count items { name value } value other } }');
     });
 
     it('should handle mixed data types', () => {
-      const fixture = {
+      const fixtureWithMixedTypes = {
+        ...testFixture.expectedOutput,
         string: "text",
         number: 123,
         boolean: true,
@@ -127,13 +112,14 @@ describe('convertFixtureToQuery', () => {
         array: [{ item: "test" }]
       };
       
-      const query = convertFixtureToQuery(fixture, 'data');
+      const query = convertFixtureToQuery(fixtureWithMixedTypes, 'data');
       
-      expect(query).toBe('query { data { string number boolean object { nested } array { item } } }');
+      expect(query).toBe('query { data { title count items { name value } string number boolean object { nested } array { item } } }');
     });
 
     it('should handle deeply nested structures', () => {
-      const fixture = {
+      const fixtureWithDeepNesting = {
+        ...testFixture.expectedOutput,
         level1: {
           level2: {
             level3: {
@@ -145,22 +131,21 @@ describe('convertFixtureToQuery', () => {
         }
       };
       
-      const query = convertFixtureToQuery(fixture, 'data');
+      const query = convertFixtureToQuery(fixtureWithDeepNesting, 'data');
       
-      expect(query).toBe('query { data { level1 { level2 { level3 { level4 { deepValue } } } } } }');
+      expect(query).toBe('query { data { title count items { name value } level1 { level2 { level3 { level4 { deepValue } } } } } }');
     });
 
     it('should handle empty objects', () => {
-      const fixture = {
+      const modifiedFixture = {
+        ...testFixture.expectedOutput,
         emptyObject: {},
         normalField: "value"
       };
       
-      const query = convertFixtureToQuery(fixture, 'data');
+      const query = convertFixtureToQuery(modifiedFixture, 'data');
       
-      // For mutation-based validation, we include empty objects in the query structure
-      // GraphQL will handle validation of whether empty objects are allowed
-      expect(query).toBe('query { data { emptyObject normalField } }');
+      expect(query).toBe('query { data { title count items { name value } emptyObject normalField } }');
     });
   });
 });
