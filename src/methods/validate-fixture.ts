@@ -25,7 +25,7 @@ export interface CompleteValidationResult {
   resultParameterName?: string;
   inputQuery: {
     valid: boolean;
-    errors: GraphQLError[];
+    errors: readonly GraphQLError[];
   };
   inputFixture: {
     valid: boolean;
@@ -38,7 +38,7 @@ export interface CompleteValidationResult {
   };
   outputFixture: {
     valid: boolean;
-    errors: Array<{ message: string }>;
+    errors: { message: string }[];
     mutationName: string | null;
     resultParameterType: string | null;
   };

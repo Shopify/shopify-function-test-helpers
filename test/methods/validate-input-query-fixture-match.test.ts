@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { validateInputQueryFixtureMatch, loadSchema, loadInputQuery, loadFixture } from '../../src/wasm-testing-helpers.ts';
+import { GraphQLSchema } from 'graphql';
 
 describe('validateInputQueryFixtureMatch', () => {
-  let schema;
+  let schema: GraphQLSchema;
 
   beforeAll(async () => {
     const schemaPath = './test/fixtures/test-schema.graphql';

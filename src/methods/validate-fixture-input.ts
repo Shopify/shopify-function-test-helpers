@@ -28,7 +28,7 @@ export interface ValidationResult {
  * @param {GraphQLSchema} originalSchema - The original GraphQL schema with Query root
  * @returns {Promise<Object>} Validation result with structure:
  *   - valid: boolean - Whether the fixture data is valid
- *   - errors: Array<string> - Array of error messages (empty if valid)
+ *   - errors: string[] - Array of error messages (empty if valid)
  *   - data: Object|null - The resulting data from query execution
  *   - query: string|null - The GraphQL query generated from fixture structure
  */

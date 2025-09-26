@@ -8,7 +8,7 @@ import fs from 'fs';
  * Interface for the parsed fixture data structure
  */
 export interface FixtureData {
-  export: Record<string, any>;
+  export: string;
   input: Record<string, any>;
   expectedOutput: Record<string, any>;
   target: string;

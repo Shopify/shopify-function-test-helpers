@@ -1,10 +1,11 @@
+import { describe, test, expect, beforeAll } from 'vitest';
 import { determineMutationFromTarget } from '../../src/utils/determine-mutation-from-target.ts';
-import { buildSchema } from 'graphql';
+import { buildSchema, GraphQLSchema } from 'graphql';
 import fs from 'fs';
 import path from 'path';
 
 describe('determineMutationFromTarget', () => {
-  let testSchema;
+  let testSchema: GraphQLSchema;
   
   beforeAll(() => {
     const schemaPath = path.join(__dirname, '../fixtures/test-schema.graphql');

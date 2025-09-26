@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { validateInputQuery, loadInputQuery, loadSchema } from '../../src/wasm-testing-helpers.ts';
 
 describe('validateInputQuery', () => {
@@ -35,7 +36,7 @@ describe('validateInputQuery', () => {
   it('should return errors for null schema', async () => {
     const queryAST = await loadInputQuery('./test/fixtures/test-query.graphql');
     
-    const errors = validateInputQuery(queryAST, null);
+    const errors = validateInputQuery(queryAST, null as any);
     
     expect(errors).toHaveLength(1);
     expect(errors[0]).toHaveProperty('message');

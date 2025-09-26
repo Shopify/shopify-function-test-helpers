@@ -5,7 +5,7 @@ import { isNonNullType, coerceInputValue, isInputType, GraphQLSchema } from 'gra
  */
 export interface OutputValidationResult {
   valid: boolean;
-  errors: Array<{ message: string }>;
+  errors: { message: string }[];
   mutationName: string;
   resultParameterType: string | null;
 }
@@ -24,7 +24,7 @@ export interface OutputValidationResult {
  * @param {string} resultParameterName - The parameter name in the mutation (usually 'result')
  * @returns {Object} Validation result with structure:
  *   - valid: boolean - Whether the fixture data is valid for the mutation
- *   - errors: Array<Object> - Array of GraphQL coercion errors (empty if valid)
+ *   - errors: { message: string }[] - Array of GraphQL coercion errors (empty if valid)
  *   - mutationName: string - The mutation name that was validated
  *   - resultParameterType: string|null - The GraphQL type of the result parameter
  */
@@ -55,7 +55,7 @@ export async function validateFixtureOutput(
     }
 
     // Validate the fixture data directly against the parameter type
-    let errors: Array<{ message: string }> = [];
+    let errors: { message: string }[] = [];
     try {
       // Validate the result parameter value against its expected type
       let inputType = resultArg.type;
