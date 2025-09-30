@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { buildFunction, loadFixture, runFunction, validateFixture, loadSchema, loadInputQuery } from "@shopify/functions-test-helpers";
+import { buildFunction, loadFixture, runFunction, validateFixture, loadSchema, loadInputQuery } from "@shopify/shopify-function-test-helpers";
 
 function logValidationResults(fixtureFile, validationResult) {
   console.log(`Validation for ${path.basename(fixtureFile)}:`);

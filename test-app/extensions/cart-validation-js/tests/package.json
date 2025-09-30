@@ -6,7 +6,7 @@
     "test": "vitest --run"
   },
   "dependencies": {
-    "@shopify/functions-test-helpers": "file:../../../..",
+    "@shopify/shopify-function-test-helpers": "file:../../../..",
     "vitest": "^3.2.4"
   }
 }
