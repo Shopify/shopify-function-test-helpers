@@ -5,7 +5,7 @@ A JavaScript library that rpovides helpers for testing Shopify Functions WASM (W
 ## Installation
 
 ```bash
-npm install shopify-functions-wasm-testing-helpers
+npm install @shopify/shopify-function-test-helpers
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ const {
   validateFixture,
   buildFunction,
   runFunction
-} = require('shopify-functions-wasm-testing-helpers');
+} = require('@shopify/shopify-function-test-helpers');
 
 // Load a fixture from test data
 const fixture = loadFixture('20250915_184036_156Z_extensions_cart-checkout-validation_ba711d.json');

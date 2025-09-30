@@ -1,5 +1,5 @@
 {
-  "name": "@shopify/functions-test-helpers",
+  "name": "@shopify/shopify-function-test-helpers",
   "version": "1.0.0",
   "description": "A JavaScript library for testing Shopify Functions WASM modules, with complete test-app examples",
   "main": "dist/wasm-testing-helpers.js",
@@ -40,10 +40,10 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/shopify-functions-wasm-testing-helpers.git"
+    "url": "git+https://github.com/Shopify/shopify-function-test-helpers.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/shopify-functions-wasm-testing-helpers/issues"
+    "url": "https://github.com/Shopify/shopify-function-test-helpers/issues"
   },
-  "homepage": "https://github.com/your-username/shopify-functions-wasm-testing-helpers#readme"
+  "homepage": "https://github.com/Shopify/shopify-function-test-helpers#readme"
 }
