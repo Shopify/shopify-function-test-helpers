@@ -7,9 +7,9 @@ import { GraphQLSchema, GraphQLError, DocumentNode, print } from 'graphql';
 import { FixtureData } from './load-fixture.js';
 
 /**
- * Interface for validate fixture options
+ * Interface for validate test assets options
  */
-export interface ValidateFixtureOptions {
+export interface ValidateTestAssetsOptions {
   schema: GraphQLSchema;
   fixture: FixtureData;
   inputQueryAST: DocumentNode;
@@ -46,14 +46,14 @@ export interface CompleteValidationResult {
 }
 
 /**
- * Complete fixture validation - validates input query, input fixture, query-fixture match, and output fixture
- * 
+ * Validates test assets (input query and fixture) before function execution
+ *
  * This function provides a one-stop validation solution that:
  * 1. Validates the input query against the schema
  * 2. Validates the input fixture data against the schema
  * 3. Validates that the query structure matches the fixture data structure
  * 4. Validates the output fixture data against the specified mutation
- * 
+ *
  * @param {Object} options - Validation options
  * @param {GraphQLSchema} options.schema - The built GraphQL schema
  * @param {Object} options.fixture - The loaded fixture data (from loadFixture)
@@ -68,13 +68,13 @@ export interface CompleteValidationResult {
  *   - inputQueryFixtureMatch: { valid: boolean, errors: Array } - Input query-fixture structure match results
  *   - outputFixture: { valid: boolean, errors: Array, mutationName: string, resultParameterType: string } - Output fixture validation results
  */
-export async function validateFixture({
+export async function validateTestAssets({
   schema,
   fixture,
   inputQueryAST,
   mutationName,
   resultParameterName
-}: ValidateFixtureOptions): Promise<CompleteValidationResult> {
+}: ValidateTestAssetsOptions): Promise<CompleteValidationResult> {
   const results: CompleteValidationResult = {
     mutationName,
     resultParameterName,

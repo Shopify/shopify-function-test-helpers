@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { validateFixture, loadFixture, loadInputQuery, loadSchema } from '../../src/wasm-testing-helpers.ts';
+import { validateTestAssets, loadFixture, loadInputQuery, loadSchema } from '../../src/wasm-testing-helpers.ts';
 
-describe('validateFixture', () => {
+describe('validateTestAssets', () => {
   // Helper function to load test data
   async function loadTestData() {
     const schema = await loadSchema('./test/fixtures/test-schema.graphql');
@@ -16,7 +16,7 @@ describe('validateFixture', () => {
       const { schema, fixture, inputQueryAST } = await loadTestData();
 
       // Don't provide mutationName or resultParameterName - let it auto-determine
-      const result = await validateFixture({
+      const result = await validateTestAssets({
         schema,
         fixture,
         inputQueryAST
@@ -35,7 +35,7 @@ describe('validateFixture', () => {
     it('should perform complete validation workflow with valid test fixture', async () => {
       const { schema, fixture, inputQueryAST } = await loadTestData();
 
-      const result = await validateFixture({
+      const result = await validateTestAssets({
         schema,
         fixture,
         inputQueryAST
@@ -78,7 +78,7 @@ describe('validateFixture', () => {
         }
       };
 
-      const result = await validateFixture({
+      const result = await validateTestAssets({
         schema,
         fixture: invalidFixture,
         inputQueryAST
@@ -113,7 +113,7 @@ describe('validateFixture', () => {
         }
       };
 
-      const result = await validateFixture({
+      const result = await validateTestAssets({
         schema,
         fixture: invalidFixture,
         inputQueryAST
@@ -146,7 +146,7 @@ describe('validateFixture', () => {
         }
       };
 
-      const result = await validateFixture({
+      const result = await validateTestAssets({
         schema,
         fixture: invalidFixture,
         inputQueryAST
@@ -169,7 +169,7 @@ describe('validateFixture', () => {
       
       const invalidQueryAST = await loadInputQuery('./test/fixtures/wrong-fields-query.graphql');
 
-      const result = await validateFixture({
+      const result = await validateTestAssets({
         schema,
         fixture,
         inputQueryAST: invalidQueryAST
@@ -189,7 +189,7 @@ describe('validateFixture', () => {
       // Valid GraphQL syntax but fields that don't exist in our schema
       const mismatchQueryAST = await loadInputQuery('./test/fixtures/wrong-fields-query.graphql');
 
-      const result = await validateFixture({
+      const result = await validateTestAssets({
         schema,
         fixture,
         inputQueryAST: mismatchQueryAST
@@ -210,7 +210,7 @@ describe('validateFixture', () => {
     it('should handle invalid mutation name', async () => {
       const { schema, fixture, inputQueryAST } = await loadTestData();
 
-      const result = await validateFixture({
+      const result = await validateTestAssets({
         schema,
         fixture,
         inputQueryAST,

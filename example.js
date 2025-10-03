@@ -4,7 +4,7 @@
 
 const {
   loadFixture,
-  validateFixture,
+  validateTestAssets,
   buildFunction,
   runFunction
 } = require('./index.js');
@@ -27,11 +27,11 @@ try {
   console.log('');
 }
 
-// 2. Validate a fixture
-console.log('2. Validating a fixture...');
+// 2. Validate test assets
+console.log('2. Validating test assets...');
 try {
   const fixture = loadFixture('20250915_184036_156Z_extensions_cart-checkout-validation_ba711d.json');
-  const validation = validateFixture(fixture);
+  const validation = validateTestAssets(fixture);
   
   console.log('Validation result:', validation.isValid ? 'VALID' : 'INVALID');
   if (!validation.isValid) {

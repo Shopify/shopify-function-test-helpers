@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { buildFunction, loadFixture, runFunction, validateFixture, loadSchema, loadInputQuery } from "@shopify/shopify-function-test-helpers";
+import { buildFunction, loadFixture, runFunction, validateTestAssets, loadSchema, loadInputQuery } from "@shopify/shopify-function-test-helpers";
 
 function logValidationResults(fixtureFile, validationResult) {
   console.log(`Validation for ${path.basename(fixtureFile)}:`);
@@ -39,7 +39,7 @@ describe("Default Integration Test", () => {
       const fixture = await loadFixture(fixtureFile);
 
       // Validate fixture using our comprehensive validation system
-      const validationResult = await validateFixture({
+      const validationResult = await validateTestAssets({
         schema,
         fixture,
         inputQueryAST
