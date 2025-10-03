@@ -6,8 +6,7 @@
   "types": "dist/wasm-testing-helpers.d.ts",
   "type": "module",
   "files": [
-    "dist/",
-    "test-app/"
+    "dist/"
   ],
   "workspaces": [
     "test-app",
