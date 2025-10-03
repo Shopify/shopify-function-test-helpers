@@ -26,7 +26,7 @@ describe("Default Integration Test", () => {
     
     schema = await loadSchema(schemaPath);
     inputQueryAST = await loadInputQuery(inputQueryPath);
-  }, 10000); // 10 second timeout for building the function
+  }, 20000); // 10 second timeout for building the function
 
   const fixturesDir = path.join(__dirname, "fixtures");
   const fixtureFiles = fs

@@ -85,7 +85,7 @@ describe("Function Tests", () => {
 
     schema = await loadSchema(schemaPath);
     inputQueryAST = await loadInputQuery(inputQueryPath);
-  }, 10000);
+  }, 20000);
 
   const fixturesDir = path.join(__dirname, "fixtures");
   const fixtureFiles = fs
