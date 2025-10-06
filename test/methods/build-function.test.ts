@@ -11,5 +11,5 @@ describe("buildFunction", () => {
     expect(result).toHaveProperty("success");
     expect(result).toHaveProperty("output");
     expect(result).toHaveProperty("error");
-  }, 20000); // 10 second timeout for build operations
+  }, 20000); // 20 second timeout for build operations
 });

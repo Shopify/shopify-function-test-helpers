@@ -1,0 +1,30 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "data.processing.generate.run",
+    "input": {
+      "data": {
+        "metafield": {
+          "type": "json",
+          "value": "{\"foo\":\"bar\"}",
+          "jsonValue": "{\"foo\":\"bar\"}"
+        },
+        "items": [
+          {
+            "id": "item-1",
+            "count": 10
+          },
+          {
+            "id": "item-2",
+            "count": 20
+          }
+        ]
+      }
+    },
+    "output": {
+      "title": "Test",
+      "count": 1,
+      "items": []
+    }
+  }
+}

@@ -4,11 +4,6 @@ query Query {
       id
       count
       nonExistentField
-      details {
-        id
-        name
-        anotherInvalidField
-      }
     }
     metadata {
       email

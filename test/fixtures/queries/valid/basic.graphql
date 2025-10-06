@@ -1,12 +1,8 @@
-query DifferentName {
+query Query {
   data {
     items {
       id
       count
-      details {
-        id
-        name
-      }
     }
     metadata {
       email

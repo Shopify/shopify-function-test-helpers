@@ -11,5 +11,8 @@ query Input {
   }
   discount {
     discountClasses
+    metafield(namespace: "$app:discount-function", key: "config") {
+      value
+    }
   }
 }

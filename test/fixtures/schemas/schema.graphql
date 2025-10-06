@@ -3,19 +3,31 @@ schema {
   mutation: Mutation
 }
 
+scalar JSON
+
 type Query {
   data: DataContainer
 }
 
 type DataContainer {
-  items: [Item!]!
+  items(first: Int): [Item!]!
   metadata: Metadata
+  metafield(namespace: String!, key: String!): Metafield
+  searchResults: [SearchResult!]!
+}
+
+union SearchResult = Item | Metadata
+
+type Metafield {
+  jsonValue: JSON!
+  type: String!
+  value: String!
 }
 
 type Item {
   id: ID
   count: Int!
-  details: ItemDetails
+  details(itemId: ID!): ItemDetails
 }
 
 type ItemDetails {

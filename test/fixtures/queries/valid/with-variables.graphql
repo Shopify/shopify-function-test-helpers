@@ -1,9 +1,9 @@
-query Query {
+query TestQuery($itemId: ID!) {
   data {
     items {
       id
       count
-      details {
+      details(itemId: $itemId) {
         id
         name
       }

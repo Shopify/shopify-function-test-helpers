@@ -8,7 +8,7 @@ describe('determineMutationFromTarget', () => {
   let testSchema: GraphQLSchema;
   
   beforeAll(() => {
-    const schemaPath = path.join(__dirname, '../fixtures/test-schema.graphql');
+    const schemaPath = path.join(__dirname, '../fixtures/schemas/schema.graphql');
     const schemaString = fs.readFileSync(schemaPath, 'utf8');
     testSchema = buildSchema(schemaString);
   });
