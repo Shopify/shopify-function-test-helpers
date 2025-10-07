@@ -128,7 +128,7 @@ describe("Function Tests", () => {
 - [`loadFixture`](./src/methods/load-fixture.ts) - Load a fixture file from the specified path
 - [`loadSchema`](./src/methods/load-schema.ts) - Load a GraphQL schema from a file
 - [`loadInputQuery`](./src/methods/load-input-query.ts) - Load and parse a GraphQL input query
-- [`validateTestAssets`](./src/methods/validate-fixture.ts) - Validate test assets including input query, fixture input/output, and query-fixture match
+- [`validateTestAssets`](./src/methods/validate-test-assets.ts) - Validate test assets including input query, fixture input/output, and query-fixture match
 - [`buildFunction`](./src/methods/build-function.ts) - Build a Shopify function using the Shopify CLI
 - [`runFunction`](./src/methods/run-function.ts) - Run a Shopify function using the Shopify CLI
 
