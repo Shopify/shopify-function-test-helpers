@@ -1,6 +1,6 @@
 # Shopify Functions WASM Testing Helpers
 
-A JavaScript library that rpovides helpers for testing Shopify Functions WASM (WebAssembly) modules. This library provides four core utilities: `loadFixture`, `validateFixture`, `buildFunction`, and `runFunction`.
+A JavaScript library that provides helpers for testing Shopify Functions WASM (WebAssembly) modules. This library provides utilities for loading fixtures, validating test assets, building functions, and running functions.
 
 ## Installation
 
@@ -13,70 +13,126 @@ npm install @shopify/shopify-function-test-helpers
 ### Basic Usage
 
 ```javascript
-const {
-  loadFixture,
-  validateFixture,
+import {
   buildFunction,
-  runFunction
-} = require('@shopify/shopify-function-test-helpers');
+  loadFixture,
+  loadSchema,
+  loadInputQuery,
+  validateTestAssets,
+  runFunction,
+} from "@shopify/shopify-function-test-helpers";
 
-// Load a fixture from test data
-const fixture = loadFixture('20250915_184036_156Z_extensions_cart-checkout-validation_ba711d.json');
+// Load the GraphQL schema and input query
+const schema = await loadSchema("/path/to/schema.graphql");
+const inputQueryAST = await loadInputQuery("/path/to/src/run.graphql");
 
-// Validate the fixture structure
-const validation = validateFixture(fixture);
-console.log('Is valid:', validation.isValid);
+// Load a test fixture
+const fixture = await loadFixture("/path/to/fixtures/my-test.json");
 
-// Build a function
-const payload = buildFunction();
+// Build the function
+await buildFunction("/path/to/function");
 
-// Run a function implementation
+// Validate the test assets
+const validationResult = await validateTestAssets({
+  schema,
+  fixture,
+  inputQueryAST,
+});
 
-const result = runFunction(payload, mockFunction);
-console.log('Result status:', result.status);
+console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
+console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
+console.log(`  Input Query-Fixture Match: ${validationResult.inputQueryFixtureMatch.valid ? '✅' : '❌'}`);
+console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
+
+// Run the function
+const runResult = await runFunction(
+  fixture.export,
+  fixture.input,
+  "/path/to/function"
+);
+
+console.log("Output:", runResult.result.output);
+console.log("Expected:", fixture.expectedOutput);
+```
+
+### Complete Test Example
+
+For a full test suite that runs multiple fixtures:
+
+```javascript
+import path from "path";
+import fs from "fs";
+import {
+  buildFunction,
+  loadFixture,
+  runFunction,
+  validateTestAssets,
+  loadSchema,
+  loadInputQuery,
+} from "@shopify/shopify-function-test-helpers";
+
+describe("Function Tests", () => {
+  let schema;
+  let inputQueryAST;
+  let functionDir;
+
+  beforeAll(async () => {
+    functionDir = path.dirname(__dirname);
+    await buildFunction(functionDir);
+
+    const schemaPath = path.join(functionDir, "schema.graphql");
+    const inputQueryPath = path.join(functionDir, "src/run.graphql");
+
+    schema = await loadSchema(schemaPath);
+    inputQueryAST = await loadInputQuery(inputQueryPath);
+  }, 20000);
+
+  const fixturesDir = path.join(__dirname, "fixtures");
+  const fixtureFiles = fs
+    .readdirSync(fixturesDir)
+    .filter((file) => file.endsWith(".json"))
+    .map((file) => path.join(fixturesDir, file));
+
+  fixtureFiles.forEach((fixtureFile) => {
+    test(`runs ${path.basename(fixtureFile)}`, async () => {
+      const fixture = await loadFixture(fixtureFile);
+
+      const validationResult = await validateTestAssets({
+        schema,
+        fixture,
+        inputQueryAST,
+      });
+
+      expect(validationResult.inputQuery.valid).toBe(true);
+      expect(validationResult.inputFixture.valid).toBe(true);
+      expect(validationResult.inputQueryFixtureMatch.valid).toBe(true);
+      expect(validationResult.outputFixture.valid).toBe(true);
+
+      const runResult = await runFunction(
+        fixture.export,
+        fixture.input,
+        functionDir
+      );
+
+      expect(runResult.error).toBeNull();
+      expect(runResult.result.output).toEqual(fixture.expectedOutput);
+    }, 10000);
+  });
+});
 ```
 
 ## API Reference
 
-### Functions
+### Core Functions
 
-#### `loadFixture(filename)`
-Loads a fixture from the test_data directory.
+- [`loadFixture`](./src/methods/load-fixture.ts) - Load a fixture file from the specified path
+- [`loadSchema`](./src/methods/load-schema.ts) - Load a GraphQL schema from a file
+- [`loadInputQuery`](./src/methods/load-input-query.ts) - Load and parse a GraphQL input query
+- [`validateTestAssets`](./src/methods/validate-test-assets.ts) - Validate test assets including input query, fixture input/output, and query-fixture match
+- [`buildFunction`](./src/methods/build-function.ts) - Build a Shopify function using the Shopify CLI
+- [`runFunction`](./src/methods/run-function.ts) - Run a Shopify function using the Shopify CLI
 
-**Parameters:**
-- `filename`: Name of the fixture file
-
-**Returns:** Fixture object
-
-**Throws:** Error if fixture file is not found
-
-#### `validateFixture(fixture)`
-Validates a fixture to ensure it has the correct structure.
-
-**Parameters:**
-- `fixture`: The fixture data to validate
-
-**Returns:** ValidationResult object with `isValid` boolean and `errors` array
-
-#### `buildFunction(functionPath?)`
-Builds a Shopify function using the Shopify CLI.
-
-**Parameters:**
-- `functionPath` (optional): Path to the function directory. If not provided, will auto-detect from current working directory.
-
-**Returns:** Promise that resolves to build result object with `success`, `output`, and `error` properties.
-
-#### `runFunction(exportName, input, functionPath?)`
-Runs a Shopify function using the Shopify CLI.
-
-**Parameters:**
-- `exportName`: The export name of the function to run
-- `input`: The input data to pass to the function
-- `functionPath` (optional): Path to the function directory. If not provided, will auto-detect from current working directory.
-
-**Returns:** Promise that resolves to result object with `result` and `error` properties.
-
-**Note:** Both functions will automatically detect the function directory by looking for `shopify.function.toml` in common locations (current directory, src/, functions/, extensions/). You can also provide a specific path if needed.
+See [wasm-testing-helpers.ts](./src/wasm-testing-helpers.ts) for all exported types.
 
 ## Development
 
@@ -91,6 +147,15 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
+
+# Run example integration tests
+npm run test:examples
+```
+
+### Building
+
+```bash
+npm run build
 ```
 
 ### Linting
@@ -115,7 +180,3 @@ MIT
 4. Add tests for your changes
 5. Run the test suite
 6. Submit a pull request
-
-## Related
-
-- [Tech Design](https://docs.google.com/document/d/1nmJge_seHPgJlzYgux6S90NEVPcYgn9uqimx9AXP_m8/edit?tab=t.0#heading=h.9zotah988fq7)
