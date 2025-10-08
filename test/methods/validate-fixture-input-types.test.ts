@@ -19,8 +19,8 @@ describe('validateFixtureInputTypes', () => {
     const traversalResult = validateFixtureInputStructure(queryAST, fixture.input);
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
-      traversalResult.normalizedData,
-      schema
+      schema,
+      fixture.input
     );
 
     expect(result).toHaveProperty('valid');
@@ -51,8 +51,8 @@ describe('validateFixtureInputTypes', () => {
     // But type validation should fail (wrong type for count)
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
-      traversalResult.normalizedData,
-      schema
+      schema,
+      invalidInput
     );
 
     expect(result.valid).toBe(false);
@@ -74,8 +74,8 @@ describe('validateFixtureInputTypes', () => {
     const traversalResult = validateFixtureInputStructure(queryAST, emptyArrayInput);
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
-      traversalResult.normalizedData,
-      schema
+      schema,
+      emptyArrayInput
     );
 
     // The query structure is valid, so this should pass
@@ -101,8 +101,8 @@ describe('validateFixtureInputTypes', () => {
     const traversalResult = validateFixtureInputStructure(queryAST, complexInput);
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
-      traversalResult.normalizedData,
-      schema
+      schema,
+      complexInput
     );
 
     expect(result.valid).toBe(true);
@@ -117,21 +117,46 @@ describe('validateFixtureInputTypes', () => {
     const aliasedQueryAST = await loadInputQuery('./test/fixtures/queries/valid/aliased.graphql');
     const aliasedFixture = await loadFixture('./test/fixtures/data/valid/aliased.json');
 
-    // Traverse with the aliased query to normalize the data
+    // Traverse with the aliased query
     const traversalResult = validateFixtureInputStructure(aliasedQueryAST, aliasedFixture.input);
-
-    // The normalized data should have actual field names, not aliases
-    expect(traversalResult.normalizedData.data).toHaveProperty('items');
-    expect(traversalResult.normalizedData.data).not.toHaveProperty('itemList');
 
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
-      traversalResult.normalizedData,
-      schema
+      schema,
+      aliasedFixture.input
     );
 
-    // Should succeed because traversal normalized the aliases
+    // Should succeed because normalized data uses actual field names that GraphQL can resolve
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
+  });
+
+  it('should handle multiple aliases for same field using custom resolver', async () => {
+    // Load the multiple-aliases query and fixture
+    const multiAliasQueryAST = await loadInputQuery('./test/fixtures/queries/valid/multiple-aliases-same-field.graphql');
+    const multiAliasFixture = await loadFixture('./test/fixtures/data/valid/multiple-aliases-same-field.json');
+
+    // Traverse with the query
+    const traversalResult = validateFixtureInputStructure(multiAliasQueryAST, multiAliasFixture.input);
+
+    const result = await validateFixtureInputTypes(
+      traversalResult.generatedQuery,
+      schema,
+      multiAliasFixture.input
+    );
+
+    // Should succeed because custom resolver can look up aliases from original fixture data
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+
+    // Verify that both aliased fields were resolved correctly in the result
+    expect(result.data?.data?.metafield1).toEqual({
+      type: 'json',
+      value: '{"setting1":"value1"}'
+    });
+    expect(result.data?.data?.metafield2).toEqual({
+      type: 'json',
+      value: '{"setting2":"value2"}'
+    });
   });
 });

@@ -1,0 +1,29 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "data.processing.generate.run",
+    "input": {
+      "data": {
+        "metafield1": {
+          "type": "json",
+          "value": "{\"setting1\":\"value1\"}"
+        },
+        "metafield2": {
+          "type": "json",
+          "value": "{\"setting2\":\"value2\"}"
+        },
+        "items": [
+          {
+            "id": "gid://test/Item/1",
+            "count": 5
+          }
+        ]
+      }
+    },
+    "output": {
+      "title": "Test",
+      "count": 1,
+      "items": []
+    }
+  }
+}

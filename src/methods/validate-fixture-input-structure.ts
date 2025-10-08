@@ -10,8 +10,6 @@ export interface ValidateFixtureInputStructureResult {
   errors: string[];
   /** GraphQL query string generated from traversing the fixture structure */
   generatedQuery: string;
-  /** Normalized fixture data (with aliases resolved to actual field names) */
-  normalizedData: Record<string, any>;
 }
 
 /**
@@ -19,12 +17,11 @@ export interface ValidateFixtureInputStructureResult {
  *
  * This function performs a single traversal that:
  * 1. Validates that fixture structure matches query structure
- * 2. Generates a GraphQL query string from the structure
- * 3. Normalizes fixture data (resolves aliases to actual field names)
+ * 2. Generates a GraphQL query string from the structure (with aliases preserved)
  *
  * @param queryAST - The GraphQL query AST
- * @param fixtureData - The fixture data to validate and normalize
- * @returns Result containing validation status, errors, query, and normalized data
+ * @param fixtureData - The fixture data to validate
+ * @returns Result containing validation status, errors, and generated query
  */
 export function validateFixtureInputStructure(
   queryAST: DocumentNode,
@@ -41,8 +38,7 @@ export function validateFixtureInputStructure(
     return {
       valid: false,
       errors: ['No query operation found in AST'],
-      generatedQuery: '',
-      normalizedData: {}
+      generatedQuery: ''
     };
   }
 
@@ -78,8 +74,7 @@ export function validateFixtureInputStructure(
   return {
     valid: errors.length === 0,
     errors,
-    generatedQuery,
-    normalizedData
+    generatedQuery
   };
 }
 
@@ -234,7 +229,10 @@ function traverseSelections(
         continue;
       }
 
-      // Normalize: use actual field name in normalized data
+      // Normalize to actual field name so GraphQL execution can resolve it from rootValue
+      // GraphQL looks up actual field names, not aliases, when resolving from rootValue
+      const normalizedKey = actualFieldName;
+
       if (fieldNode.selectionSet) {
         // Field has nested selections
         const result = traverseSelections(
@@ -244,14 +242,14 @@ function traverseSelections(
           errors,
           fragments
         );
-        normalized[actualFieldName] = result.normalizedData;
+        normalized[normalizedKey] = result.normalizedData;
 
         // Build selection string with arguments if present
         const fieldString = buildFieldString(fieldNode, result.selectionSet);
         selectionParts.push(fieldString);
       } else {
         // Scalar field
-        normalized[actualFieldName] = fixtureValue;
+        normalized[normalizedKey] = fixtureValue;
         const fieldString = buildFieldString(fieldNode, '');
         selectionParts.push(fieldString);
       }
@@ -272,6 +270,10 @@ function traverseSelections(
  */
 function buildFieldString(fieldNode: FieldNode, selectionSet: string): string {
   const fieldName = fieldNode.name.value;
+  const alias = fieldNode.alias?.value;
+
+  // Build field part with optional alias
+  const fieldPart = alias ? `${alias}: ${fieldName}` : fieldName;
 
   // Build arguments string
   let argsString = '';
@@ -286,14 +288,14 @@ function buildFieldString(fieldNode: FieldNode, selectionSet: string): string {
 
   // Build final field string
   if (selectionSet) {
-    return `${fieldName}${argsString} { ${selectionSet} }`;
+    return `${fieldPart}${argsString} { ${selectionSet} }`;
   } else if (fieldNode.selectionSet) {
     // Field has selection set in query but no data was traversed (e.g., null value)
     // We still need to include the selection set for schema validation
     const querySelectionSet = buildSelectionSetFromQuery(fieldNode.selectionSet.selections);
-    return `${fieldName}${argsString} { ${querySelectionSet} }`;
+    return `${fieldPart}${argsString} { ${querySelectionSet} }`;
   } else {
-    return `${fieldName}${argsString}`;
+    return `${fieldPart}${argsString}`;
   }
 }
 

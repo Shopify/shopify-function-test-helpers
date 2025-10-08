@@ -104,8 +104,8 @@ export async function validateTestAssets({
     // Step 4: Validate input fixture types using traversal results
     const inputFixtureResult = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
-      traversalResult.normalizedData,
-      schema
+      schema,
+      fixture.input
     );
     results.inputFixture = {
       valid: inputFixtureResult.valid,

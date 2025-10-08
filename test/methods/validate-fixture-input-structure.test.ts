@@ -13,10 +13,9 @@ describe('validateFixtureInputStructure', () => {
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
     expect(result.generatedQuery).toBe('query { data { items { id count } metadata { email } } }');
-    expect(result.normalizedData).toEqual(basicFixture.input);
   });
 
-  it('should handle aliases and normalize data', async () => {
+  it('should handle aliases in fixture and generate query with aliases', async () => {
     const aliasedQuery = await loadInputQuery('./test/fixtures/queries/valid/aliased.graphql');
     const aliasedFixture = await loadFixture('./test/fixtures/data/valid/aliased.json');
 
@@ -24,44 +23,23 @@ describe('validateFixtureInputStructure', () => {
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
-
-    // Normalized data should use actual field names, not aliases
-    expect(result.normalizedData).toEqual({
-      data: {
-        items: [
-          {
-            id: 'gid://test/Item/1',
-            count: 2
-          }
-        ],
-        metadata: {
-          email: 'test@example.com'
-        }
-      }
-    });
+    // Generated query preserves aliases
+    expect(result.generatedQuery).toBe('query { data { itemList: items { itemId: id count } metadata { email } } }');
   });
 
-  it('should generate query with actual field names, not aliases', async () => {
-    const aliasedQuery = await loadInputQuery('./test/fixtures/queries/valid/aliased.graphql');
-    const aliasedFixture = await loadFixture('./test/fixtures/data/valid/aliased.json');
 
-    const result = validateFixtureInputStructure(aliasedQuery, aliasedFixture.input);
+  it('should handle same field selected multiple times with different aliases', async () => {
+    const multiAliasQuery = await loadInputQuery('./test/fixtures/queries/valid/multiple-aliases-same-field.graphql');
+    const multiAliasFixture = await loadFixture('./test/fixtures/data/valid/multiple-aliases-same-field.json');
+
+    const result = validateFixtureInputStructure(multiAliasQuery, multiAliasFixture.input);
 
     expect(result.valid).toBe(true);
-    expect(result.generatedQuery).toBe('query { data { items { id count } metadata { email } } }');
-    expect(result.normalizedData).toEqual({
-      data: {
-        items: [
-          {
-            id: 'gid://test/Item/1',
-            count: 2
-          }
-        ],
-        metadata: {
-          email: 'test@example.com'
-        }
-      }
-    });
+    expect(result.errors).toHaveLength(0);
+
+    // Generated query should include the field multiple times with aliases and different arguments
+    expect(result.generatedQuery).toContain('metafield1: metafield(namespace: "$app:config", key: "setting1")');
+    expect(result.generatedQuery).toContain('metafield2: metafield(namespace: "$app:config", key: "setting2")');
   });
 
   it('should detect when fixture has extra fields', async () => {
@@ -130,15 +108,6 @@ describe('validateFixtureInputStructure', () => {
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
       expect(result.generatedQuery).toBe('query { data { searchResults { ... on Item { id count } ... on Metadata { email phone } } } }');
-      expect(result.normalizedData).toEqual({
-        data: {
-          searchResults: [
-            { __typename: 'Item', id: 'gid://test/Item/1', count: 5 },
-            { __typename: 'Metadata', email: 'test@example.com', phone: '555-1234' },
-            { __typename: 'Item', id: 'gid://test/Item/2', count: 10 }
-          ]
-        }
-      });
     });
 
     it('should detect when fixture has fields not in any fragment', async () => {
@@ -164,15 +133,6 @@ describe('validateFixtureInputStructure', () => {
 
       const result = validateFixtureInputStructure(fragmentsQuery, fragmentsFixture.input);
 
-      expect(result.normalizedData).toEqual({
-        data: {
-          searchResults: [
-            { __typename: 'Item', id: 'gid://test/Item/1', count: 5 },
-            { __typename: 'Metadata', email: 'test@example.com', phone: '555-1234' },
-            { __typename: 'Item', id: 'gid://test/Item/2', count: 10 }
-          ]
-        }
-      });
     });
   });
 
@@ -203,12 +163,6 @@ describe('validateFixtureInputStructure', () => {
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
-      expect(result.normalizedData).toEqual({
-        data: {
-          items: [{ id: 'item-1', count: null }],
-          metadata: { email: null }
-        }
-      });
     });
 
     it('should allow null values in arrays', () => {
@@ -237,15 +191,6 @@ describe('validateFixtureInputStructure', () => {
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
-      expect(result.normalizedData).toEqual({
-        data: {
-          items: [
-            { id: 'item-1', count: 5 },
-            null,
-            { id: 'item-2', count: 10 }
-          ]
-        }
-      });
     });
   });
 
@@ -272,11 +217,6 @@ describe('validateFixtureInputStructure', () => {
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
       expect(result.generatedQuery).toBe('query { data { items { id } } }');
-      expect(result.normalizedData).toEqual({
-        data: {
-          items: []
-        }
-      });
     });
 
     it('should detect errors in specific array items', () => {
@@ -336,17 +276,6 @@ describe('validateFixtureInputStructure', () => {
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
-      expect(result.normalizedData).toEqual({
-        level1: {
-          level2: {
-            level3: {
-              level4: {
-                value: 'deep value'
-              }
-            }
-          }
-        }
-      });
     });
 
     it('should report errors at correct nesting level', () => {
@@ -399,23 +328,6 @@ describe('validateFixtureInputStructure', () => {
       // Full expected query
       expect(result.generatedQuery).toBe('query($itemId: ID!) { data { items { id count details(itemId: $itemId) { id name } } metadata { email } } }');
 
-      expect(result.normalizedData).toEqual({
-        data: {
-          items: [
-            {
-              id: 'gid://test/Item/1',
-              count: 5,
-              details: {
-                id: 'gid://test/ItemDetails/123',
-                name: 'Item 1 Details'
-              }
-            }
-          ],
-          metadata: {
-            email: 'test@example.com'
-          }
-        }
-      });
     });
   });
 
@@ -440,11 +352,6 @@ describe('validateFixtureInputStructure', () => {
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
       expect(result.generatedQuery).toBe('query { title count active }');
-      expect(result.normalizedData).toEqual({
-        title: 'Test Title',
-        count: 42,
-        active: true
-      });
     });
 
     it('should fail when no query operation is found', () => {
@@ -493,14 +400,6 @@ describe('validateFixtureInputStructure', () => {
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
-      expect(result.normalizedData).toEqual({
-        data: {
-          stringField: 'text',
-          numberField: 123,
-          booleanField: true,
-          nullField: null
-        }
-      });
     });
   });
 });
