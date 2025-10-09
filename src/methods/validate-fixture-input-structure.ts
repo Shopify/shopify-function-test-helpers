@@ -75,14 +75,6 @@ export function validateFixtureInputStructure(
 }
 
 /**
- * Result of traversing selections at a level
- */
-interface TraverseResult {
-  fixtureSelectionSet: string;
-  errors: string[];
-}
-
-/**
  * Recursively extract fields from inline fragments
  * @param selections - The selection set to extract fields from
  * @returns Map of field keys to field nodes
@@ -108,6 +100,73 @@ function extractFieldsFromSelections(
   }
 
   return selectedFields;
+}
+
+/**
+ * Build field string with arguments
+ */
+function buildFieldString(fieldNode: FieldNode, selectionSet: string): string {
+  const fieldName = fieldNode.name.value;
+  const alias = fieldNode.alias?.value;
+
+  // Build field part with optional alias
+  const fieldPart = alias ? `${alias}: ${fieldName}` : fieldName;
+
+  // Build arguments string
+  let argsString = '';
+  if (fieldNode.arguments && fieldNode.arguments.length > 0) {
+    const args = fieldNode.arguments.map(arg => {
+      const argName = arg.name.value;
+      const argValue = print(arg.value);
+      return `${argName}: ${argValue}`;
+    });
+    argsString = `(${args.join(', ')})`;
+  }
+
+  // Build final field string
+  if (selectionSet) {
+    return `${fieldPart}${argsString} { ${selectionSet} }`;
+  } else if (fieldNode.selectionSet) {
+    // Field has selection set in query but no data was traversed (e.g., null value)
+    // We still need to include the selection set for schema validation
+    const querySelectionSet = buildSelectionSetString(fieldNode.selectionSet.selections);
+    return `${fieldPart}${argsString} { ${querySelectionSet} }`;
+  } else {
+    return `${fieldPart}${argsString}`;
+  }
+}
+
+/**
+ * Build selection set string from selections without fixture data
+ * Used for empty arrays where we have no fixture data to validate against
+ */
+function buildSelectionSetString(selections: readonly SelectionNode[]): string {
+  const selectionParts: string[] = [];
+
+  for (const selection of selections) {
+    if (selection.kind === 'Field') {
+      const field = selection as FieldNode;
+      const nestedSelectionSet = field.selectionSet
+        ? buildSelectionSetString(field.selectionSet.selections)
+        : '';
+      selectionParts.push(buildFieldString(field, nestedSelectionSet));
+    } else if (selection.kind === 'InlineFragment') {
+      const fragment = selection as InlineFragmentNode;
+      const fragmentFields = buildSelectionSetString(fragment.selectionSet.selections);
+      const typeName = fragment.typeCondition?.name.value || '';
+      selectionParts.push(`... on ${typeName} { ${fragmentFields} }`);
+    }
+  }
+
+  return selectionParts.join(' ');
+}
+
+/**
+ * Result of traversing selections at a level
+ */
+interface TraverseResult {
+  fixtureSelectionSet: string;
+  errors: string[];
 }
 
 /**
@@ -155,6 +214,8 @@ function traverseSelections(
     expandedSelections.length > 0 &&
     expandedSelections.every(s => s.kind === 'InlineFragment');
 
+  // When all selections are inline fragments, we have a union/interface type
+  // that requires special handling to match fixture data to the correct fragment
   if (hasOnlyInlineFragments) {
     return traverseInlineFragments(
       expandedSelections as readonly InlineFragmentNode[],
@@ -246,65 +307,6 @@ function traverseSelections(
     errors.push(`Expected object with fields at path "${path}" but got scalar value`);
   }
   return { fixtureSelectionSet: '', errors };
-}
-
-/**
- * Build field string with arguments
- */
-function buildFieldString(fieldNode: FieldNode, selectionSet: string): string {
-  const fieldName = fieldNode.name.value;
-  const alias = fieldNode.alias?.value;
-
-  // Build field part with optional alias
-  const fieldPart = alias ? `${alias}: ${fieldName}` : fieldName;
-
-  // Build arguments string
-  let argsString = '';
-  if (fieldNode.arguments && fieldNode.arguments.length > 0) {
-    const args = fieldNode.arguments.map(arg => {
-      const argName = arg.name.value;
-      const argValue = print(arg.value);
-      return `${argName}: ${argValue}`;
-    });
-    argsString = `(${args.join(', ')})`;
-  }
-
-  // Build final field string
-  if (selectionSet) {
-    return `${fieldPart}${argsString} { ${selectionSet} }`;
-  } else if (fieldNode.selectionSet) {
-    // Field has selection set in query but no data was traversed (e.g., null value)
-    // We still need to include the selection set for schema validation
-    const querySelectionSet = buildSelectionSetString(fieldNode.selectionSet.selections);
-    return `${fieldPart}${argsString} { ${querySelectionSet} }`;
-  } else {
-    return `${fieldPart}${argsString}`;
-  }
-}
-
-/**
- * Build selection set string from selections without fixture data
- * Used for empty arrays where we have no fixture data to validate against
- */
-function buildSelectionSetString(selections: readonly SelectionNode[]): string {
-  const selectionParts: string[] = [];
-
-  for (const selection of selections) {
-    if (selection.kind === 'Field') {
-      const field = selection as FieldNode;
-      const nestedSelectionSet = field.selectionSet
-        ? buildSelectionSetString(field.selectionSet.selections)
-        : '';
-      selectionParts.push(buildFieldString(field, nestedSelectionSet));
-    } else if (selection.kind === 'InlineFragment') {
-      const fragment = selection as InlineFragmentNode;
-      const fragmentFields = buildSelectionSetString(fragment.selectionSet.selections);
-      const typeName = fragment.typeCondition?.name.value || '';
-      selectionParts.push(`... on ${typeName} { ${fragmentFields} }`);
-    }
-  }
-
-  return selectionParts.join(' ');
 }
 
 /**
