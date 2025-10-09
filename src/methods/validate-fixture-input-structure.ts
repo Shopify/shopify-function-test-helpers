@@ -162,6 +162,35 @@ function buildSelectionSetString(selections: readonly SelectionNode[]): string {
 }
 
 /**
+ * Find which inline fragment matches the fixture data based on field names
+ * @param inlineFragments - The inline fragments to check
+ * @param fixtureKeys - The keys present in the fixture data
+ * @returns The matching fragment, or null if no match found
+ */
+function findMatchingFragment(
+  inlineFragments: readonly InlineFragmentNode[],
+  fixtureKeys: string[]
+): InlineFragmentNode | null {
+  for (const fragment of inlineFragments) {
+    const fragmentFields = new Set<string>();
+    for (const selection of fragment.selectionSet.selections) {
+      if (selection.kind === 'Field') {
+        const field = selection as FieldNode;
+        const key = field.alias?.value || field.name.value;
+        fragmentFields.add(key);
+      }
+    }
+
+    const allFieldsMatch = fixtureKeys.every(key => fragmentFields.has(key));
+    if (allFieldsMatch) {
+      return fragment;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Result of traversing selections at a level
  */
 interface TraverseResult {
@@ -351,24 +380,7 @@ function traverseInlineFragments(
   const fixtureKeys = Object.keys(fixtureData);
 
   // Find matching fragment
-  let matchedFragment: InlineFragmentNode | null = null;
-
-  for (const fragment of inlineFragments) {
-    const fragmentFields = new Set<string>();
-    for (const selection of fragment.selectionSet.selections) {
-      if (selection.kind === 'Field') {
-        const field = selection as FieldNode;
-        const key = field.alias?.value || field.name.value;
-        fragmentFields.add(key);
-      }
-    }
-
-    const allFieldsMatch = fixtureKeys.every(key => fragmentFields.has(key));
-    if (allFieldsMatch) {
-      matchedFragment = fragment;
-      break;
-    }
-  }
+  const matchedFragment = findMatchingFragment(inlineFragments, fixtureKeys);
 
   if (!matchedFragment) {
     errors.push(`Fixture data at path "${path}" with fields [${fixtureKeys.join(', ')}] does not match any inline fragment`);
