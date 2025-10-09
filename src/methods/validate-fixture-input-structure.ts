@@ -181,8 +181,7 @@ function findMatchingFragment(
       }
     }
 
-    const allFieldsMatch = fixtureKeys.every(key => fragmentFields.has(key));
-    if (allFieldsMatch) {
+    if (fixtureKeys.every(key => fragmentFields.has(key))) {
       return fragment;
     }
   }
