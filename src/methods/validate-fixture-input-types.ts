@@ -4,6 +4,7 @@ import {
   GraphQLFieldResolver,
   GraphQLTypeResolver,
   defaultFieldResolver,
+  responsePathAsArray,
 } from "graphql";
 
 /**
@@ -47,11 +48,36 @@ export async function validateFixtureInputTypes(
   });
 
   return {
-    valid: !result.errors || result.errors.length === 0,
+    valid: !result.errors,
     errors: result.errors?.map((err) => err.message) || [],
     data: result.data || null,
     query,
   };
+}
+
+/**
+ * Navigate to the parent object in nested data using a path array
+ * Stops one level before the last key to return the parent object
+ * @param data - The root data object
+ * @param pathParts - Array of keys to traverse
+ * @returns The parent object, or undefined if not found
+ */
+function navigateToParent(
+  data: any,
+  pathParts: (string | number)[]
+): any {
+  let currentData = data;
+
+  for (let i = 0; i < pathParts.length - 1; i++) {
+    const key = pathParts[i];
+    if (currentData && typeof currentData === "object") {
+      currentData = currentData[key];
+    } else {
+      return undefined;
+    }
+  }
+
+  return currentData;
 }
 
 /**
@@ -62,30 +88,16 @@ function createFieldResolver(
   originalFixtureData: Record<string, any>
 ): GraphQLFieldResolver<any, any> {
   return (source, args, context, info) => {
-    // info.path contains the current path in the query execution
-    // We need to find the corresponding data in the original fixture
-
     // Build the path to look up in original fixture
-    const pathParts: (string | number)[] = [];
-    let currentPath: typeof info.path | undefined = info.path;
-    while (currentPath) {
-      pathParts.unshift(currentPath.key);
-      currentPath = currentPath.prev;
-    }
+    const pathParts = responsePathAsArray(info.path);
 
     // Navigate to the parent object in original fixture
-    let currentData: any = originalFixtureData;
-    for (let i = 0; i < pathParts.length - 1; i++) {
-      const key = pathParts[i];
-      if (currentData && typeof currentData === "object") {
-        currentData = currentData[key];
-      } else {
-        break;
-      }
-    }
+    const currentData = navigateToParent(originalFixtureData, pathParts);
 
     // Try to get the value using the alias from the original fixture
     const fieldName = info.fieldName;
+    // fieldNodes is an array because the same field can appear multiple times via fragments
+    // All instances must have the same alias (or no alias), so we can use the first node
     const alias = info.fieldNodes[0]?.alias?.value;
 
     if (currentData && typeof currentData === "object") {
@@ -127,9 +139,7 @@ function createTypeResolver(schema: GraphQLSchema): GraphQLTypeResolver<any, any
       const typeFieldNames = Object.keys(typeFields);
 
       // Check if all value keys are valid fields for this type
-      const allKeysValid = valueKeys.every(key => typeFieldNames.includes(key));
-
-      if (allKeysValid && valueKeys.length > 0) {
+      if (valueKeys.every(key => typeFieldNames.includes(key)) && valueKeys.length > 0) {
         return possibleType.name;
       }
     }
