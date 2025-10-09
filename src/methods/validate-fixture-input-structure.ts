@@ -85,12 +85,13 @@ interface TraverseResult {
 /**
  * Recursively extract fields from inline fragments
  * @param selections - The selection set to extract fields from
- * @param selectedFields - The map to add fields to
+ * @returns Map of field keys to field nodes
  */
 function extractFieldsFromSelections(
-  selections: readonly SelectionNode[],
-  selectedFields: Map<string, FieldNode>
-): void {
+  selections: readonly SelectionNode[]
+): Map<string, FieldNode> {
+  const selectedFields = new Map<string, FieldNode>();
+
   for (const selection of selections) {
     if (selection.kind === 'Field') {
       const field = selection as FieldNode;
@@ -99,9 +100,14 @@ function extractFieldsFromSelections(
     } else if (selection.kind === 'InlineFragment') {
       const fragment = selection as InlineFragmentNode;
       // Recursively extract fields from nested inline fragments
-      extractFieldsFromSelections(fragment.selectionSet.selections, selectedFields);
+      const nestedFields = extractFieldsFromSelections(fragment.selectionSet.selections);
+      for (const [key, field] of nestedFields) {
+        selectedFields.set(key, field);
+      }
     }
   }
+
+  return selectedFields;
 }
 
 /**
@@ -159,8 +165,7 @@ function traverseSelections(
   }
 
   // Build a map of selected fields
-  const selectedFields = new Map<string, FieldNode>();
-  extractFieldsFromSelections(expandedSelections, selectedFields);
+  const selectedFields = extractFieldsFromSelections(expandedSelections);
 
   // Handle arrays
   if (Array.isArray(fixtureData)) {
