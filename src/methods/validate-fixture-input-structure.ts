@@ -60,7 +60,7 @@ export function validateFixtureInputStructure(
   if (queryOperation.variableDefinitions && queryOperation.variableDefinitions.length > 0) {
     const varDefs = queryOperation.variableDefinitions.map(varDef => {
       const varName = varDef.variable.name.value;
-      const varType = printType(varDef.type);
+      const varType = print(varDef.type);
       return `$${varName}: ${varType}`;
     }).join(', ');
     generatedQuery += `(${varDefs})`;
@@ -80,20 +80,6 @@ export function validateFixtureInputStructure(
 interface TraverseResult {
   fixtureSelectionSet: string;
   errors: string[];
-}
-
-/**
- * Print a GraphQL type node as a string
- */
-function printType(type: any): string {
-  if (type.kind === 'NonNullType') {
-    return `${printType(type.type)}!`;
-  } else if (type.kind === 'ListType') {
-    return `[${printType(type.type)}]`;
-  } else if (type.kind === 'NamedType') {
-    return type.name.value;
-  }
-  return '';
 }
 
 /**
