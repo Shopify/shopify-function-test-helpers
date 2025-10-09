@@ -261,7 +261,7 @@ function traverseSelections(
   if (Array.isArray(fixtureData)) {
     // Validate each array item against the query selections
     let fixtureSelectionSet = '';
-    fixtureData.forEach((item, index) => {
+    for (const [index, item] of fixtureData.entries()) {
       const itemPath = path ? `${path}[${index}]` : `[${index}]`;
       if (item !== null && item !== undefined) {
         const result = traverseSelections(expandedSelections, item, fragments, itemPath);
@@ -272,7 +272,7 @@ function traverseSelections(
           fixtureSelectionSet = result.fixtureSelectionSet;
         }
       }
-    });
+    }
 
     // If array is empty or has no objects, build selection set from query selections only
     if (!fixtureSelectionSet) {
@@ -352,13 +352,13 @@ function traverseInlineFragments(
   // Handle arrays
   if (Array.isArray(fixtureData)) {
     // Validate each array item against the inline fragments
-    fixtureData.forEach((item, index) => {
+    for (const [index, item] of fixtureData.entries()) {
       const itemPath = path ? `${path}[${index}]` : `[${index}]`;
       if (item !== null && item !== undefined) {
         const result = traverseInlineFragments(inlineFragments, item, fragmentDefs, itemPath);
         errors.push(...result.errors);
       }
-    });
+    }
 
     // Build selection set with all fragments
     const fragmentSelections = inlineFragments.map(fragment => {
