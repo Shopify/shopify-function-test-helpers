@@ -44,11 +44,25 @@ describe('validateInputQuery', () => {
 
   it('should return errors for null schema', async () => {
     const queryAST = await loadInputQuery('./test/fixtures/queries/valid/basic.graphql');
-    
+
     const errors = validateInputQuery(queryAST, null as any);
-    
+
     expect(errors).toHaveLength(1);
     expect(errors[0]).toHaveProperty('message');
     expect(errors[0].message).toContain('Failed to validate query');
+  });
+
+  it('should catch undefined fragment spreads', async () => {
+    const queryPath = './test/fixtures/queries/invalid/undefined-fragment.graphql';
+    const schemaPath = './test/fixtures/schemas/schema.graphql';
+
+    const queryAST = await loadInputQuery(queryPath);
+    const schema = await loadSchema(schemaPath);
+
+    const errors = validateInputQuery(queryAST, schema);
+
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0]).toHaveProperty('message');
+    expect(errors[0].message).toContain('Unknown fragment "UndefinedFragment"');
   });
 });

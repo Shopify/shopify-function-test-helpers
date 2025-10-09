@@ -2,6 +2,7 @@ import {
   graphql,
   GraphQLSchema,
   GraphQLFieldResolver,
+  GraphQLTypeResolver,
   defaultFieldResolver,
 } from "graphql";
 
@@ -41,7 +42,8 @@ export async function validateFixtureInputTypes(
     schema,
     source: query,
     rootValue: fixtureData,
-    fieldResolver: createAliasAwareResolver(fixtureData),
+    fieldResolver: createFieldResolver(fixtureData),
+    typeResolver: createTypeResolver(schema),
   });
 
   return {
@@ -56,7 +58,7 @@ export async function validateFixtureInputTypes(
  * Create a custom field resolver that handles aliases
  * This resolver first looks for the aliased field name, then falls back to the actual field name
  */
-function createAliasAwareResolver(
+function createFieldResolver(
   originalFixtureData: Record<string, any>
 ): GraphQLFieldResolver<any, any> {
   return (source, args, context, info) => {
@@ -99,5 +101,40 @@ function createAliasAwareResolver(
 
     // Fall back to default resolver
     return defaultFieldResolver(source, args, context, info);
+  };
+}
+
+/**
+ * Create a custom type resolver that infers the concrete type from fixture data
+ * This handles union and interface types by checking which possible type's fields match the data
+ */
+function createTypeResolver(schema: GraphQLSchema): GraphQLTypeResolver<any, any> {
+  return (value, _context, _info, abstractType) => {
+    // If the value already has __typename, use it
+    if (value && typeof value === 'object' && '__typename' in value) {
+      return value.__typename as string;
+    }
+
+    // Get possible types for this abstract type
+    const possibleTypes = schema.getPossibleTypes(abstractType);
+
+    // Get the fields present in the value
+    const valueKeys = value && typeof value === 'object' ? Object.keys(value) : [];
+
+    // Find the type that best matches the fields in the value
+    for (const possibleType of possibleTypes) {
+      const typeFields = possibleType.getFields();
+      const typeFieldNames = Object.keys(typeFields);
+
+      // Check if all value keys are valid fields for this type
+      const allKeysValid = valueKeys.every(key => typeFieldNames.includes(key));
+
+      if (allKeysValid && valueKeys.length > 0) {
+        return possibleType.name;
+      }
+    }
+
+    // If no match found, return undefined and let GraphQL report the error
+    return undefined;
   };
 }

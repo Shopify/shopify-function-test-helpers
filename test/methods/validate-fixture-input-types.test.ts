@@ -57,8 +57,7 @@ describe('validateFixtureInputTypes', () => {
 
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBe(1);
-    expect(result.errors[0]).toContain('Int cannot represent non-integer value');
-    expect(result.errors[0]).toContain('"not_a_number"');
+    expect(result.errors[0]).toBe('Int cannot represent non-integer value: "not_a_number"');
   });
 
   it('should handle empty arrays', async () => {
@@ -107,9 +106,7 @@ describe('validateFixtureInputTypes', () => {
 
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
-    expect(result).toHaveProperty('query');
-    expect(result.query).toContain('metadata');
-    expect(result.query).toContain('email');
+    expect(result.query).toBe('query { data { items { id count } metadata { email } } }');
   });
 
   it('should succeed when fixture uses aliased field names with queryAST', async () => {
@@ -158,5 +155,95 @@ describe('validateFixtureInputTypes', () => {
       type: 'json',
       value: '{"setting2":"value2"}'
     });
+  });
+
+  it('should handle abstract types (unions/interfaces) with custom type resolver', async () => {
+    // Load the inline-fragments query and fixture
+    const inlineFragmentsQueryAST = await loadInputQuery('./test/fixtures/queries/valid/inline-fragments.graphql');
+    const inlineFragmentsFixture = await loadFixture('./test/fixtures/data/valid/inline-fragments.json');
+
+    // Traverse with the query
+    const traversalResult = validateFixtureInputStructure(inlineFragmentsQueryAST, inlineFragmentsFixture.input);
+
+    const result = await validateFixtureInputTypes(
+      traversalResult.generatedQuery,
+      schema,
+      inlineFragmentsFixture.input
+    );
+
+    // Should succeed because custom type resolver can infer concrete types from fixture data
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+
+    // Verify that union types were resolved correctly
+    expect(result.data?.data?.searchResults).toBeDefined();
+    expect(result.data.data.searchResults).toHaveLength(3);
+
+    // First item should be an Item type
+    expect(result.data.data.searchResults[0]).toEqual({
+      id: 'gid://test/Item/1',
+      count: 5
+    });
+
+    // Second item should be a Metadata type
+    expect(result.data.data.searchResults[1]).toEqual({
+      email: 'test@example.com',
+      phone: '555-1234'
+    });
+
+    // Third item should be an Item type
+    expect(result.data.data.searchResults[2]).toEqual({
+      id: 'gid://test/Item/2',
+      count: 10
+    });
+  });
+
+  it('should fail when fixture data does not match any possible type in union', async () => {
+    // Load the inline-fragments query
+    const inlineFragmentsQueryAST = await loadInputQuery('./test/fixtures/queries/valid/inline-fragments.graphql');
+
+    // Create fixture with invalid fields that don't match Item or Metadata
+    const invalidUnionFixture = {
+      data: {
+        searchResults: [
+          {
+            invalidField: 'does not match any type',
+            anotherInvalidField: 'also invalid'
+          }
+        ]
+      }
+    };
+
+    // Traverse with the query
+    const traversalResult = validateFixtureInputStructure(inlineFragmentsQueryAST, invalidUnionFixture);
+
+    const result = await validateFixtureInputTypes(
+      traversalResult.generatedQuery,
+      schema,
+      invalidUnionFixture
+    );
+
+    // Should fail because the fixture data doesn't match any possible union type
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBe(1);
+    expect(result.errors[0]).toBe('Abstract type "SearchResult" must resolve to an Object type at runtime for field "DataContainer.searchResults". Either the "SearchResult" type should provide a "resolveType" function or each possible type should provide an "isTypeOf" function.');
+  });
+
+  it('should catch scalar value where object is expected', async () => {
+    const basicQueryAST = await loadInputQuery('./test/fixtures/queries/valid/basic.graphql');
+    const scalarMismatchFixture = await loadFixture('./test/fixtures/data/invalid/scalar-mismatch.json');
+
+    const traversalResult = validateFixtureInputStructure(basicQueryAST, scalarMismatchFixture.input);
+
+    const result = await validateFixtureInputTypes(
+      traversalResult.generatedQuery,
+      schema,
+      scalarMismatchFixture.input
+    );
+
+    // Should fail because 'data' is a scalar but should be an object
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBe(1);
+    expect(result.errors[0]).toBe('Cannot return null for non-nullable field DataContainer.items.');
   });
 });

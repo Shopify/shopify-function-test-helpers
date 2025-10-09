@@ -99,6 +99,17 @@ describe('validateFixtureInputStructure', () => {
       expect(result.generatedQuery).toBe('query { data { searchResults { ... on Item { id count } ... on Metadata { email phone } } } }');
     });
 
+    it('should handle nested inline fragments', async () => {
+      const nestedFragmentsQuery = await loadInputQuery('./test/fixtures/queries/valid/nested-inline-fragments.graphql');
+      const nestedFragmentsFixture = await loadFixture('./test/fixtures/data/valid/nested-inline-fragments.json');
+
+      const result = validateFixtureInputStructure(nestedFragmentsQuery, nestedFragmentsFixture.input);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.generatedQuery).toBe('query { data { items { id count details { id name } } } }');
+    });
+
     it('should validate named fragments for union/interface types', async () => {
       const namedFragmentsQuery = await loadInputQuery('./test/fixtures/queries/valid/named-fragments.graphql');
       const namedFragmentsFixture = await loadFixture('./test/fixtures/data/valid/named-fragments.json');
@@ -242,6 +253,30 @@ describe('validateFixtureInputStructure', () => {
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.includes('items[2]') && e.includes('name'))).toBe(true);
     });
+
+    it('should not report duplicate errors for first array item', () => {
+      const query = parse(`
+        query {
+          items {
+            id
+            name
+          }
+        }
+      `);
+
+      const fixture = {
+        items: [
+          { id: 'item-1' }, // Missing name in first item
+          { id: 'item-2', name: 'Item 2' }
+        ]
+      };
+
+      const result = validateFixtureInputStructure(query, fixture);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe('Query selects field "name" at path "items[0].name" but it is missing from the fixture');
+    });
   });
 
   describe('Deeply Nested Structures', () => {
@@ -354,6 +389,29 @@ describe('validateFixtureInputStructure', () => {
       expect(result.generatedQuery).toBe('query { title count active }');
     });
 
+    it('should detect scalar value where object with fields is expected', () => {
+      const query = parse(`
+        query {
+          data {
+            items {
+              id
+              count
+            }
+          }
+        }
+      `);
+
+      const fixture = {
+        data: "scalar string instead of object"
+      };
+
+      const result = validateFixtureInputStructure(query, fixture);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe('Expected object with fields at path "data" but got scalar value');
+    });
+
     it('should fail when no query operation is found', () => {
       const mutation = parse(`
         mutation {
@@ -372,7 +430,7 @@ describe('validateFixtureInputStructure', () => {
       const result = validateFixtureInputStructure(mutation, fixture);
 
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('No query operation found in AST');
+      expect(result.errors).toEqual(['No query operation found in AST']);
     });
 
     it('should handle fixture with mixed data types', () => {
