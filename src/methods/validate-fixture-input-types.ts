@@ -27,7 +27,8 @@ export interface ValidationResult {
  *
  * @param {string} query - The GraphQL query string (from validateFixtureInputStructure)
  * @param {GraphQLSchema} schema - The GraphQL schema to validate against
- * @param {Record<string, any>} fixtureData - The fixture data with aliases preserved (from validateFixtureInputStructure)
+ * @param {Record<string, any>} fixtureInputData - The fixture input data with aliases preserved (from validateFixtureInputStructure)
+ * @param {Record<string, any>} fixtureInputQueryVariables - Optional input query variable values from the fixture
  * @returns {Promise<ValidationResult>} Validation result with structure:
  *   - valid: boolean - Whether the fixture data types are valid against the schema
  *   - errors: string[] - Array of error messages (empty if valid)
@@ -37,13 +38,16 @@ export interface ValidationResult {
 export async function validateFixtureInputTypes(
   query: string,
   schema: GraphQLSchema,
-  fixtureData: Record<string, any>
+  fixtureInputData: Record<string, any>,
+  fixtureInputQueryVariables?: Record<string, any>
 ): Promise<ValidationResult> {
+
   const result = await graphql({
     schema,
     source: query,
-    rootValue: fixtureData,
-    fieldResolver: createFieldResolver(fixtureData),
+    rootValue: fixtureInputData,
+    variableValues: fixtureInputQueryVariables,
+    fieldResolver: createFieldResolver(fixtureInputData),
     typeResolver: createTypeResolver(schema),
   });
 
@@ -85,14 +89,14 @@ function navigateToParent(
  * This resolver first looks for the aliased field name, then falls back to the actual field name
  */
 function createFieldResolver(
-  originalFixtureData: Record<string, any>
+  originalFixtureInputData: Record<string, any>
 ): GraphQLFieldResolver<any, any> {
   return (source, args, context, info) => {
     // Build the path to look up in original fixture
     const pathParts = responsePathAsArray(info.path);
 
     // Navigate to the parent object in original fixture
-    const currentData = navigateToParent(originalFixtureData, pathParts);
+    const currentData = navigateToParent(originalFixtureInputData, pathParts);
 
     // Try to get the value using the alias from the original fixture
     const fieldName = info.fieldName;

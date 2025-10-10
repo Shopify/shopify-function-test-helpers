@@ -12,6 +12,7 @@ export interface FixtureData {
   input: Record<string, any>;
   expectedOutput: Record<string, any>;
   target: string;
+  inputQueryVariables?: Record<string, any>;
 }
 
 /**
@@ -20,8 +21,9 @@ export interface FixtureData {
  * @returns {Promise<Object>} The parsed fixture data with structure:
  *   - export: Object - The export data from payload.export
  *   - input: Object - The input data from payload.input
- *   - expectedOutput: Object - The output data from payload.output  
+ *   - expectedOutput: Object - The output data from payload.output
  *   - target: string - The target string from payload.target
+ *   - inputQueryVariables: Object (optional) - Variable values from payload.inputQueryVariables
  */
 export async function loadFixture(filename: string): Promise<FixtureData> {
   try {
@@ -33,6 +35,7 @@ export async function loadFixture(filename: string): Promise<FixtureData> {
       input: fixture.payload.input,
       expectedOutput: fixture.payload.output,
       target: fixture.payload.target,
+      inputQueryVariables: fixture.payload.inputQueryVariables,
     };
   } catch (error) {
     if (error instanceof SyntaxError) {
@@ -42,6 +45,6 @@ export async function loadFixture(filename: string): Promise<FixtureData> {
     } else {
       throw new Error(`Unknown error loading fixture file ${filename}`);
     }
-  } 
+  }
 }
 

@@ -35,6 +35,7 @@ export interface CompleteValidationResult {
   inputQueryFixtureMatch: {
     valid: boolean;
     errors: string[];
+    generatedQuery?: string;
   };
   outputFixture: {
     valid: boolean;
@@ -98,14 +99,17 @@ export async function validateTestAssets({
     // Step 3: Store input query-fixture structure match results
     results.inputQueryFixtureMatch = {
       valid: traversalResult.valid,
-      errors: traversalResult.errors
+      errors: traversalResult.errors,
+      generatedQuery: traversalResult.generatedQuery
     };
 
     // Step 4: Validate input fixture types using traversal results
+    // Pass variable values from fixture if present
     const inputFixtureResult = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
       schema,
-      fixture.input
+      fixture.input,
+      fixture.inputQueryVariables
     );
     results.inputFixture = {
       valid: inputFixtureResult.valid,

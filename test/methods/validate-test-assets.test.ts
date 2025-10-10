@@ -198,6 +198,95 @@ describe('validateTestAssets', () => {
       expect(result.inputQuery.valid && result.inputFixture.valid && result.inputQueryFixtureMatch.valid && result.outputFixture.valid).toBeFalsy();
     });
 
+    it('should validate complete test with all fragment corner cases', async () => {
+      const schema = await loadSchema('./test/fixtures/schemas/schema.graphql');
+      const fixture = await loadFixture('./test/fixtures/data/valid/complete-test.json');
+      const inputQueryAST = await loadInputQuery('./test/fixtures/queries/valid/complete-test.graphql');
+
+      const result = await validateTestAssets({
+        schema,
+        fixture,
+        inputQueryAST
+      });
+
+      // All validations should pass
+      expect(result.inputQuery.valid).toBe(true);
+      expect(result.inputQuery.errors).toHaveLength(0);
+
+      expect(result.inputFixture.valid).toBe(true);
+      expect(result.inputFixture.errors).toHaveLength(0);
+
+      expect(result.inputQueryFixtureMatch.valid).toBe(true);
+      expect(result.inputQueryFixtureMatch.errors).toHaveLength(0);
+
+      expect(result.outputFixture.valid).toBe(true);
+      expect(result.outputFixture.errors).toHaveLength(0);
+
+      // Verify the generated query includes all the complex scenarios
+      const generatedQuery = result.inputQueryFixtureMatch.generatedQuery;
+
+      // Should have different aliases from fragment spreads
+      expect(generatedQuery).toContain('firstItemList: items');
+      expect(generatedQuery).toContain('secondItemList: items');
+
+      // Should have merged field selections
+      expect(generatedQuery).toContain('mergedItemList: items');
+
+      // Should have inline fragments for union types
+      expect(generatedQuery).toContain('... on Item');
+      expect(generatedQuery).toContain('... on Metadata');
+
+      // Should have field with arguments and variable
+      expect(generatedQuery).toContain('metafield(namespace: "custom", key: $customKey)');
+
+      // Should have filtered items with variable
+      expect(generatedQuery).toContain('filteredItems: items(first: $firstCount)');
+
+      // Should have details field with itemId argument
+      expect(generatedQuery).toContain('details(itemId: "gid://test/Item/6")');
+
+      // Verify data was validated correctly
+      expect(result.inputFixture.data?.data?.firstItemList).toEqual([{ id: 'gid://test/Item/1' }]);
+      expect(result.inputFixture.data?.data?.secondItemList).toEqual([{ id: 'gid://test/Item/2' }]);
+      expect(result.inputFixture.data?.data?.mergedItemList).toEqual([{
+        id: 'gid://test/Item/3',
+        count: 10,
+        details: { id: 'gid://test/Details/3' }
+      }]);
+      expect(result.inputFixture.data?.data?.searchResults).toHaveLength(2);
+      expect(result.inputFixture.data?.data?.moreSearchResults).toHaveLength(2);
+    });
+
+    it('should use actual variable values from fixture when present', async () => {
+      const schema = await loadSchema('./test/fixtures/schemas/schema.graphql');
+      const fixture = await loadFixture('./test/fixtures/data/valid/complete-test-with-variables.json');
+      const inputQueryAST = await loadInputQuery('./test/fixtures/queries/valid/complete-test.graphql');
+
+      const result = await validateTestAssets({
+        schema,
+        fixture,
+        inputQueryAST
+      });
+
+      // All validations should pass
+      expect(result.inputQuery.valid).toBe(true);
+      expect(result.inputQuery.errors).toHaveLength(0);
+
+      expect(result.inputFixture.valid).toBe(true);
+      expect(result.inputFixture.errors).toHaveLength(0);
+
+      expect(result.inputQueryFixtureMatch.valid).toBe(true);
+      expect(result.inputQueryFixtureMatch.errors).toHaveLength(0);
+
+      expect(result.outputFixture.valid).toBe(true);
+      expect(result.outputFixture.errors).toHaveLength(0);
+
+      // Verify fixture has extracted variables
+      expect(fixture.inputQueryVariables).toBeDefined();
+      expect(fixture.inputQueryVariables?.customKey).toBe('configuration');
+      expect(fixture.inputQueryVariables?.firstCount).toBe(10);
+    });
+
     it('should handle query with valid syntax but schema mismatch', async () => {
       const { schema, fixture } = await loadTestData();
       
