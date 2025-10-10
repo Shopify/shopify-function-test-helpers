@@ -5,7 +5,7 @@ import { loadInputQuery } from '../../src/wasm-testing-helpers.ts';
 
 describe('loadInputQuery', () => {
   it('should load and parse a GraphQL query file', async () => {
-    const queryPath = path.join(process.cwd(), 'test/fixtures/test-query.graphql');
+    const queryPath = path.join(process.cwd(), 'test/fixtures/queries/valid/basic.graphql');
     
     const document = await loadInputQuery(queryPath);
     
@@ -23,7 +23,7 @@ describe('loadInputQuery', () => {
   });
 
   it('should throw an error for invalid GraphQL', async () => {
-    const queryPath = path.join(process.cwd(), 'test/fixtures/invalid-query.graphql');
+    const queryPath = path.join(process.cwd(), 'test/fixtures/queries/invalid/syntax-error.graphql');
     
     await expect(loadInputQuery(queryPath)).rejects.toThrow('Failed to load input query from');
   });

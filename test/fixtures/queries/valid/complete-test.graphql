@@ -1,0 +1,99 @@
+query CompleteTest($customKey: String!, $firstCount: Int) {
+  # Basic field selection
+  data {
+    # Fragment spreads on same type with different aliases (Example 2)
+    ...DataFragmentA
+    ...DataFragmentB
+
+    # Fragment spreads on same type with same alias for field merging (Example 3)
+    ...DataFragmentC
+    ...DataFragmentD
+
+    # Inline fragments on union type (Example 4)
+    searchResults {
+      ... on Item {
+        id
+        count
+      }
+      ... on Metadata {
+        email
+        phone
+      }
+    }
+
+    # Fragment spreads on different types - union logic (Example 5)
+    moreSearchResults: searchResults {
+      ...ItemFields
+      ...MetadataFields
+    }
+
+    # Mixed inline fragment and fields (Example 6)
+    items {
+      id
+      ... on Item {
+        count
+        details(itemId: "gid://test/Item/6") {
+          id
+          name
+        }
+      }
+    }
+
+    # Basic field with arguments and variable
+    metafield(namespace: "custom", key: $customKey) {
+      type
+      value
+    }
+
+    # Fragment with arguments
+    ...ItemsWithFilter
+  }
+}
+
+# Fragment spreads on same type - different aliases
+fragment DataFragmentA on DataContainer {
+  firstItemList: items {
+    id
+  }
+}
+
+fragment DataFragmentB on DataContainer {
+  secondItemList: items {
+    id
+  }
+}
+
+# Fragment spreads on same type - same alias with different fields
+fragment DataFragmentC on DataContainer {
+  mergedItemList: items {
+    id
+    count
+  }
+}
+
+fragment DataFragmentD on DataContainer {
+  mergedItemList: items {
+    id
+    details(itemId: "gid://test/Item/3") {
+      id
+    }
+  }
+}
+
+# Fragment spreads on different types (union members)
+fragment ItemFields on Item {
+  id
+  count
+}
+
+fragment MetadataFields on Metadata {
+  email
+  phone
+}
+
+# Fragment with arguments and variable
+fragment ItemsWithFilter on DataContainer {
+  filteredItems: items(first: $firstCount) {
+    id
+  }
+}

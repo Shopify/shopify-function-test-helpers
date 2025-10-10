@@ -7,11 +7,7 @@
         "items": [
           {
             "id": "gid://test/Item/1",
-            "count": 2,
-            "details": {
-              "id": "gid://test/ItemDetails/123",
-              "name": "Test Item"
-            }
+            "count": 2
           }
         ],
         "metadata": {

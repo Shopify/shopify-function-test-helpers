@@ -1,0 +1,12 @@
+{
+  "payload": {
+    "export": "run",
+    "input": {
+      "data": "scalar instead of object"
+    },
+    "output": {
+      "discounts": []
+    },
+    "target": "purchase.product-discount.run"
+  }
+}

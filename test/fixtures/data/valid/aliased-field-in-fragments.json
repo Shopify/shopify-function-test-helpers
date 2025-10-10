@@ -1,0 +1,19 @@
+{
+  "payload": {
+    "export": "run",
+    "input": {
+      "data": {
+        "itemList": [
+          {
+            "id": "gid://test/Item/1",
+            "count": 5
+          }
+        ]
+      }
+    },
+    "output": {
+      "discounts": []
+    },
+    "target": "purchase.product-discount.run"
+  }
+}

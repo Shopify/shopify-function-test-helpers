@@ -1,0 +1,18 @@
+query Query {
+  data {
+    searchResults {
+      ...ItemFields
+      ...MetadataFields
+    }
+  }
+}
+
+fragment ItemFields on Item {
+  id
+  count
+}
+
+fragment MetadataFields on Metadata {
+  email
+  phone
+}

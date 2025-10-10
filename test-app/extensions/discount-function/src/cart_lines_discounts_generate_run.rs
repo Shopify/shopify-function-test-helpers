@@ -51,6 +51,14 @@ fn cart_lines_discounts_generate_run(
 
     let mut operations = vec![];
 
+    // Read the metafield to get the discount percentage
+    // Default to 10.0 if metafield is not present
+    let discount_percentage = input
+        .discount()
+        .metafield()
+        .and_then(|m| m.value().parse::<f64>().ok())
+        .unwrap_or(10.0);
+
     // Check if the discount has the ORDER class
     if has_order_discount_class {
         operations.push(CartOperation::OrderDiscountsAdd(
@@ -62,9 +70,9 @@ fn cart_lines_discounts_generate_run(
                             excluded_cart_line_ids: vec![],
                         },
                     )],
-                    message: Some("10% OFF ORDER".to_string()),
+                    message: Some(format!("{}% OFF ORDER", discount_percentage)),
                     value: OrderDiscountCandidateValue::Percentage(Percentage {
-                        value: Decimal(10.0),
+                        value: Decimal(discount_percentage),
                     }),
                     conditions: None,
                     associated_discount_code: None,
@@ -83,9 +91,9 @@ fn cart_lines_discounts_generate_run(
                         id: max_cart_line.id().clone(),
                         quantity: None,
                     })],
-                    message: Some("20% OFF PRODUCT".to_string()),
+                    message: Some(format!("{}% OFF PRODUCT", discount_percentage * 2.0)),
                     value: ProductDiscountCandidateValue::Percentage(Percentage {
-                        value: Decimal(20.0),
+                        value: Decimal(discount_percentage * 2.0),
                     }),
                     associated_discount_code: None,
                 }],

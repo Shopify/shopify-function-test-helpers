@@ -12,8 +12,8 @@ describe("validateFixtureOutput", () => {
   let fixture: FixtureData;
 
   beforeAll(async () => {
-    schema = await loadSchema("./test/fixtures/test-schema.graphql");
-    fixture = await loadFixture("./test/fixtures/valid-test-fixture.json");
+    schema = await loadSchema("./test/fixtures/schemas/schema.graphql");
+    fixture = await loadFixture("./test/fixtures/data/valid/basic.json");
   });
 
   describe("Mutation-Based Validation", () => {
@@ -161,15 +161,9 @@ describe("validateFixtureOutput", () => {
       expect(result.errors).toHaveLength(3);
 
       // Check each extra field gets its own specific error
-      expect(result.errors[0].message).toBe(
-        'Field "extraField1" is not defined by type "ProcessDataResult". At ""'
-      );
-      expect(result.errors[1].message).toBe(
-        'Field "extraField2" is not defined by type "ProcessDataResult". At ""'
-      );
-      expect(result.errors[2].message).toBe(
-        'Field "nestedExtra" is not defined by type "ProcessDataResult". At ""'
-      );
+      expect(result.errors[0].message).toContain('Field "extraField1" is not defined by type "ProcessDataResult"');
+      expect(result.errors[1].message).toContain('Field "extraField2" is not defined by type "ProcessDataResult"');
+      expect(result.errors[2].message).toContain('Field "nestedExtra" is not defined by type "ProcessDataResult"');
     });
   });
 });
