@@ -76,25 +76,33 @@ export function validateFixtureInputStructure(
 
 /**
  * Recursively extract fields from inline fragments
+ * When the same field appears multiple times, merge their selection sets
  * @param selections - The selection set to extract fields from
- * @returns Map of field keys to field nodes
+ * @returns Map of field keys to arrays of field nodes (to handle field merging)
  */
 function extractFieldsFromSelections(
   selections: readonly SelectionNode[]
-): Map<string, FieldNode> {
-  const selectedFields = new Map<string, FieldNode>();
+): Map<string, FieldNode[]> {
+  const selectedFields = new Map<string, FieldNode[]>();
 
   for (const selection of selections) {
     if (selection.kind === 'Field') {
       const field = selection as FieldNode;
       const key = field.alias?.value || field.name.value;
-      selectedFields.set(key, field);
+
+      if (!selectedFields.has(key)) {
+        selectedFields.set(key, []);
+      }
+      selectedFields.get(key)!.push(field);
     } else if (selection.kind === 'InlineFragment') {
       const fragment = selection as InlineFragmentNode;
       // Recursively extract fields from nested inline fragments
       const nestedFields = extractFieldsFromSelections(fragment.selectionSet.selections);
-      for (const [key, field] of nestedFields) {
-        selectedFields.set(key, field);
+      for (const [key, fields] of nestedFields) {
+        if (!selectedFields.has(key)) {
+          selectedFields.set(key, []);
+        }
+        selectedFields.get(key)!.push(...fields);
       }
     }
   }
@@ -218,43 +226,72 @@ function traverseSelections(
 
   const errors: string[] = [];
 
-  // Expand selections: replace FragmentSpreads with their inline equivalent
-  const expandedSelections: SelectionNode[] = [];
+  // Separate inline fragments, fragment spreads, and other selections
+  const inlineFragments: InlineFragmentNode[] = [];
+  const fragmentSpreads: SelectionNode[] = [];
+  const otherSelections: SelectionNode[] = [];
+
   for (const selection of selections) {
-    if (selection.kind === 'FragmentSpread') {
-      const fragmentName = selection.name.value;
-      const fragmentDef = fragments.get(fragmentName);
-      if (fragmentDef) {
-        // Convert fragment spread to inline fragment
-        expandedSelections.push({
-          kind: 'InlineFragment',
-          typeCondition: fragmentDef.typeCondition,
-          selectionSet: fragmentDef.selectionSet
-        } as InlineFragmentNode);
-      }
+    if (selection.kind === 'InlineFragment') {
+      inlineFragments.push(selection as InlineFragmentNode);
+    } else if (selection.kind === 'FragmentSpread') {
+      fragmentSpreads.push(selection);
     } else {
-      expandedSelections.push(selection);
+      otherSelections.push(selection);
     }
   }
 
-  // Check if all selections are inline fragments (union/interface type)
-  const hasOnlyInlineFragments =
-    expandedSelections.length > 0 &&
-    expandedSelections.every(s => s.kind === 'InlineFragment');
+  // Convert fragment spreads to inline fragments and check if they're on different types
+  const fragmentSpreadTypes = new Set<string>();
+  for (const selection of fragmentSpreads) {
+    const fragmentName = (selection as any).name.value;
+    const fragmentDef = fragments.get(fragmentName);
+    if (fragmentDef && fragmentDef.typeCondition) {
+      fragmentSpreadTypes.add(fragmentDef.typeCondition.name.value);
+      // Convert to inline fragment
+      inlineFragments.push({
+        kind: 'InlineFragment',
+        typeCondition: fragmentDef.typeCondition,
+        selectionSet: fragmentDef.selectionSet
+      } as InlineFragmentNode);
+    }
+  }
 
-  // When all selections are inline fragments, we have a union/interface type
-  // that requires special handling to match fixture data to the correct fragment
-  if (hasOnlyInlineFragments) {
+  // If we ONLY have inline fragments (no fields) AND they're on different types,
+  // this is a union/interface type that requires matching ONE fragment
+  const hasMultipleFragmentTypes = fragmentSpreadTypes.size > 1;
+  const isUnionInterfaceType = inlineFragments.length > 0 &&
+    otherSelections.length === 0 &&
+    (hasMultipleFragmentTypes || fragmentSpreads.length === 0);
+
+  if (isUnionInterfaceType) {
     return traverseInlineFragments(
-      expandedSelections as readonly InlineFragmentNode[],
+      inlineFragments,
       fixtureData,
       fragments,
       path
     );
   }
 
-  // Build a map of selected fields
-  const selectedFields = extractFieldsFromSelections(expandedSelections);
+  // Otherwise, merge everything: expand fragment spreads and inline fragments
+  const allSelections: SelectionNode[] = [...otherSelections];
+
+  // Expand fragment spreads by merging their selections
+  for (const selection of fragmentSpreads) {
+    const fragmentName = (selection as any).name.value;
+    const fragmentDef = fragments.get(fragmentName);
+    if (fragmentDef) {
+      allSelections.push(...fragmentDef.selectionSet.selections);
+    }
+  }
+
+  // Merge inline fragment selections
+  for (const inlineFrag of inlineFragments) {
+    allSelections.push(...inlineFrag.selectionSet.selections);
+  }
+
+  // Build a map of selected fields from the merged selections
+  const selectedFields = extractFieldsFromSelections(allSelections);
 
   // Handle arrays
   if (Array.isArray(fixtureData)) {
@@ -263,7 +300,7 @@ function traverseSelections(
     for (const [index, item] of fixtureData.entries()) {
       const itemPath = path ? `${path}[${index}]` : `[${index}]`;
       if (item !== null && item !== undefined) {
-        const result = traverseSelections(expandedSelections, item, fragments, itemPath);
+        const result = traverseSelections(allSelections, item, fragments, itemPath);
         errors.push(...result.errors);
 
         // Use the first non-null item to build the selection set
@@ -275,7 +312,7 @@ function traverseSelections(
 
     // If array is empty or has no objects, build selection set from query selections only
     if (!fixtureSelectionSet) {
-      fixtureSelectionSet = buildSelectionSetString(expandedSelections);
+      fixtureSelectionSet = buildSelectionSetString(allSelections);
     }
 
     return { fixtureSelectionSet, errors };
@@ -294,7 +331,7 @@ function traverseSelections(
     }
 
     // Process each selected field
-    for (const [aliasOrFieldName, fieldNode] of selectedFields.entries()) {
+    for (const [aliasOrFieldName, fieldNodes] of selectedFields.entries()) {
       const fieldPath = path ? `${path}.${aliasOrFieldName}` : aliasOrFieldName;
 
       // Check if field exists in fixture
@@ -303,10 +340,21 @@ function traverseSelections(
         continue;
       }
 
-      if (fieldNode.selectionSet) {
-        // Field has nested selections
+      // When the same field appears multiple times, merge their selection sets
+      const mergedSelections: SelectionNode[] = [];
+      let hasSelectionSet = false;
+
+      for (const fieldNode of fieldNodes) {
+        if (fieldNode.selectionSet) {
+          hasSelectionSet = true;
+          mergedSelections.push(...fieldNode.selectionSet.selections);
+        }
+      }
+
+      if (hasSelectionSet) {
+        // Field has nested selections - traverse with merged selections
         const result = traverseSelections(
-          fieldNode.selectionSet.selections,
+          mergedSelections,
           fixtureData[aliasOrFieldName],
           fragments,
           fieldPath
@@ -314,12 +362,12 @@ function traverseSelections(
 
         errors.push(...result.errors);
 
-        // Build selection string with arguments if present
-        const fieldString = buildFieldString(fieldNode, result.fixtureSelectionSet);
+        // Build selection string using the first field node (for alias/name/args)
+        const fieldString = buildFieldString(fieldNodes[0], result.fixtureSelectionSet);
         selectionParts.push(fieldString);
       } else {
-        // Scalar field
-        const fieldString = buildFieldString(fieldNode, '');
+        // Scalar field - use first field node
+        const fieldString = buildFieldString(fieldNodes[0], '');
         selectionParts.push(fieldString);
       }
     }
@@ -331,7 +379,7 @@ function traverseSelections(
   }
 
   // Scalar value - but we have selections, which means structure mismatch
-  if (expandedSelections.length > 0) {
+  if (allSelections.length > 0) {
     errors.push(`Expected object with fields at path "${path}" but got scalar value`);
   }
   return { fixtureSelectionSet: '', errors };

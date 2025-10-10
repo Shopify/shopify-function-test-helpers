@@ -1,0 +1,19 @@
+query {
+  data {
+    ...FragmentA
+    ...FragmentB
+  }
+}
+
+fragment FragmentA on DataContainer {
+  itemList: items {
+    id
+    count
+  }
+}
+
+fragment FragmentB on DataContainer {
+  itemList: items {
+    id
+  }
+}

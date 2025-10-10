@@ -246,4 +246,65 @@ describe('validateFixtureInputTypes', () => {
     expect(result.errors.length).toBe(1);
     expect(result.errors[0]).toBe('Cannot return null for non-nullable field DataContainer.items.');
   });
+
+  it('should handle aliased field appearing in multiple fragments (fieldNodes array scenario)', async () => {
+    // This tests the scenario where info.fieldNodes has multiple entries
+    // When the same aliased field appears in multiple fragments, GraphQL execution
+    // creates multiple fieldNodes for that field, but they all have the same alias
+    const aliasedFragmentsQueryAST = await loadInputQuery('./test/fixtures/queries/valid/aliased-field-in-fragments.graphql');
+    const aliasedFragmentsFixture = await loadFixture('./test/fixtures/data/valid/aliased-field-in-fragments.json');
+
+    const traversalResult = validateFixtureInputStructure(aliasedFragmentsQueryAST, aliasedFragmentsFixture.input);
+
+    const result = await validateFixtureInputTypes(
+      traversalResult.generatedQuery,
+      schema,
+      aliasedFragmentsFixture.input
+    );
+
+    // Should succeed - the custom field resolver handles looking up 'itemList' alias
+    // During GraphQL execution, when resolving the 'itemList' field, info.fieldNodes
+    // contains entries for each fragment that selected it, but all have the same alias
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+    expect(result.data?.data?.itemList).toEqual([
+      {
+        id: 'gid://test/Item/1',
+        count: 5
+      }
+    ]);
+  });
+
+  it('should handle fragments with different aliases for same field', async () => {
+    // When fragments use different aliases for the same field, GraphQL merges them
+    // The fixture should have both aliases since they're selecting the same field twice
+    const differentAliasesQueryAST = await loadInputQuery('./test/fixtures/queries/valid/different-aliases-in-fragments.graphql');
+    const differentAliasesFixture = await loadFixture('./test/fixtures/data/valid/different-aliases-in-fragments.json');
+
+    const traversalResult = validateFixtureInputStructure(differentAliasesQueryAST, differentAliasesFixture.input);
+
+    // Structure validation should pass - fragments are merged
+    expect(traversalResult.valid).toBe(true);
+    expect(traversalResult.errors).toHaveLength(0);
+
+    // Type validation should also pass
+    const result = await validateFixtureInputTypes(
+      traversalResult.generatedQuery,
+      schema,
+      differentAliasesFixture.input
+    );
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+    expect(result.data?.data?.itemList).toEqual([
+      {
+        id: 'gid://test/Item/1'
+      }
+    ]);
+    expect(result.data?.data?.itemList2).toEqual([
+      {
+        id: 'gid://test/Item/1'
+      }
+    ]);
+  });
 });
