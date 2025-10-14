@@ -94,7 +94,7 @@ export async function validateTestAssets({
     };
 
     // Step 2: Validate query-fixture structure match to get validation, query, and normalized data in one pass
-    const traversalResult = validateFixtureInputStructure(inputQueryAST, fixture.input);
+    const traversalResult = validateFixtureInputStructure(inputQueryAST, schema, fixture.input);
 
     // Step 3: Store input query-fixture structure match results
     results.inputQueryFixtureMatch = {

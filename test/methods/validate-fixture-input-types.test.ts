@@ -16,7 +16,7 @@ describe('validateFixtureInputTypes', () => {
   });
 
   it('should validate input fixture types against original schema', async () => {
-    const traversalResult = validateFixtureInputStructure(queryAST, fixture.input);
+    const traversalResult = validateFixtureInputStructure(queryAST, schema, fixture.input);
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
       schema,
@@ -43,7 +43,7 @@ describe('validateFixtureInputTypes', () => {
       }
     };
 
-    const traversalResult = validateFixtureInputStructure(queryAST, invalidInput);
+    const traversalResult = validateFixtureInputStructure(queryAST, schema, invalidInput);
 
     // Structure validation should pass (right fields present)
     expect(traversalResult.valid).toBe(true);
@@ -70,7 +70,7 @@ describe('validateFixtureInputTypes', () => {
       }
     };
 
-    const traversalResult = validateFixtureInputStructure(queryAST, emptyArrayInput);
+    const traversalResult = validateFixtureInputStructure(queryAST, schema, emptyArrayInput);
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
       schema,
@@ -97,7 +97,7 @@ describe('validateFixtureInputTypes', () => {
       }
     };
 
-    const traversalResult = validateFixtureInputStructure(queryAST, complexInput);
+    const traversalResult = validateFixtureInputStructure(queryAST, schema, complexInput);
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
       schema,
@@ -115,7 +115,7 @@ describe('validateFixtureInputTypes', () => {
     const aliasedFixture = await loadFixture('./test/fixtures/data/valid/aliased.json');
 
     // Traverse with the aliased query
-    const traversalResult = validateFixtureInputStructure(aliasedQueryAST, aliasedFixture.input);
+    const traversalResult = validateFixtureInputStructure(aliasedQueryAST, schema, aliasedFixture.input);
 
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
@@ -134,7 +134,7 @@ describe('validateFixtureInputTypes', () => {
     const multiAliasFixture = await loadFixture('./test/fixtures/data/valid/multiple-aliases-same-field.json');
 
     // Traverse with the query
-    const traversalResult = validateFixtureInputStructure(multiAliasQueryAST, multiAliasFixture.input);
+    const traversalResult = validateFixtureInputStructure(multiAliasQueryAST, schema, multiAliasFixture.input);
 
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
@@ -163,7 +163,7 @@ describe('validateFixtureInputTypes', () => {
     const inlineFragmentsFixture = await loadFixture('./test/fixtures/data/valid/inline-fragments.json');
 
     // Traverse with the query
-    const traversalResult = validateFixtureInputStructure(inlineFragmentsQueryAST, inlineFragmentsFixture.input);
+    const traversalResult = validateFixtureInputStructure(inlineFragmentsQueryAST, schema, inlineFragmentsFixture.input);
 
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
@@ -215,7 +215,7 @@ describe('validateFixtureInputTypes', () => {
     };
 
     // Traverse with the query
-    const traversalResult = validateFixtureInputStructure(inlineFragmentsQueryAST, invalidUnionFixture);
+    const traversalResult = validateFixtureInputStructure(inlineFragmentsQueryAST, schema, invalidUnionFixture);
 
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
@@ -233,7 +233,7 @@ describe('validateFixtureInputTypes', () => {
     const basicQueryAST = await loadInputQuery('./test/fixtures/queries/valid/basic.graphql');
     const scalarMismatchFixture = await loadFixture('./test/fixtures/data/invalid/scalar-mismatch.json');
 
-    const traversalResult = validateFixtureInputStructure(basicQueryAST, scalarMismatchFixture.input);
+    const traversalResult = validateFixtureInputStructure(basicQueryAST, schema, scalarMismatchFixture.input);
 
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
@@ -254,7 +254,7 @@ describe('validateFixtureInputTypes', () => {
     const aliasedFragmentsQueryAST = await loadInputQuery('./test/fixtures/queries/valid/aliased-field-in-fragments.graphql');
     const aliasedFragmentsFixture = await loadFixture('./test/fixtures/data/valid/aliased-field-in-fragments.json');
 
-    const traversalResult = validateFixtureInputStructure(aliasedFragmentsQueryAST, aliasedFragmentsFixture.input);
+    const traversalResult = validateFixtureInputStructure(aliasedFragmentsQueryAST, schema, aliasedFragmentsFixture.input);
 
     const result = await validateFixtureInputTypes(
       traversalResult.generatedQuery,
@@ -281,7 +281,7 @@ describe('validateFixtureInputTypes', () => {
     const differentAliasesQueryAST = await loadInputQuery('./test/fixtures/queries/valid/different-aliases-in-fragments.graphql');
     const differentAliasesFixture = await loadFixture('./test/fixtures/data/valid/different-aliases-in-fragments.json');
 
-    const traversalResult = validateFixtureInputStructure(differentAliasesQueryAST, differentAliasesFixture.input);
+    const traversalResult = validateFixtureInputStructure(differentAliasesQueryAST, schema, differentAliasesFixture.input);
 
     // Structure validation should pass - fragments are merged
     expect(traversalResult.valid).toBe(true);
