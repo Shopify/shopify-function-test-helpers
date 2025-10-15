@@ -10,7 +10,7 @@ import { loadFixture } from './methods/load-fixture.js';
 import { loadSchema } from './methods/load-schema.js';
 import { loadInputQuery } from './methods/load-input-query.js';
 import { buildFunction } from './methods/build-function.js';
-import { runFunction } from './methods/run-function.js';
+import { runFunction, runFunctionWithRunnerDirectly } from './methods/run-function.js';
 import { validateTestAssets } from './methods/validate-test-assets.js';
 import { validateInputQuery } from './methods/validate-input-query.js';
 import { validateFixtureInputStructure } from './methods/validate-fixture-input-structure.js';
@@ -24,6 +24,7 @@ export {
   loadInputQuery,
   buildFunction,
   runFunction,
+  runFunctionWithRunnerDirectly,
   validateTestAssets,
   validateInputQuery,
   validateFixtureInputStructure,
