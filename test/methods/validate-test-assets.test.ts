@@ -27,9 +27,9 @@ describe('validateTestAssets', () => {
       expect(result.resultParameterName).toBe('result');
 
       expect(result.inputQuery.valid).toBe(true);
-      expect(result.inputFixture.valid).toBe(true);
-      expect(result.inputQueryFixtureMatch.valid).toBe(true);
-      expect(result.outputFixture.valid).toBe(true);
+      expect(result.fixtureInputTypes.valid).toBe(true);
+      expect(result.fixtureInputStructure.valid).toBe(true);
+      expect(result.fixtureOutput.valid).toBe(true);
     });
     
     it('should perform complete validation workflow with valid test fixture', async () => {
@@ -45,23 +45,23 @@ describe('validateTestAssets', () => {
       expect(result).toHaveProperty('mutationName');
       expect(result).toHaveProperty('resultParameterName');
       expect(result).toHaveProperty('inputQuery');
-      expect(result).toHaveProperty('inputFixture');
-      expect(result).toHaveProperty('inputQueryFixtureMatch');
-      expect(result).toHaveProperty('outputFixture');
+      expect(result).toHaveProperty('fixtureInputTypes');
+      expect(result).toHaveProperty('fixtureInputStructure');
+      expect(result).toHaveProperty('fixtureOutput');
 
       expect(result.inputQuery.valid).toBe(true);
       expect(result.inputQuery.errors).toHaveLength(0);
 
-      expect(result.inputFixture.valid).toBe(true);
-      expect(result.inputFixture.errors).toHaveLength(0);
+      expect(result.fixtureInputTypes.valid).toBe(true);
+      expect(result.fixtureInputTypes.errors).toHaveLength(0);
 
-      expect(result.inputQueryFixtureMatch.valid).toBe(true);
-      expect(result.inputQueryFixtureMatch.errors).toHaveLength(0);
+      expect(result.fixtureInputStructure.valid).toBe(true);
+      expect(result.fixtureInputStructure.errors).toHaveLength(0);
 
-      expect(result.outputFixture.valid).toBe(true);
-      expect(result.outputFixture.errors).toHaveLength(0);
+      expect(result.fixtureOutput.valid).toBe(true);
+      expect(result.fixtureOutput.errors).toHaveLength(0);
 
-      expect(result.inputQuery.valid && result.inputFixture.valid && result.inputQueryFixtureMatch.valid && result.outputFixture.valid).toBe(true);
+      expect(result.inputQuery.valid && result.fixtureInputTypes.valid && result.fixtureInputStructure.valid && result.fixtureOutput.valid).toBe(true);
     });
   });
 
@@ -86,13 +86,13 @@ describe('validateTestAssets', () => {
 
       expect(result.inputQuery.valid).toBe(true);
 
-      expect(result.inputFixture.valid).toBe(true);
+      expect(result.fixtureInputTypes.valid).toBe(true);
 
-      expect(result.inputQueryFixtureMatch.valid).toBe(true);
+      expect(result.fixtureInputStructure.valid).toBe(true);
 
-      expect(result.outputFixture.valid).toBe(false);
-      expect(result.outputFixture.errors.length).toBe(1);
-      expect(result.outputFixture.errors[0].message).toContain('Field "extraField" is not defined by type "ProcessDataResult"');
+      expect(result.fixtureOutput.valid).toBe(false);
+      expect(result.fixtureOutput.errors.length).toBe(1);
+      expect(result.fixtureOutput.errors[0].message).toContain('Field "extraField" is not defined by type "ProcessDataResult"');
     });
   });
 
@@ -129,10 +129,10 @@ describe('validateTestAssets', () => {
       expect(result.inputQuery.valid).toBe(true);
 
       // Input fixture should be invalid due to query/schema mismatch
-      expect(result.inputFixture.valid).toBe(false);
-      expect(result.inputFixture.errors.length).toBeGreaterThan(0);
+      expect(result.fixtureInputTypes.valid).toBe(false);
+      expect(result.fixtureInputTypes.errors.length).toBeGreaterThan(0);
       // Should contain type error from GraphQL execution
-      const hasTypeError = result.inputFixture.errors.some(e =>
+      const hasTypeError = result.fixtureInputTypes.errors.some(e =>
         e.includes('Int cannot represent non-integer value') || e.includes('not_a_number')
       );
       expect(hasTypeError).toBe(true);
@@ -166,15 +166,15 @@ describe('validateTestAssets', () => {
       expect(result.inputQuery.valid).toBe(true);
 
       // Input fixture structure should be invalid due to fixture having fields not in query
-      expect(result.inputQueryFixtureMatch.valid).toBe(false);
-      expect(result.inputQueryFixtureMatch.errors.length).toBeGreaterThan(0);
+      expect(result.fixtureInputStructure.valid).toBe(false);
+      expect(result.fixtureInputStructure.errors.length).toBeGreaterThan(0);
       // Should contain error about invalidField not being in query
-      const hasInvalidFieldError = result.inputQueryFixtureMatch.errors.some(e =>
+      const hasInvalidFieldError = result.fixtureInputStructure.errors.some(e =>
         e.includes('invalidField')
       );
       expect(hasInvalidFieldError).toBe(true);
 
-      expect(result.outputFixture.valid).toBe(true);
+      expect(result.fixtureOutput.valid).toBe(true);
     });
   });
 
@@ -195,7 +195,7 @@ describe('validateTestAssets', () => {
       expect(result.inputQuery.errors.length).toBe(2);
       expect(result.inputQuery.errors[0].message).toContain('Cannot query field');
 
-      expect(result.inputQuery.valid && result.inputFixture.valid && result.inputQueryFixtureMatch.valid && result.outputFixture.valid).toBeFalsy();
+      expect(result.inputQuery.valid && result.fixtureInputTypes.valid && result.fixtureInputStructure.valid && result.fixtureOutput.valid).toBeFalsy();
     });
 
     it('should validate complete test with all fragment corner cases', async () => {
@@ -213,17 +213,17 @@ describe('validateTestAssets', () => {
       expect(result.inputQuery.valid).toBe(true);
       expect(result.inputQuery.errors).toHaveLength(0);
 
-      expect(result.inputFixture.valid).toBe(true);
-      expect(result.inputFixture.errors).toHaveLength(0);
+      expect(result.fixtureInputTypes.valid).toBe(true);
+      expect(result.fixtureInputTypes.errors).toHaveLength(0);
 
-      expect(result.inputQueryFixtureMatch.valid).toBe(true);
-      expect(result.inputQueryFixtureMatch.errors).toHaveLength(0);
+      expect(result.fixtureInputStructure.valid).toBe(true);
+      expect(result.fixtureInputStructure.errors).toHaveLength(0);
 
-      expect(result.outputFixture.valid).toBe(true);
-      expect(result.outputFixture.errors).toHaveLength(0);
+      expect(result.fixtureOutput.valid).toBe(true);
+      expect(result.fixtureOutput.errors).toHaveLength(0);
 
       // Verify the generated query includes all the complex scenarios
-      const generatedQuery = result.inputQueryFixtureMatch.generatedQuery;
+      const generatedQuery = result.fixtureInputStructure.generatedQuery;
 
       // Should have different aliases from fragment spreads
       expect(generatedQuery).toContain('firstItemList: items');
@@ -246,15 +246,15 @@ describe('validateTestAssets', () => {
       expect(generatedQuery).toContain('details(itemId: "gid://test/Item/6")');
 
       // Verify data was validated correctly
-      expect(result.inputFixture.data?.data?.firstItemList).toEqual([{ id: 'gid://test/Item/1' }]);
-      expect(result.inputFixture.data?.data?.secondItemList).toEqual([{ id: 'gid://test/Item/2' }]);
-      expect(result.inputFixture.data?.data?.mergedItemList).toEqual([{
+      expect(result.fixtureInputTypes.data?.data?.firstItemList).toEqual([{ id: 'gid://test/Item/1' }]);
+      expect(result.fixtureInputTypes.data?.data?.secondItemList).toEqual([{ id: 'gid://test/Item/2' }]);
+      expect(result.fixtureInputTypes.data?.data?.mergedItemList).toEqual([{
         id: 'gid://test/Item/3',
         count: 10,
         details: { id: 'gid://test/Details/3' }
       }]);
-      expect(result.inputFixture.data?.data?.searchResults).toHaveLength(2);
-      expect(result.inputFixture.data?.data?.moreSearchResults).toHaveLength(2);
+      expect(result.fixtureInputTypes.data?.data?.searchResults).toHaveLength(2);
+      expect(result.fixtureInputTypes.data?.data?.moreSearchResults).toHaveLength(2);
     });
 
     it('should use actual variable values from fixture when present', async () => {
@@ -272,14 +272,14 @@ describe('validateTestAssets', () => {
       expect(result.inputQuery.valid).toBe(true);
       expect(result.inputQuery.errors).toHaveLength(0);
 
-      expect(result.inputFixture.valid).toBe(true);
-      expect(result.inputFixture.errors).toHaveLength(0);
+      expect(result.fixtureInputTypes.valid).toBe(true);
+      expect(result.fixtureInputTypes.errors).toHaveLength(0);
 
-      expect(result.inputQueryFixtureMatch.valid).toBe(true);
-      expect(result.inputQueryFixtureMatch.errors).toHaveLength(0);
+      expect(result.fixtureInputStructure.valid).toBe(true);
+      expect(result.fixtureInputStructure.errors).toHaveLength(0);
 
-      expect(result.outputFixture.valid).toBe(true);
-      expect(result.outputFixture.errors).toHaveLength(0);
+      expect(result.fixtureOutput.valid).toBe(true);
+      expect(result.fixtureOutput.errors).toHaveLength(0);
 
       // Verify fixture has extracted variables
       expect(fixture.inputQueryVariables).toBeDefined();
@@ -305,7 +305,7 @@ describe('validateTestAssets', () => {
       expect(result.inputQuery.errors[0].message).toContain('Cannot query field "nonExistentField" on type "Item"');
       expect(result.inputQuery.errors[1].message).toContain('Cannot query field "invalidMetadataField" on type "Metadata"');
 
-      expect(result.inputQuery.valid && result.inputFixture.valid && result.inputQueryFixtureMatch.valid && result.outputFixture.valid).toBeFalsy();
+      expect(result.inputQuery.valid && result.fixtureInputTypes.valid && result.fixtureInputStructure.valid && result.fixtureOutput.valid).toBeFalsy();
     });
   });
 
@@ -321,9 +321,9 @@ describe('validateTestAssets', () => {
         resultParameterName: 'result'
       });
 
-      expect(result.inputQuery.valid && result.inputFixture.valid && result.inputQueryFixtureMatch.valid && result.outputFixture.valid).toBeFalsy();
-      expect(result.outputFixture.valid).toBe(false);
-      expect(result.outputFixture.errors.length).toBe(1);
+      expect(result.inputQuery.valid && result.fixtureInputTypes.valid && result.fixtureInputStructure.valid && result.fixtureOutput.valid).toBeFalsy();
+      expect(result.fixtureOutput.valid).toBe(false);
+      expect(result.fixtureOutput.errors.length).toBe(1);
     });
   });
 });

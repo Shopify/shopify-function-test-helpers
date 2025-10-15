@@ -5,10 +5,10 @@ import { buildFunction, loadFixture, runFunction, validateTestAssets, loadSchema
 function logValidationResults(fixtureFile, validationResult) {
   console.log(`Validation for ${path.basename(fixtureFile)}:`);
   console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
-  console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
-  console.log(`  Input Query-Fixture Match: ${validationResult.inputQueryFixtureMatch.valid ? '✅' : '❌'}`);
-  console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
-  console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.inputQueryFixtureMatch.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
+  console.log(`  Fixture Input Structure: ${validationResult.fixtureInputStructure.valid ? '✅' : '❌'}`);
+  console.log(`  Fixture Input Types: ${validationResult.fixtureInputTypes.valid ? '✅' : '❌'}`);
+  console.log(`  Fixture Output: ${validationResult.fixtureOutput.valid ? '✅' : '❌'}`);
+  console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.fixtureInputStructure.valid && validationResult.fixtureInputTypes.valid && validationResult.fixtureOutput.valid) ? '✅' : '❌'}`);
 }
 
 // File-level variables shared across all tests
@@ -54,9 +54,9 @@ describe("Discount Function Tests", () => {
 
         // Assert that all validation steps pass
         expect(validationResult.inputQuery.valid).toBe(true);
-        expect(validationResult.inputFixture.valid).toBe(true);
-        expect(validationResult.inputQueryFixtureMatch.valid).toBe(true);
-        expect(validationResult.outputFixture.valid).toBe(true);
+        expect(validationResult.fixtureInputStructure.valid).toBe(true);
+        expect(validationResult.fixtureInputTypes.valid).toBe(true);
+        expect(validationResult.fixtureOutput.valid).toBe(true);
 
         // Run the actual function
         const runResult = await runFunction(
@@ -96,9 +96,9 @@ describe("Discount Function Tests", () => {
         // For incorrectly formatted fixtures, validation should fail because the fixture
         // structure doesn't match the query (e.g., arguments in field keys)
         expect(validationResult.inputQuery.valid).toBe(true);
-        expect(validationResult.inputFixture.valid).toBe(true);
-        expect(validationResult.inputQueryFixtureMatch.valid).toBe(false);
-        expect(validationResult.outputFixture.valid).toBe(true);
+        expect(validationResult.fixtureInputStructure.valid).toBe(false);
+        expect(validationResult.fixtureInputTypes.valid).toBe(true);
+        expect(validationResult.fixtureOutput.valid).toBe(true);
 
         // Run the actual function
         const runResult = await runFunction(
