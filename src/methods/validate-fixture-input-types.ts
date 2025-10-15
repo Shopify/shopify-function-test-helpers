@@ -42,6 +42,8 @@ export async function validateFixtureInputTypes(
   fixtureInputQueryVariables?: Record<string, any>
 ): Promise<ValidationResult> {
 
+  // Execute query against fixture data to validate types using GraphQL's built-in validation.
+  // Custom resolvers handle aliases and abstract types.
   const result = await graphql({
     schema,
     source: query,
