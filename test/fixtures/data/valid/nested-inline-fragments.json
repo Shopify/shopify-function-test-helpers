@@ -1,0 +1,31 @@
+{
+  "payload": {
+    "export": "run",
+    "input": {
+      "data": {
+        "items": [
+          {
+            "id": "gid://test/Item/1",
+            "count": 5,
+            "details": {
+              "id": "detail-1",
+              "name": "Detail 1"
+            }
+          },
+          {
+            "id": "gid://test/Item/2",
+            "count": 10,
+            "details": {
+              "id": "detail-2",
+              "name": "Detail 2"
+            }
+          }
+        ]
+      }
+    },
+    "output": {
+      "discounts": []
+    },
+    "target": "purchase.product-discount.run"
+  }
+}

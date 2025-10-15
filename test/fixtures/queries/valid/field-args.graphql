@@ -1,0 +1,13 @@
+query RunInput {
+  data {
+    metafield(namespace: "$app:test", key: "config") {
+      type
+      value
+      jsonValue
+    }
+    items(first: 5) {
+      id
+      count
+    }
+  }
+}

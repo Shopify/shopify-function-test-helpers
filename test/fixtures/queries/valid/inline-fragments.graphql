@@ -1,0 +1,14 @@
+query Query {
+  data {
+    searchResults {
+      ... on Item {
+        id
+        count
+      }
+      ... on Metadata {
+        email
+        phone
+      }
+    }
+  }
+}

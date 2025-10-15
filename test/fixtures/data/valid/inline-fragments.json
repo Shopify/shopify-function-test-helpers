@@ -1,0 +1,29 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "data.processing.generate.run",
+    "input": {
+      "data": {
+        "searchResults": [
+          {
+            "id": "gid://test/Item/1",
+            "count": 5
+          },
+          {
+            "email": "test@example.com",
+            "phone": "555-1234"
+          },
+          {
+            "id": "gid://test/Item/2",
+            "count": 10
+          }
+        ]
+      }
+    },
+    "output": {
+      "title": "Test",
+      "count": 1,
+      "items": []
+    }
+  }
+}
