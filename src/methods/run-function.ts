@@ -59,7 +59,7 @@ export async function runFunction(
         stdio: ['pipe', 'pipe', 'pipe'],
         env: {
           ...process.env,
-          SHOPIFY_FLAG_INVOKED_BY: 'shopify-function-test-helpers'
+          INVOKED_BY: 'shopify-function-test-helpers'
         }
       });
 
