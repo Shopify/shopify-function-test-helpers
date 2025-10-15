@@ -86,7 +86,17 @@ function navigateToParent(
 
 /**
  * Create a custom field resolver that handles aliases
- * This resolver first looks for the aliased field name, then falls back to the actual field name
+ *
+ * This resolver handles the mismatch between fixture data (which uses aliases as keys)
+ * and GraphQL execution (which expects actual field names). It looks up values from
+ * the original fixture data using the alias from the query, allowing type validation
+ * to work correctly with aliased fields.
+ *
+ * The resolver navigates the original fixture data using the query path and returns
+ * the value at that location, whether it's keyed by alias or actual field name.
+ *
+ * @param originalFixtureInputData - The original fixture data with aliased keys
+ * @returns GraphQL field resolver function
  */
 function createFieldResolver(
   originalFixtureInputData: Record<string, any>
@@ -122,7 +132,23 @@ function createFieldResolver(
 
 /**
  * Create a custom type resolver that infers the concrete type from fixture data
- * This handles union and interface types by checking which possible type's fields match the data
+ *
+ * For abstract types (unions/interfaces), GraphQL needs to know which concrete type
+ * a value represents. This resolver determines the type by examining which fields are
+ * present in the fixture data and matching them against the possible types.
+ *
+ * The resolver first checks for an explicit `__typename` field, then falls back to
+ * inferring the type by matching the fixture's fields against each possible type's schema.
+ *
+ * Example:
+ * ```
+ * Abstract type: SearchResult (union of Item | Metadata)
+ * Fixture: { id: "1", count: 5 }
+ * Result: "Item" (because id and count match Item's fields)
+ * ```
+ *
+ * @param schema - The GraphQL schema containing type definitions
+ * @returns GraphQL type resolver function
  */
 function createTypeResolver(schema: GraphQLSchema): GraphQLTypeResolver<any, any> {
   return (value, _context, _info, abstractType) => {

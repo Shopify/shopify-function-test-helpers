@@ -93,9 +93,27 @@ export function validateFixtureInputStructure(
 
 /**
  * Recursively extract fields from inline fragments
- * When the same field appears multiple times, merge their selection sets
+ *
+ * When fragments are merged (for regular types, not abstract types), the same field can appear
+ * multiple times with different selection sets. This function flattens all fields into a map
+ * and groups multiple occurrences of the same field together.
+ *
+ * Why this is needed:
+ * - Fragments can select overlapping fields: `{ ...A ...B }` where both select `id`
+ * - The same field can have different nested selections that need to be merged
+ * - GraphQL allows this and merges the selection sets automatically during execution
+ * - We need to replicate this merging behavior during validation
+ *
+ * Example:
+ * {
+ *   ... on Item { id count }
+ *   ... on Item { id name }
+ * }
+ * 
+ * Results in: `id` appears twice, both occurrences are grouped together in the map
+ *
  * @param selections - The selection set to extract fields from
- * @returns Map of field keys to arrays of field nodes (to handle field merging)
+ * @returns Map of field keys (alias or field name) to arrays of field nodes
  */
 function extractFieldsFromSelections(
   selections: readonly SelectionNode[]
@@ -129,6 +147,18 @@ function extractFieldsFromSelections(
 
 /**
  * Build field string with arguments
+ *
+ * Constructs a GraphQL field string from a field node, including:
+ * - Alias (if present): `alias: fieldName`
+ * - Arguments (if present): `fieldName(arg: value)`
+ * - Selection set (if present): `fieldName { nested fields }`
+ *
+ * This is part of generating the final GraphQL query string that represents
+ * the fixture structure.
+ *
+ * @param fieldNode - The field node from the query AST
+ * @param selectionSet - The nested selection set string (empty if none)
+ * @returns Complete field string in GraphQL syntax
  */
 function buildFieldString(fieldNode: FieldNode, selectionSet: string): string {
   const fieldName = fieldNode.name.value;
@@ -163,7 +193,22 @@ function buildFieldString(fieldNode: FieldNode, selectionSet: string): string {
 
 /**
  * Build selection set string from selections without fixture data
- * Used for empty arrays where we have no fixture data to validate against
+ *
+ * Used for empty arrays or abstract types where we have no fixture data to validate against.
+ * This generates the query structure directly from the AST selections rather than walking
+ * fixture data, ensuring we still produce valid GraphQL even when there's no data.
+ *
+ * This is valid because GraphQL queries can return empty arrays - the query structure
+ * is still correct even if no data matches. For example:
+ *
+ * Query: `{ items { id name } }`
+ * Fixture: `{ items: [] }`
+ *
+ * We still need to generate `items { id name }` to validate that the query structure
+ * is valid, even though there are no items to validate against.
+ *
+ * @param selections - The selection set from the query
+ * @returns GraphQL selection set string
  */
 function buildSelectionSetString(selections: readonly SelectionNode[]): string {
   const selectionParts: string[] = [];
@@ -188,6 +233,24 @@ function buildSelectionSetString(selections: readonly SelectionNode[]): string {
 
 /**
  * Find which inline fragment matches the fixture data based on field names
+ *
+ * For abstract types (unions/interfaces), we need to determine which concrete type
+ * the fixture data represents. This function matches the fixture by checking if all
+ * the fixture's fields are present in one of the fragments.
+ *
+ * Example:
+ * ```
+ * Fragments:
+ *   ... on Item { id count }
+ *   ... on Metadata { email phone }
+ *
+ * Fixture: { id: "1", count: 5 }
+ * Result: Matches "... on Item" because fixture has id and count
+ *
+ * Fixture: { email: "test@example.com", phone: "555-1234" }
+ * Result: Matches "... on Metadata" because fixture has email and phone
+ * ```
+ *
  * @param inlineFragments - The inline fragments to check
  * @param fixtureKeys - The keys present in the fixture data
  * @returns The matching fragment, or null if no match found
@@ -224,6 +287,15 @@ interface TraverseResult {
 
 /**
  * Convert fragment spreads to inline fragments by looking up their definitions
+ *
+ * GraphQL queries can use fragments in two ways:
+ * 1. Inline fragments: `... on TypeName { fields }` - already in the format we need
+ * 2. Fragment spreads: `...FragmentName` - references to named fragments defined elsewhere
+ *
+ * This function normalizes both forms into inline fragments so we can process them uniformly.
+ * We need this because our validation logic works with inline fragments (which have typeCondition
+ * and selectionSet directly), but queries often use fragment spreads for reusability.
+ *
  * @param selections - The selections that may contain fragment spreads
  * @param fragments - Map of fragment definitions
  * @returns Array of inline fragments (includes both original inline fragments and converted spreads)
@@ -257,6 +329,13 @@ function convertFragmentSpreadsToInline(
 /**
  * Traverse query selections and fixture data together
  *
+ * This function recursively walks through GraphQL query selections and fixture data in parallel:
+ * - Validates that fixture fields match query selections (no extra/missing fields)
+ * - Handles arrays by validating each item against the same selections
+ * - For abstract types (unions/interfaces), matches fixture data to the correct fragment
+ * - For regular types, merges all fragments and validates against combined selections
+ * - Generates a GraphQL query string that represents the fixture structure
+ *
  * @param selections - The selection set from the query
  * @param fixtureData - The fixture data at this level
  * @param fragments - Map of fragment definitions
@@ -282,7 +361,7 @@ function traverseSelections(
   // Check if we're on an abstract type (union/interface) using the schema
   const isAbstractParentType = parentType && isAbstractType(parentType);
 
-  // Handle arrays: process each item recursively
+  // Handle arrays by validating each item against the same selections
   if (Array.isArray(fixtureData)) {
     let fixtureSelectionSet = '';
 
@@ -325,8 +404,7 @@ function traverseSelections(
     // Convert fragment spreads to inline fragments
     const inlineFragments = convertFragmentSpreadsToInline(selections, fragments);
 
-    // If parent type is abstract AND we only have fragments (no other selections),
-    // we need to match exactly ONE fragment
+    // For abstract types (unions/interfaces), match fixture data to the correct fragment
     if (isAbstractParentType && inlineFragments.length > 0 && otherSelections.length === 0) {
       return traverseInlineFragmentsForObject(
         inlineFragments,
@@ -336,7 +414,7 @@ function traverseSelections(
         path
       );
     } else {
-      // Otherwise, merge everything: expand all fragments into the selection set
+      // For regular types, merge all fragments and validate against combined selections
       const allSelections: SelectionNode[] = [...otherSelections];
 
       // Merge inline fragment selections
@@ -351,7 +429,7 @@ function traverseSelections(
       if (typeof fixtureData === 'object') {
         const selectionParts: string[] = [];
 
-        // Check that every field in fixture is selected in query
+        // Validate that fixture fields match query selections (no extra fields)
         for (const fixtureKey of Object.keys(fixtureData)) {
           if (!selectedFields.has(fixtureKey)) {
             const fieldPath = path ? `${path}.${fixtureKey}` : fixtureKey;
@@ -359,7 +437,7 @@ function traverseSelections(
           }
         }
 
-        // Process each selected field
+        // Validate that fixture fields match query selections (no missing fields)
         for (const [aliasOrFieldName, fieldNodes] of selectedFields.entries()) {
           const fieldPath = path ? `${path}.${aliasOrFieldName}` : aliasOrFieldName;
 
@@ -413,7 +491,7 @@ function traverseSelections(
             nestedSelectionSet = result.fixtureSelectionSet;
           }
 
-          // Build selection string using the first field node (for alias/name/args)
+          // Generate GraphQL query string that represents the fixture structure
           const fieldString = buildFieldString(fieldNodes[0], nestedSelectionSet);
           selectionParts.push(fieldString);
         }
@@ -435,7 +513,20 @@ function traverseSelections(
 
 /**
  * Traverse inline fragments for a single object (union/interface types)
- * This matches the fixture data against exactly ONE fragment
+ *
+ * For abstract types (unions/interfaces), the fixture data must match exactly ONE of the
+ * possible fragment types. This function finds which fragment matches the fixture data
+ * based on the fields present, then validates the fixture against that fragment.
+ *
+ * Once the matching fragment is found, this function recursively calls traverseSelections
+ * to continue walking the structure and validating nested fields within that fragment.
+ *
+ * @param inlineFragments - The inline fragments to check against
+ * @param fixtureData - The fixture data at this level
+ * @param fragmentDefs - Map of fragment definitions
+ * @param schema - The GraphQL schema for type lookups
+ * @param path - Current path for error messages (defaults to empty string at root)
+ * @returns Selection set string wrapped in inline fragment syntax and validation errors
  */
 function traverseInlineFragmentsForObject(
   inlineFragments: readonly InlineFragmentNode[],
