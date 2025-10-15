@@ -56,7 +56,11 @@ export async function runFunction(
         '--path', functionName
       ], {
         cwd: appRootDir,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          SHOPIFY_INVOKED_BY: 'shopify-function-test-helpers'
+        }
       });
 
       let stdout = '';
