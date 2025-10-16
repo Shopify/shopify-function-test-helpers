@@ -1,0 +1,44 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "data.processing.generate.run",
+    "input": {
+      "data": {
+        "items": [
+          {
+            "id": "gid://test/Item/1",
+            "count": 5,
+            "details": {
+              "id": "gid://test/ItemDetails/1",
+              "name": "Test Item"
+            }
+          }
+        ],
+        "metadata": {
+          "email": "test@example.com"
+        },
+        "metafield": {
+          "type": "single_line_text_field",
+          "value": "Custom description"
+        },
+        "searchResults": [
+          {
+            "__typename": "Item",
+            "id": "gid://test/Item/2",
+            "count": 10
+          },
+          {
+            "__typename": "Metadata",
+            "email": "search@example.com",
+            "phone": "555-9999"
+          }
+        ]
+      }
+    },
+    "output": {
+      "title": "Test Processing Result",
+      "count": 42,
+      "items": []
+    }
+  }
+}

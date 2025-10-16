@@ -1,0 +1,12 @@
+query {
+  data {
+    ...ItemFields
+  }
+}
+
+fragment ItemFields on DataContainer {
+  items {
+    id
+    count
+  }
+}

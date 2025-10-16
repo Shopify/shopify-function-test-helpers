@@ -1,0 +1,14 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "data.processing.generate.run",
+    "input": {
+      "data": "this should be an object, not a string"
+    },
+    "output": {
+      "title": "Test Processing Result",
+      "count": 42,
+      "items": []
+    }
+  }
+}

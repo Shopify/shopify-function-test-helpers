@@ -1,0 +1,24 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "data.processing.generate.run",
+    "input": {
+      "data": {
+        "items": [
+          {
+            "itemId": "gid://test/Item/1",
+            "itemCount": 5,
+            "details": {
+              "name": "Test Item"
+            }
+          }
+        ]
+      }
+    },
+    "output": {
+      "title": "Test Processing Result",
+      "count": 42,
+      "items": []
+    }
+  }
+}

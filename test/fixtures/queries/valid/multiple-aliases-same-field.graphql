@@ -1,0 +1,14 @@
+query Query {
+  data {
+    firstItems: items {
+      id
+      count
+    }
+    secondItems: items {
+      id
+      details {
+        name
+      }
+    }
+  }
+}
