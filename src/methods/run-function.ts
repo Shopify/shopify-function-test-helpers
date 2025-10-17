@@ -53,10 +53,11 @@ export async function runFunction(
         'app', 'function', 'run',
         '--export', exportName,
         '--json',
-        '--path', functionName
+        '--path', functionName,
+        '--invoked-by', 'shopify-function-test-helpers'
       ], {
         cwd: appRootDir,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       let stdout = '';
