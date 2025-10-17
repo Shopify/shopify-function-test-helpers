@@ -53,14 +53,11 @@ export async function runFunction(
         'app', 'function', 'run',
         '--export', exportName,
         '--json',
-        '--path', functionName
+        '--path', functionName,
+        '--invoked-by', 'shopify-function-test-helpers'
       ], {
         cwd: appRootDir,
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          INVOKED_BY: 'shopify-function-test-helpers'
-        }
       });
 
       let stdout = '';
