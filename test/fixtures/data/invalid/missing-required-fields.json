@@ -1,0 +1,15 @@
+{
+  "payload": {
+    "export": "test-data-processing",
+    "target": "data.processing.generate.run",
+    "input": {
+      "data": {
+        "items": []
+      }
+    },
+    "output": {
+      "title": "Test Processing Result",
+      "items": []
+    }
+  }
+}

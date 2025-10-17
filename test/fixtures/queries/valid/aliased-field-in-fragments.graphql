@@ -1,0 +1,12 @@
+fragment ItemInfo on Item {
+  identifier: id
+  quantity: count
+}
+
+query {
+  data {
+    items {
+      ...ItemInfo
+    }
+  }
+}

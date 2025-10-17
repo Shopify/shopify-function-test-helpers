@@ -1,0 +1,25 @@
+{
+  "payload": {
+    "export": "run",
+    "input": {
+      "data": {
+        "items": [
+          {
+            "id": "gid://test/Item/1",
+            "count": 5,
+            "details": {
+              "id": "gid://test/ItemDetails/123",
+              "name": "Test Item"
+            }
+          }
+        ]
+      }
+    },
+    "output": {
+      "title": "Test",
+      "count": 1,
+      "items": []
+    },
+    "target": "data.processing.generate.run"
+  }
+}

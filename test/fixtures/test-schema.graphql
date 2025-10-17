@@ -8,14 +8,18 @@ type Query {
 }
 
 type DataContainer {
-  items: [Item!]!
+  items(first: Int): [Item!]!
   metadata: Metadata
+  metafield(namespace: String!, key: String!): Metafield
+  searchResults: [SearchResult!]!
 }
+
+union SearchResult = Item | Metadata
 
 type Item {
   id: ID
   count: Int!
-  details: ItemDetails
+  details(itemId: String): ItemDetails
 }
 
 type ItemDetails {
@@ -26,6 +30,11 @@ type ItemDetails {
 type Metadata {
   email: String
   phone: String
+}
+
+type Metafield {
+  type: String!
+  value: String!
 }
 
 type Mutation {

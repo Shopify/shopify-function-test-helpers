@@ -1,0 +1,27 @@
+{
+  "payload": {
+    "export": "run",
+    "input": {
+      "data": {
+        "searchResults": [
+          {
+            "__typename": "Item",
+            "id": "gid://test/Item/1",
+            "count": 5
+          },
+          {
+            "__typename": "Metadata",
+            "email": "test@example.com",
+            "phone": "555-1234"
+          }
+        ]
+      }
+    },
+    "output": {
+      "title": "Test",
+      "count": 1,
+      "items": []
+    },
+    "target": "data.processing.generate.run"
+  }
+}

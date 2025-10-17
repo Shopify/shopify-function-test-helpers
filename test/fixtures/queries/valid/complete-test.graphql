@@ -1,0 +1,29 @@
+query Query {
+  data {
+    items {
+      id
+      count
+      details {
+        id
+        name
+      }
+    }
+    metadata {
+      email
+    }
+    metafield(namespace: "custom", key: "description") {
+      type
+      value
+    }
+    searchResults {
+      ... on Item {
+        id
+        count
+      }
+      ... on Metadata {
+        email
+        phone
+      }
+    }
+  }
+}

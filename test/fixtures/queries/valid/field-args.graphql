@@ -1,0 +1,12 @@
+query {
+  data {
+    items {
+      id
+      count
+      details(itemId: "gid://test/Item/1") {
+        id
+        name
+      }
+    }
+  }
+}

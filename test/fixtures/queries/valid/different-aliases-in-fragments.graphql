@@ -1,0 +1,20 @@
+fragment ItemFields on Item {
+  itemId: id
+  itemCount: count
+}
+
+fragment MoreItemFields on Item {
+  itemId: id
+  details {
+    name
+  }
+}
+
+query {
+  data {
+    items {
+      ...ItemFields
+      ...MoreItemFields
+    }
+  }
+}
