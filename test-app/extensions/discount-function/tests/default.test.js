@@ -6,9 +6,8 @@ function logValidationResults(fixtureFile, validationResult) {
   console.log(`Validation for ${path.basename(fixtureFile)}:`);
   console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
   console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
-  console.log(`  Input Query-Fixture Match: ${validationResult.inputQueryFixtureMatch.valid ? '✅' : '❌'}`);
   console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
-  console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.inputQueryFixtureMatch.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
+  console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
 }
 
 describe("Default Integration Test", () => {
@@ -51,7 +50,6 @@ describe("Default Integration Test", () => {
       // Assert that all validation steps pass
       expect(validationResult.inputQuery.valid).toBe(true);
       expect(validationResult.inputFixture.valid).toBe(true);
-      expect(validationResult.inputQueryFixtureMatch.valid).toBe(true);
       expect(validationResult.outputFixture.valid).toBe(true);
 
       // Run the actual function

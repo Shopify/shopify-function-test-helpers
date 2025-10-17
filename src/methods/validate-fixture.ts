@@ -9,7 +9,7 @@ import {
   isAbstractType,
   getNamedType,
 } from "graphql";
-import { inlineNamedFragmentSpreads } from "./inline-named-fragment-spreads.js";
+import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
 
 export interface ValidateFixtureResult {
   valid: boolean;

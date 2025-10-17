@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parse, print } from "graphql/language";
-import { inlineNamedFragmentSpreads } from "../../src/methods/inline-named-fragment-spreads.ts";
+import { inlineNamedFragmentSpreads } from "../../src/utils/inline-named-fragment-spreads.js";
 
 describe("inlineNamedFragmentSpreads", () => {
   it("should no-op when there aren't any named fragment spreads", async () => {
