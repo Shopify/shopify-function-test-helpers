@@ -1,6 +1,6 @@
 import { validateInputQuery } from "./validate-input-query.js";
 import { validateFixtureOutput } from "./validate-fixture-output.js";
-import { validateFixture } from "./validate-fixture.js";
+import { validateFixtureInput } from "./validate-fixture-input.js";
 import { determineMutationFromTarget } from "../utils/determine-mutation-from-target.js";
 import { GraphQLSchema, GraphQLError, DocumentNode, print } from "graphql";
 import { FixtureData } from "./load-fixture.js";
@@ -89,7 +89,7 @@ export async function validateTestAssets({
     };
 
     // Step 2: Validate input fixture (which also validates query-fixture match)
-    const inputFixtureResult = await validateFixture(
+    const inputFixtureResult = await validateFixtureInput(
       inputQueryAST,
       schema,
       fixture.input

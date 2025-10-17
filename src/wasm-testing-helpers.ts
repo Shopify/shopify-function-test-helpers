@@ -13,10 +13,8 @@ export { buildFunction } from "./methods/build-function.js";
 export { runFunction } from "./methods/run-function.js";
 export { validateTestAssets } from "./methods/validate-test-assets.js";
 export { validateInputQuery } from "./methods/validate-input-query.js";
-export { validateInputQueryFixtureMatch } from "./methods/validate-input-query-fixture-match.js";
-export { validateFixtureInput } from "./methods/validate-fixture-input.js";
 export { validateFixtureOutput } from "./methods/validate-fixture-output.js";
-export { validateFixture } from "./methods/validate-fixture.js";
+export { validateFixtureInput } from "./methods/validate-fixture-input.js";
 
 // Export types for consumers
 export type { FixtureData } from "./methods/load-fixture.js";
@@ -26,8 +24,6 @@ export type {
   ValidateTestAssetsOptions,
   CompleteValidationResult,
 } from "./methods/validate-test-assets.js";
-export type { QueryFixtureMatchResult } from "./methods/validate-input-query-fixture-match.js";
-export type { ValidationResult } from "./methods/validate-fixture-input.js";
 export type { OutputValidationResult } from "./methods/validate-fixture-output.js";
 export type { MutationTarget } from "./utils/determine-mutation-from-target.js";
-export type { ValidateFixtureResult } from "./methods/validate-fixture.js";
+export type { ValidateFixtureInputResult } from "./methods/validate-fixture-input.js";

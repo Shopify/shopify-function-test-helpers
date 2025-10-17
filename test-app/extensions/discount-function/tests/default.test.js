@@ -2,14 +2,6 @@ import path from "path";
 import fs from "fs";
 import { buildFunction, loadFixture, runFunction, validateTestAssets, loadSchema, loadInputQuery } from "@shopify/shopify-function-test-helpers";
 
-function logValidationResults(fixtureFile, validationResult) {
-  console.log(`Validation for ${path.basename(fixtureFile)}:`);
-  console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
-  console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
-  console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
-  console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
-}
-
 describe("Default Integration Test", () => {
   let schema;
   let inputQueryAST;
