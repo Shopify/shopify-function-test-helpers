@@ -5,13 +5,14 @@
   "main": "dist/wasm-testing-helpers.js",
   "types": "dist/wasm-testing-helpers.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/wasm-testing-helpers.js",
+      "types": "./dist/wasm-testing-helpers.d.ts"
+    }
+  },
   "files": [
     "dist/"
-  ],
-  "workspaces": [
-    "test-app",
-    "test-app/extensions/*",
-    "test-app/extensions/*/tests"
   ],
   "scripts": {
     "build": "tsc",
