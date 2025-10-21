@@ -3,41 +3,43 @@ import { validateInputQuery, loadInputQuery, loadSchema } from '../../src/wasm-t
 
 describe('validateInputQuery', () => {
   it('should validate a valid GraphQL query against schema', async () => {
-    const queryPath = './test/fixtures/test-query.graphql';
+    const queryPath = './test/fixtures/valid-query.graphql';
     const schemaPath = './test/fixtures/test-schema.graphql';
-    
+
     const queryAST = await loadInputQuery(queryPath);
     const schema = await loadSchema(schemaPath);
-    
+
     const errors = validateInputQuery(queryAST, schema);
-    
+
     expect(errors).toEqual([]);
   });
 
   it('should return validation errors for invalid GraphQL query', async () => {
     const queryPath = './test/fixtures/wrong-fields-query.graphql';
     const schemaPath = './test/fixtures/test-schema.graphql';
-    
+
     const queryAST = await loadInputQuery(queryPath);
     const schema = await loadSchema(schemaPath);
-    
+
     const errors = validateInputQuery(queryAST, schema);
-    
+
     expect(errors.length).toBe(3);
-    expect(errors[0]).toHaveProperty('message');
+    expect(errors[0].message).toContain('Cannot query field "nonExistentField" on type "Item"');
+    expect(errors[1].message).toContain('Cannot query field "anotherInvalidField" on type "ItemDetails"');
+    expect(errors[2].message).toContain('Cannot query field "invalidMetadataField" on type "Metadata"');
   });
 
   it('should return errors for invalid query string', async () => {
     // Since validateInputQuery expects an AST, invalid syntax should be caught at loadInputQuery level
     // This test verifies that loadInputQuery properly handles syntax errors
-    await expect(loadInputQuery('./test/fixtures/invalid-query.graphql')).rejects.toThrow();
+    await expect(loadInputQuery('./test/fixtures/malformed-query.graphql')).rejects.toThrow();
   });
 
   it('should return errors for null schema', async () => {
-    const queryAST = await loadInputQuery('./test/fixtures/test-query.graphql');
-    
+    const queryAST = await loadInputQuery('./test/fixtures/valid-query.graphql');
+
     const errors = validateInputQuery(queryAST, null as any);
-    
+
     expect(errors).toHaveLength(1);
     expect(errors[0]).toHaveProperty('message');
     expect(errors[0].message).toContain('Failed to validate query');

@@ -5,8 +5,8 @@ describe('validateTestAssets', () => {
   // Helper function to load test data
   async function loadTestData() {
     const schema = await loadSchema('./test/fixtures/test-schema.graphql');
-    const fixture = await loadFixture('./test/fixtures/valid-test-fixture.json');
-    const inputQueryAST = await loadInputQuery('./test/fixtures/test-query.graphql');
+    const fixture = await loadFixture('./test/fixtures/valid-fixture.json');
+    const inputQueryAST = await loadInputQuery('./test/fixtures/valid-query.graphql');
     return { schema, fixture, inputQueryAST };
   }
 
