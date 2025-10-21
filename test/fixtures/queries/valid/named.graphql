@@ -1,8 +1,0 @@
-query TestQuery {
-  data {
-    items {
-      id
-      count
-    }
-  }
-}

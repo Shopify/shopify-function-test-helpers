@@ -1,8 +1,0 @@
-query TestQuery($itemCount: Int) {
-  data {
-    items(first: $itemCount) {
-      id
-      count
-    }
-  }
-}

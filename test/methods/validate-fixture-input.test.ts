@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { validateFixtureInput } from "../../src/methods/validate-fixture-input.ts";
 import { loadSchema } from "../../src/methods/load-schema.ts";
-import { loadInputQuery } from "../../src/methods/load-input-query.ts";
-import { loadFixture } from "../../src/methods/load-fixture.ts";
 import { GraphQLSchema, parse } from "graphql";
 
 describe("validateFixtureInput", () => {
@@ -13,57 +11,153 @@ describe("validateFixtureInput", () => {
   });
 
   describe("Valid Fixtures", () => {
-    it("valid/basic.json + queries/valid/basic.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/basic.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/valid/basic.json"
-      );
+    it("validates basic fixture with all fields present", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            items {
+              id
+              count
+              details {
+                id
+                name
+              }
+            }
+            metadata {
+              email
+            }
+          }
+        }
+      `);
 
-      const result = validateFixtureInput(queryAST, schema, fixture.input);
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              count: 2,
+              details: {
+                id: "gid://test/ItemDetails/123",
+                name: "Test Item"
+              }
+            }
+          ],
+          metadata: {
+            email: "test@example.com"
+          }
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.errors).toHaveLength(0);
       expect(result.valid).toBe(true);
     });
 
-    it("valid/aliased.json + queries/valid/aliased.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/aliased.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/valid/aliased.json"
-      );
+    it("handles field aliases", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            allItems: items {
+              id
+              count
+            }
+          }
+        }
+      `);
 
-      const result = validateFixtureInput(queryAST, schema, fixture.input);
+      const fixtureInput = {
+        data: {
+          allItems: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it("valid/multiple-aliases-same-field.json + queries/valid/multiple-aliases-same-field.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/multiple-aliases-same-field.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/valid/multiple-aliases-same-field.json"
-      );
+    it("handles multiple aliases for the same field", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            firstItems: items {
+              id
+              count
+            }
+            secondItems: items {
+              id
+              details {
+                name
+              }
+            }
+          }
+        }
+      `);
 
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
+      const fixtureInput = {
+        data: {
+          firstItems: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+              details: {
+                name: "First Item"
+              }
+            }
+          ],
+          secondItems: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+              details: {
+                name: "First Item"
+              }
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it("valid/named-fragments.json + queries/valid/named-fragments.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/named-fragments.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/valid/named-fragments.json"
-      );
+    it("handles named fragments", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            ...ItemFields
+          }
+        }
 
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
+        fragment ItemFields on DataContainer {
+          items {
+            id
+            count
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -86,71 +180,189 @@ describe("validateFixtureInput", () => {
     //   expect(result.errors).toHaveLength(0);
     // });
 
-    it("valid/nested-inline-fragments.json + queries/valid/nested-inline-fragments.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/nested-inline-fragments.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/valid/nested-inline-fragments.json"
-      );
+    it("handles nested inline fragments", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              ... on Item {
+                id
+                count
+                details {
+                  ... on ItemDetails {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
 
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+              details: {
+                id: "gid://test/ItemDetails/1",
+                name: "Test Item"
+              }
+            }
+          ]
+        }
+      };
 
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it("valid/different-aliases-in-fragments.json + queries/valid/different-aliases-in-fragments.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/different-aliases-in-fragments.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/valid/different-aliases-in-fragments.json"
-      );
-
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
-
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it("valid/aliased-field-in-fragments.json + queries/valid/aliased-field-in-fragments.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/aliased-field-in-fragments.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/valid/aliased-field-in-fragments.json"
-      );
-
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
-
-      expect(result.valid).toBe(true);
-      expect(result.errors).toHaveLength(0);
-    });
-
-    it("valid/with-variables.json + queries/valid/with-variables.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/with-variables.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/valid/with-variables.json"
-      );
-
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it("valid/field-args.json + queries/valid/field-args.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/field-args.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/valid/field-args.json"
-      );
+    it("handles different aliases in fragments", () => {
+      const queryAST = parse(`
+        fragment ItemFields on Item {
+          itemId: id
+          itemCount: count
+        }
 
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
+        fragment MoreItemFields on Item {
+          itemId: id
+          details {
+            name
+          }
+        }
+
+        query {
+          data {
+            items {
+              ...ItemFields
+              ...MoreItemFields
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              itemId: "gid://test/Item/1",
+              itemCount: 5,
+              details: {
+                name: "Test Item"
+              }
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles aliased fields in fragments", () => {
+      const queryAST = parse(`
+        fragment ItemInfo on Item {
+          identifier: id
+          quantity: count
+        }
+
+        query {
+          data {
+            items {
+              ...ItemInfo
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              identifier: "gid://test/Item/1",
+              quantity: 5
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles queries with variables", () => {
+      const queryAST = parse(`
+        query TestQuery($itemCount: Int) {
+          data {
+            items(first: $itemCount) {
+              id
+              count
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {
+              id: "gid://test/Item/2",
+              count: 10
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles fields with arguments", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            items {
+              id
+              count
+              details(itemId: "gid://test/Item/1") {
+                id
+                name
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+              details: {
+                id: "gid://test/ItemDetails/123",
+                name: "Test Item"
+              }
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -274,14 +486,36 @@ describe("validateFixtureInput", () => {
   });
 
   describe("Invalid Fixtures", () => {
-    it("invalid/incomplete.json + queries/valid/basic.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/basic.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/invalid/incomplete.json"
-      );
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
+    it("detects missing fields in fixture data", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            items {
+              id
+              count
+              details {
+                id
+                name
+              }
+            }
+            metadata {
+              email
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1"
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(3);
       expect(result.errors[0]).toBe("Missing expected fixture data for count");
@@ -311,27 +545,66 @@ describe("validateFixtureInput", () => {
     //     'Extra field "extraField" at data.items[0]'
     //   );
     // });
-    it("invalid/scalar-mismatch.json + queries/valid/basic.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/basic.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/invalid/scalar-mismatch.json"
-      );
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
+    it("detects type mismatches (object vs scalar)", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            items {
+              id
+              count
+              details {
+                id
+                name
+              }
+            }
+            metadata {
+              email
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: "this should be an object, not a string"
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(1);
       expect(result.errors[0]).toBe("Expected object for data, but got string");
     });
 
-    it("invalid/invalid-input.json + queries/valid/basic.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/basic.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/invalid/invalid-input.json"
-      );
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
+    it("detects invalid scalar values", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            items {
+              id
+              count
+              details {
+                id
+                name
+              }
+            }
+            metadata {
+              email
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: 123,
+              count: "not a number"
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(3);
@@ -346,14 +619,32 @@ describe("validateFixtureInput", () => {
       );
     });
 
-    it("invalid/missing-required-fields.json + queries/valid/basic.graphql", async () => {
-      const queryAST = await loadInputQuery(
-        "./test/fixtures/queries/valid/basic.graphql"
-      );
-      const fixture = await loadFixture(
-        "./test/fixtures/data/invalid/missing-required-fields.json"
-      );
-      const result = await validateFixtureInput(queryAST, schema, fixture.input);
+    it("detects missing required fields at root level", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            items {
+              id
+              count
+              details {
+                id
+                name
+              }
+            }
+            metadata {
+              email
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: []
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(1);
       expect(result.errors[0]).toBe(
