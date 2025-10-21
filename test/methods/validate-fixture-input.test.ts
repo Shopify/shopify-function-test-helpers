@@ -163,22 +163,51 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    // Skipping this test because it's not yet supported
-    // it("valid/inline-fragments.json + queries/valid/inline-fragments.graphql", async () => {
-    //   const queryAST = await loadInputQuery(
-    //     "./test/fixtures/queries/valid/inline-fragments.graphql"
-    //   );
-    //   const fixture = await loadFixture(
-    //     "./test/fixtures/data/valid/inline-fragments.json"
-    //   );
+    // This test is skipped because the validator doesn't yet support unions where
+    // different items in the array can be different types. Currently, it expects
+    // all fields from all inline fragments to be present in every item, instead of
+    // filtering by __typename.
+    it.skip("handles inline fragments with multiple types in union", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              __typename
+              ... on Item {
+                id
+                count
+              }
+              ... on Metadata {
+                email
+                phone
+              }
+            }
+          }
+        }
+      `);
 
-    //   const result = await validateFixtureInput(queryAST, schema, fixture.input);
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              __typename: "Item",
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {
+              __typename: "Metadata",
+              email: "test@example.com",
+              phone: "555-0001"
+            }
+          ]
+        }
+      };
 
-    //   console.log(result);
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-    //   expect(result.valid).toBe(true);
-    //   expect(result.errors).toHaveLength(0);
-    // });
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
 
     it("handles nested inline fragments", () => {
       const queryAST = parse(`
@@ -454,35 +483,6 @@ describe("validateFixtureInput", () => {
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
-
-    // Skipping this test because it's not yet supported
-    // it("valid/complete-test.json + queries/valid/complete-test.graphql", async () => {
-    //   const queryAST = await loadInputQuery(
-    //     "./test/fixtures/queries/valid/complete-test.graphql"
-    //   );
-    //   const fixture = await loadFixture(
-    //     "./test/fixtures/data/valid/complete-test.json"
-    //   );
-
-    //   const result = await validateFixtureInput(queryAST, schema, fixture.input);
-
-    //   expect(result.valid).toBe(true);
-    //   expect(result.errors).toHaveLength(0);
-    // });
-
-    // it("valid/complete-test-with-variables.json + queries/valid/complete-test.graphql", async () => {
-    //   const queryAST = await loadInputQuery(
-    //     "./test/fixtures/queries/valid/complete-test.graphql"
-    //   );
-    //   const fixture = await loadFixture(
-    //     "./test/fixtures/data/valid/complete-test-with-variables.json"
-    //   );
-
-    //   const result = await validateFixtureInput(queryAST, schema, fixture.input);
-
-    //   expect(result.valid).toBe(true);
-    //   expect(result.errors).toHaveLength(0);
-    // });
   });
 
   describe("Invalid Fixtures", () => {
@@ -527,24 +527,40 @@ describe("validateFixtureInput", () => {
       );
     });
 
-    // // Skipping this test because it's not yet supported
-    // it("invalid/extra-fields.json + queries/valid/basic.graphql", async () => {
-    //   const queryAST = await loadInputQuery(
-    //     "./test/fixtures/queries/valid/basic.graphql"
-    //   );
-    //   const fixture = await loadFixture(
-    //     "./test/fixtures/data/invalid/extra-fields.json"
-    //   );
-    //   const result = await validateFixtureInput(queryAST, schema, fixture.input);
+    // This test is skipped because the validator doesn't yet detect extra fields
+    // in fixture data that aren't present in the query. Currently, it only validates
+    // that all required fields from the query are present in the fixture, but doesn't
+    // flag additional fields that shouldn't be there.
+    it.skip("detects extra fields not in query", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            items {
+              id
+            }
+          }
+        }
+      `);
 
-    //   expect(result.valid).toBe(false);
-    //   expect(result.errors.length).toBe(3);
-    //   expect(result.errors[0]).toBe('Missing field "metadata" at data');
-    //   expect(result.errors[1]).toBe('Missing field "details" at data.items[0]');
-    //   expect(result.errors[2]).toBe(
-    //     'Extra field "extraField" at data.items[0]'
-    //   );
-    // });
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+            }
+          ]
+        }
+      };
+
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors.some(e => e.includes('count'))).toBe(true);
+    });
+
     it("detects type mismatches (object vs scalar)", () => {
       const queryAST = parse(`
         query Query {
