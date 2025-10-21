@@ -5,6 +5,7 @@ import {
   isListType,
   isNullableType,
   GraphQLSchema,
+  GraphQLType,
   getNullableType,
   isAbstractType,
   getNamedType,
@@ -61,9 +62,10 @@ export function validateFixtureInput(
               valueForResponseKey === null
             ) {
               continue;
-            } else if (isListType(getNullableType(fieldType))) {
+            } else if (fieldType && isListType(getNullableType(fieldType))) {
               if (Array.isArray(valueForResponseKey)) {
-                nestedValues.push(...valueForResponseKey);
+                const flattened = flattenNestedArrays(valueForResponseKey, fieldType);
+                nestedValues.push(...flattened);
               } else {
                 errors.push(
                   `Expected array for ${responseKey}, but got ${typeof valueForResponseKey}`
@@ -112,4 +114,51 @@ export function validateFixtureInput(
     })
   );
   return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Recursively flattens nested arrays until we reach the leaf values.
+ *
+ * @param value - The fixture data value (possibly nested arrays)
+ * @param type - The GraphQL type (possibly nested list types)
+ * @returns A flat array of leaf values
+ *
+ * @remarks
+ * This is necessary because the GraphQL visitor traverses the query structure,
+ * not the data structure. When visiting a field inside a `[[T]]` type,
+ * the visitor expects `currentValues` to contain T objects, not arrays.
+ *
+ * Without recursive flattening:
+ * - After one spread of [[T]], we'd have [Array, Array] in currentValues
+ * - Trying to access array['someField'] returns undefined, causing "missing field" errors
+ *
+ * With recursive flattening:
+ * - We fully flatten [[T]] to [T, T, ...]
+ * - Accessing T['someField'] correctly retrieves the value
+ */
+function flattenNestedArrays(
+  value: any,
+  type: GraphQLType
+): any[] {
+  const result: any[] = [];
+  const unwrappedType = getNullableType(type);
+
+  if (isListType(unwrappedType)) {
+    // Still a list type - need to go deeper
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        // Recursively flatten each item
+        result.push(...flattenNestedArrays(item, unwrappedType.ofType));
+      }
+    }
+  } else {
+    // Reached the leaf type - spread the current level
+    if (Array.isArray(value)) {
+      result.push(...value);
+    } else {
+      result.push(value);
+    }
+  }
+
+  return result;
 }

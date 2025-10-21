@@ -3,7 +3,7 @@ import { validateFixtureInput } from "../../src/methods/validate-fixture-input.t
 import { loadSchema } from "../../src/methods/load-schema.ts";
 import { loadInputQuery } from "../../src/methods/load-input-query.ts";
 import { loadFixture } from "../../src/methods/load-fixture.ts";
-import { GraphQLSchema } from "graphql";
+import { GraphQLSchema, parse } from "graphql";
 
 describe("validateFixtureInput", () => {
   let schema: GraphQLSchema;
@@ -151,6 +151,93 @@ describe("validateFixtureInput", () => {
       );
 
       const result = await validateFixtureInput(queryAST, schema, fixture.input);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles nested lists [[Item]]", async () => {
+      const queryAST = parse(`
+        query {
+          data {
+            itemMatrix {
+              id
+              count
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          itemMatrix: [
+            [
+              { id: "1", count: 10 },
+              { id: "2", count: 20 }
+            ],
+            [
+              { id: "3", count: 30 },
+              { id: "4", count: 40 },
+              { id: "5", count: 50 }
+            ],
+            [
+              { id: "6", count: 60 }
+            ]
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      expect(result.valid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles deeply nested lists [[[Metadata]]]", async () => {
+      const queryAST = parse(`
+        query {
+          data {
+            metadataCube {
+              email
+              phone
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          metadataCube: [
+            [
+              [
+                { email: "user1@example.com", phone: "555-0001" },
+                { email: "user2@example.com", phone: "555-0002" }
+              ],
+              [
+                { email: "user3@example.com", phone: "555-0003" }
+              ]
+            ],
+            [
+              [
+                { email: "user4@example.com", phone: "555-0004" }
+              ]
+            ],
+            [
+              [
+                { email: "user5@example.com", phone: "555-0005" },
+                { email: "user6@example.com", phone: "555-0006" }
+              ],
+              [
+                { email: "user7@example.com", phone: "555-0007" },
+                { email: "user8@example.com", phone: "555-0008" },
+                { email: "user9@example.com", phone: "555-0009" }
+              ]
+            ]
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);

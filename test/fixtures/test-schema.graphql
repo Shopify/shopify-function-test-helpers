@@ -12,6 +12,8 @@ type DataContainer {
   metadata: Metadata
   metafield(namespace: String!, key: String!): Metafield
   searchResults: [SearchResult!]!
+  itemMatrix: [[Item!]!]!
+  metadataCube: [[[Metadata!]!]!]!
 }
 
 union SearchResult = Item | Metadata
