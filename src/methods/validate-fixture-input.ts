@@ -23,7 +23,7 @@ export function validateFixtureInput(
 ): ValidateFixtureInputResult {
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
-  const valueStack: any[] = [[value]];
+  const valueStack: any[][] = [[value]];
   const errors: string[] = [];
   visit(
     inlineFragmentSpreadsAst,
@@ -45,6 +45,10 @@ export function validateFixtureInput(
               errors.push(`Missing expected fixture data for ${responseKey}`);
               continue;
             } else if (isInputType(fieldType)) {
+              // Although we are validating output values (fixture data), we can use coerceInputValue
+              // because the only output types that return true for isInputType are:
+              // built-in scalars, custom scalars, enums, and list/nullable wrappers of these. 
+              // For these types, input coercion and output validation are equivalent.
               coerceInputValue(
                 valueForResponseKey,
                 fieldType,
