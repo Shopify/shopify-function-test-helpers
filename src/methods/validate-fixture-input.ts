@@ -140,11 +140,11 @@ export function validateFixtureInput(
  * the visitor expects `currentValues` to contain T objects, not arrays.
  *
  * Without recursive flattening:
- * - After one spread of [[T]], we'd have [Array, Array] in currentValues
- * - Trying to access array['someField'] returns undefined, causing "missing field" errors
+ * - After one spread of [[T]], we'd have [Array<T>, Array<T>, ...] in currentValues
+ * - Trying to access Array<T>['someField'] returns undefined, causing "missing field" errors
  *
  * With recursive flattening:
- * - We fully flatten [[T]] to [T, T, ...]
+ * - We fully flatten [[T]] to [T, T, ...] in currentValues
  * - Accessing T['someField'] correctly retrieves the value
  */
 function flattenNestedArrays(
