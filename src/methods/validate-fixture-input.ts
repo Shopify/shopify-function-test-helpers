@@ -55,7 +55,6 @@ export function validateFixtureInput(
 
             if (valueForResponseKey === undefined) {
               errors.push(`Missing expected fixture data for ${responseKey}`);
-              continue;
             } else if (isInputType(fieldType)) {
               // Although we are validating output values (fixture data), we can use coerceInputValue
               // because the only output types that return true for isInputType are:
@@ -72,7 +71,7 @@ export function validateFixtureInput(
               isNullableType(fieldType) &&
               valueForResponseKey === null
             ) {
-              continue;
+              // null is valid for nullable types, nothing to do
             } else if (fieldType && isListType(getNullableType(fieldType))) {
               if (Array.isArray(valueForResponseKey)) {
                 const flattened = flattenNestedArrays(valueForResponseKey, fieldType);
