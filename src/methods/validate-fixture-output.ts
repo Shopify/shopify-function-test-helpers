@@ -4,7 +4,6 @@ import { coerceInputValue, isInputType, GraphQLSchema } from "graphql";
  * Interface for output fixture validation result
  */
 export interface OutputValidationResult {
-  valid: boolean;
   errors: { message: string }[];
   mutationName: string;
   resultParameterType: string | null;
@@ -23,7 +22,6 @@ export interface OutputValidationResult {
  * @param {string} mutationName - The mutation field name (e.g., 'cartValidationsGenerateRun')
  * @param {string} resultParameterName - The parameter name in the mutation (usually 'result')
  * @returns {Object} Validation result with structure:
- *   - valid: boolean - Whether the fixture data is valid for the mutation
  *   - errors: { message: string }[] - Array of GraphQL coercion errors (empty if valid)
  *   - mutationName: string - The mutation name that was validated
  *   - resultParameterType: string|null - The GraphQL type of the result parameter
@@ -74,7 +72,6 @@ export async function validateFixtureOutput(
     }
 
     return {
-      valid: errors.length === 0,
       errors: errors,
       mutationName: mutationName,
       resultParameterType: resultArg.type.toString(),
@@ -82,7 +79,6 @@ export async function validateFixtureOutput(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
-      valid: false,
       errors: [{ message: errorMessage }],
       mutationName: mutationName,
       resultParameterType: null,

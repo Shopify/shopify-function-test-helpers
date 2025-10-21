@@ -51,7 +51,6 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.errors).toHaveLength(0);
-      expect(result.valid).toBe(true);
     });
 
     it("handles field aliases", () => {
@@ -79,7 +78,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -126,7 +124,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -159,7 +156,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -205,7 +201,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -246,7 +241,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -290,7 +284,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -323,7 +316,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -356,7 +348,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -393,7 +384,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -430,7 +420,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -480,7 +469,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
   });
@@ -516,7 +504,6 @@ describe("validateFixtureInput", () => {
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
-      expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(3);
       expect(result.errors[0]).toBe("Missing expected fixture data for count");
       expect(result.errors[1]).toBe(
@@ -556,7 +543,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
       expect(result.errors.some(e => e.includes('count'))).toBe(true);
     });
@@ -585,7 +571,6 @@ describe("validateFixtureInput", () => {
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
-      expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(1);
       expect(result.errors[0]).toBe("Expected object for data, but got string");
     });
@@ -622,7 +607,6 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(3);
       expect(result.errors[0]).toBe(
         'Int cannot represent non-integer value: "not a number" At ""'
@@ -661,7 +645,6 @@ describe("validateFixtureInput", () => {
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
-      expect(result.valid).toBe(false);
       expect(result.errors.length).toBe(1);
       expect(result.errors[0]).toBe(
         "Missing expected fixture data for metadata"

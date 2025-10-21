@@ -34,7 +34,6 @@ describe("validateFixtureOutput", () => {
         "result"
       );
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -64,7 +63,6 @@ describe("validateFixtureOutput", () => {
         "result"
       );
 
-      expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
@@ -76,7 +74,6 @@ describe("validateFixtureOutput", () => {
         "result"
       );
 
-      expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toContain(
         "Mutation 'nonExistentMutation' not found"
@@ -91,7 +88,6 @@ describe("validateFixtureOutput", () => {
         "nonExistentParam"
       );
 
-      expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toContain(
         "Parameter 'nonExistentParam' not found"
@@ -135,7 +131,6 @@ describe("validateFixtureOutput", () => {
         "result"
       );
 
-      expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toBe(
         'Int cannot represent non-integer value: "this should be a number" At "count"'
@@ -162,7 +157,6 @@ describe("validateFixtureOutput", () => {
       );
 
       // Should detect each extra field as a separate error
-      expect(result.valid).toBe(false);
       expect(result.errors).toHaveLength(3);
 
       // Check each extra field gets its own specific error

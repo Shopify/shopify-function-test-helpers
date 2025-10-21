@@ -26,9 +26,9 @@ describe('validateTestAssets', () => {
       expect(result.mutationName).toBe('processData');
       expect(result.resultParameterName).toBe('result');
 
-      expect(result.inputQuery.valid).toBe(true);
-      expect(result.inputFixture.valid).toBe(true);
-      expect(result.outputFixture.valid).toBe(true);
+      expect(result.inputQuery.errors).toHaveLength(0);
+      expect(result.inputFixture.errors).toHaveLength(0);
+      expect(result.outputFixture.errors).toHaveLength(0);
     });
     
     it('should perform complete validation workflow with valid test fixture', async () => {
@@ -47,16 +47,9 @@ describe('validateTestAssets', () => {
       expect(result).toHaveProperty('inputFixture');
       expect(result).toHaveProperty('outputFixture');
 
-      expect(result.inputQuery.valid).toBe(true);
       expect(result.inputQuery.errors).toHaveLength(0);
-
-      expect(result.inputFixture.valid).toBe(true);
       expect(result.inputFixture.errors).toHaveLength(0);
-
-      expect(result.outputFixture.valid).toBe(true);
       expect(result.outputFixture.errors).toHaveLength(0);
-
-      expect(result.inputQuery.valid && result.inputFixture.valid && result.outputFixture.valid).toBe(true);
     });
   });
 
@@ -79,11 +72,10 @@ describe('validateTestAssets', () => {
         inputQueryAST
       });
 
-      expect(result.inputQuery.valid).toBe(true);
+      expect(result.inputQuery.errors).toHaveLength(0);
 
-      expect(result.inputFixture.valid).toBe(true);
+      expect(result.inputFixture.errors).toHaveLength(0);
 
-      expect(result.outputFixture.valid).toBe(false);
       expect(result.outputFixture.errors.length).toBe(1);
       expect(result.outputFixture.errors[0].message).toContain('Field "extraField" is not defined by type "ProcessDataResult"');
     });
@@ -112,10 +104,9 @@ describe('validateTestAssets', () => {
         inputQueryAST
       });
 
-      expect(result.inputQuery.valid).toBe(true);
+      expect(result.inputQuery.errors).toHaveLength(0);
 
       // Input fixture should be invalid due to type mismatch and missing fields
-      expect(result.inputFixture.valid).toBe(false);
       expect(result.inputFixture.errors.length).toBe(3);
       expect(result.inputFixture.errors[0]).toContain('Int cannot represent non-integer value: "not_a_number"');
       expect(result.inputFixture.errors[1]).toBe('Missing expected fixture data for details');
@@ -147,15 +138,14 @@ describe('validateTestAssets', () => {
         inputQueryAST
       });
 
-      expect(result.inputQuery.valid).toBe(true);
+      expect(result.inputQuery.errors).toHaveLength(0);
 
       // Input fixture should be invalid due to missing fields
-      expect(result.inputFixture.valid).toBe(false);
       expect(result.inputFixture.errors.length).toBe(2);
       expect(result.inputFixture.errors[0]).toBe('Missing expected fixture data for details');
       expect(result.inputFixture.errors[1]).toBe('Missing expected fixture data for metadata');
 
-      expect(result.outputFixture.valid).toBe(true);
+      expect(result.outputFixture.errors).toHaveLength(0);
     });
   });
 
@@ -172,11 +162,8 @@ describe('validateTestAssets', () => {
       });
 
       // Input query should be invalid due to non-existent fields
-      expect(result.inputQuery.valid).toBe(false);
       expect(result.inputQuery.errors.length).toBe(3);
       expect(result.inputQuery.errors[0].message).toContain('Cannot query field');
-
-      expect(result.inputQuery.valid && result.inputFixture.valid && result.outputFixture.valid).toBeFalsy();
     });
 
     it('should handle query with valid syntax but schema mismatch', async () => {
@@ -192,13 +179,10 @@ describe('validateTestAssets', () => {
       });
 
       // Input query should be invalid due to schema mismatch
-      expect(result.inputQuery.valid).toBe(false);
       expect(result.inputQuery.errors.length).toBe(3);
       expect(result.inputQuery.errors[0].message).toContain('Cannot query field "nonExistentField" on type "Item"');
       expect(result.inputQuery.errors[1].message).toContain('Cannot query field "anotherInvalidField" on type "ItemDetails"');
       expect(result.inputQuery.errors[2].message).toContain('Cannot query field "invalidMetadataField" on type "Metadata"');
-
-      expect(result.inputQuery.valid && result.inputFixture.valid && result.outputFixture.valid).toBeFalsy();
     });
   });
 
@@ -214,9 +198,8 @@ describe('validateTestAssets', () => {
         resultParameterName: 'result'
       });
 
-      expect(result.inputQuery.valid && result.inputFixture.valid && result.outputFixture.valid).toBeFalsy();
-      expect(result.outputFixture.valid).toBe(false);
       expect(result.outputFixture.errors.length).toBe(1);
+      expect(result.outputFixture.errors[0].message).toContain("Mutation 'nonExistentMutation' not found");
     });
   });
 });

@@ -13,7 +13,6 @@ import {
 import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
 
 export interface ValidateFixtureInputResult {
-  valid: boolean;
   errors: string[];
 }
 
@@ -23,7 +22,7 @@ export interface ValidateFixtureInputResult {
  * @param queryAST - The parsed GraphQL query document that defines the expected data structure
  * @param schema - The GraphQL schema containing type definitions
  * @param value - The fixture data to validate against the query
- * @returns A result object containing a validity flag and any validation errors
+ * @returns A result object containing any validation errors (empty array if valid)
  *
  * @remarks
  * The validator traverses the query AST using the GraphQL visitor pattern and validates
@@ -125,7 +124,7 @@ export function validateFixtureInput(
       },
     })
   );
-  return { valid: errors.length === 0, errors };
+  return { errors };
 }
 
 /**

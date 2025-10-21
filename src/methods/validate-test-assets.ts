@@ -2,7 +2,7 @@ import { validateInputQuery } from "./validate-input-query.js";
 import { validateFixtureOutput } from "./validate-fixture-output.js";
 import { validateFixtureInput } from "./validate-fixture-input.js";
 import { determineMutationFromTarget } from "../utils/determine-mutation-from-target.js";
-import { GraphQLSchema, GraphQLError, DocumentNode, print } from "graphql";
+import { GraphQLSchema, GraphQLError, DocumentNode } from "graphql";
 import { FixtureData } from "./load-fixture.js";
 
 /**
@@ -23,15 +23,12 @@ export interface CompleteValidationResult {
   mutationName?: string;
   resultParameterName?: string;
   inputQuery: {
-    valid: boolean;
     errors: readonly GraphQLError[];
   };
   inputFixture: {
-    valid: boolean;
     errors: string[];
   };
   outputFixture: {
-    valid: boolean;
     errors: { message: string }[];
     mutationName: string | null;
     resultParameterType: string | null;
@@ -56,9 +53,9 @@ export interface CompleteValidationResult {
  * @returns {Promise<Object>} Complete validation results with structure:
  *   - mutationName: string - Mutation name used for validation
  *   - resultParameterName: string - Parameter name used for validation
- *   - inputQuery: { valid: boolean, errors: Array } - Input query validation results
- *   - inputFixture: { valid: boolean, errors: Array } - Input fixture validation results (includes query-fixture structure match)
- *   - outputFixture: { valid: boolean, errors: Array, mutationName: string, resultParameterType: string } - Output fixture validation results
+ *   - inputQuery: { errors: Array } - Input query validation results (empty array if valid)
+ *   - inputFixture: { errors: Array } - Input fixture validation results (includes query-fixture structure match, empty array if valid)
+ *   - outputFixture: { errors: Array, mutationName: string, resultParameterType: string } - Output fixture validation results (empty errors array if valid)
  */
 export async function validateTestAssets({
   schema,
@@ -70,10 +67,9 @@ export async function validateTestAssets({
   const results: CompleteValidationResult = {
     mutationName,
     resultParameterName,
-    inputQuery: { valid: false, errors: [] },
-    inputFixture: { valid: false, errors: [] },
+    inputQuery: { errors: [] },
+    inputFixture: { errors: [] },
     outputFixture: {
-      valid: false,
       errors: [],
       mutationName: null,
       resultParameterType: null,
@@ -84,18 +80,16 @@ export async function validateTestAssets({
     // Step 1: Validate input query
     const inputQueryErrors = validateInputQuery(inputQueryAST, schema);
     results.inputQuery = {
-      valid: inputQueryErrors.length === 0,
       errors: inputQueryErrors,
     };
 
     // Step 2: Validate input fixture (which also validates query-fixture match)
-    const inputFixtureResult = await validateFixtureInput(
+    const inputFixtureResult = validateFixtureInput(
       inputQueryAST,
       schema,
       fixture.input
     );
     results.inputFixture = {
-      valid: inputFixtureResult.valid,
       errors: inputFixtureResult.errors,
     };
 
@@ -130,7 +124,6 @@ export async function validateTestAssets({
       results.resultParameterName
     );
     results.outputFixture = {
-      valid: outputFixtureResult.valid,
       errors: outputFixtureResult.errors,
       mutationName: outputFixtureResult.mutationName,
       resultParameterType: outputFixtureResult.resultParameterType,
