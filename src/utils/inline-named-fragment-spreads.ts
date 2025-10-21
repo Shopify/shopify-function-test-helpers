@@ -6,6 +6,14 @@ import {
   Kind,
 } from "graphql";
 
+/**
+ * Transforms a GraphQL document by replacing all named fragment spreads with inline fragments.
+ *
+ * @param document - The GraphQL document containing fragment definitions and spreads
+ * @returns A new document with all fragment spreads inlined and fragment definitions removed
+ *
+ * @throws {Error} If a fragment spread references a fragment definition that doesn't exist
+ */
 export function inlineNamedFragmentSpreads(
   document: DocumentNode
 ): DocumentNode {
@@ -31,6 +39,7 @@ export function inlineNamedFragmentSpreads(
     },
     FragmentDefinition: {
       enter() {
+        // Remove fragment definitions since we have inlined them
         return null;
       },
     },

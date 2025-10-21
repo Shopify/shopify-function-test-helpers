@@ -17,6 +17,18 @@ export interface ValidateFixtureInputResult {
   errors: string[];
 }
 
+/**
+ * Validates that fixture input data matches the structure and types defined in a GraphQL query.
+ *
+ * @param queryAST - The parsed GraphQL query document that defines the expected data structure
+ * @param schema - The GraphQL schema containing type definitions
+ * @param value - The fixture data to validate against the query
+ * @returns A result object containing a validity flag and any validation errors
+ *
+ * @remarks
+ * The validator traverses the query AST using the GraphQL visitor pattern and validates
+ * the corresponding fixture data at each field.
+ */
 export function validateFixtureInput(
   queryAST: DocumentNode,
   schema: GraphQLSchema,
