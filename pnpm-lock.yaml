@@ -40,8 +40,8 @@ importers:
   test-app/extensions/cart-validation-js/tests:
     dependencies:
       '@shopify/shopify-function-test-helpers':
-        specifier: file:../../../..
-        version: 'file:'
+        specifier: workspace:*
+        version: link:../../../..
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@22.18.10)(jiti@2.6.1)(yaml@2.8.1)
@@ -49,8 +49,8 @@ importers:
   test-app/extensions/discount-function/tests:
     dependencies:
       '@shopify/shopify-function-test-helpers':
-        specifier: file:../../../..
-        version: 'file:'
+        specifier: workspace:*
+        version: link:../../../..
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@22.18.10)(jiti@2.6.1)(yaml@2.8.1)
@@ -748,10 +748,6 @@ packages:
     resolution: {integrity: sha512-bf9PtUa0u8IXDVxzRToFQKsNCRz9qLYfR/MpECxl4mRoWYjAeFjgxj1XdZr2M/GNVpT05p+LgQOHopYDlUu6/w==}
     cpu: [x64]
     os: [win32]
-
-  '@shopify/shopify-function-test-helpers@file:':
-    resolution: {directory: '', type: directory}
-    engines: {node: '>=14.0.0'}
 
   '@shopify/shopify_function@2.0.0':
     resolution: {integrity: sha512-i00I0hkmYzD5TkoSwxk81FP0tKaG1M0bbgftF4nigi2NRvFwR5PJy6r1/kcB9w2zBx9xKPG/Z8C4cc2TanFf5Q==}
@@ -2979,10 +2975,6 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.52.4':
     optional: true
-
-  '@shopify/shopify-function-test-helpers@file:':
-    dependencies:
-      graphql: 16.11.0
 
   '@shopify/shopify_function@2.0.0(@types/node@22.18.10)(graphql-sock@1.0.1(graphql@16.11.0))':
     dependencies:
