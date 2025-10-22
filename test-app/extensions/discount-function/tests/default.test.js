@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { buildFunction, loadFixture, runFunction, validateTestAssets, loadSchema, loadInputQuery } from "@shopify/shopify-function-test-helpers";
+import { buildFunction, loadFixture, runFunctionRunner, validateTestAssets, loadSchema, loadInputQuery } from "@shopify/shopify-function-test-helpers";
 
 describe("Default Integration Test", () => {
   let schema;
@@ -36,24 +36,21 @@ describe("Default Integration Test", () => {
         inputQueryAST
       });
 
-      // Log validation results for debugging
-      // logValidationResults(fixtureFile, validationResult);
-
       // Assert that all validation steps pass
       expect(validationResult.inputQuery.errors).toHaveLength(0);
       expect(validationResult.inputFixture.errors).toHaveLength(0);
       expect(validationResult.outputFixture.errors).toHaveLength(0);
 
       // Run the actual function
-      const runResult = await runFunction(
-        fixture.export,
-        fixture.input,
+      const runResult = await runFunctionRunner(
+        fixture,
         functionDir
       );
 
-      const { result, error } = runResult;
+      const { result, error, timing } = runResult;
       expect(error).toBeNull();
       expect(result.output).toEqual(fixture.expectedOutput);
+      console.log(timing ? `Execution time: ${timing.durationMs}ms` : 'No timing information available');
     }, 10000);
   });
 });
