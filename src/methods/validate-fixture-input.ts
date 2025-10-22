@@ -5,9 +5,10 @@ import {
   isListType,
   isNullableType,
   GraphQLSchema,
-  GraphQLType,
+  GraphQLList,
   getNullableType,
   isAbstractType,
+  isObjectType,
   getNamedType,
 } from "graphql";
 import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
@@ -53,12 +54,15 @@ export function validateFixtureInput(
           for (const currentValue of currentValues) {
             const valueForResponseKey = currentValue[responseKey];
 
+            // Field is missing from fixture
             if (valueForResponseKey === undefined) {
               errors.push(`Missing expected fixture data for ${responseKey}`);
-            } else if (isInputType(fieldType)) {
+            }
+            // Scalars and Enums (including wrapped types)
+            else if (isInputType(fieldType)) {
               // Although we are validating output values (fixture data), we can use coerceInputValue
               // because the only output types that return true for isInputType are:
-              // built-in scalars, custom scalars, enums, and list/nullable wrappers of these. 
+              // built-in scalars, custom scalars, enums, and list/nullable wrappers of these.
               // For these types, input coercion and output validation are equivalent.
               coerceInputValue(
                 valueForResponseKey,
@@ -67,28 +71,56 @@ export function validateFixtureInput(
                   errors.push(`${error.message} At "${path.join(".")}"`);
                 }
               );
-            } else if (
+            }
+            // Nullable fields with null value
+            else if (
               isNullableType(fieldType) &&
               valueForResponseKey === null
             ) {
               // null is valid for nullable types, nothing to do
-            } else if (fieldType && isListType(getNullableType(fieldType))) {
-              if (Array.isArray(valueForResponseKey)) {
-                const flattened = flattenNestedArrays(valueForResponseKey, fieldType);
-                nestedValues.push(...flattened);
-              } else {
-                errors.push(
-                  `Expected array for ${responseKey}, but got ${typeof valueForResponseKey}`
-                );
+            }
+            // Objects, Lists of objects
+            else if (fieldType) {
+              const unwrappedFieldType = getNullableType(fieldType);
+
+              // Lists - process recursively
+              if (isListType(unwrappedFieldType)) {
+                if (Array.isArray(valueForResponseKey)) {
+                  const { values: flattened, errors: flattenErrors } = processNestedArrays(
+                    valueForResponseKey,
+                    unwrappedFieldType,
+                    responseKey
+                  );
+                  nestedValues.push(...flattened);
+                  errors.push(...flattenErrors);
+                } else {
+                  errors.push(
+                    `Expected array for ${responseKey}, but got ${typeof valueForResponseKey}`
+                  );
+                }
               }
-            } else {
-              if (typeof valueForResponseKey === "object") {
-                nestedValues.push(valueForResponseKey);
-              } else {
-                errors.push(
-                  `Expected object for ${responseKey}, but got ${typeof valueForResponseKey}`
-                );
+              // Objects - validate and add to traversal stack
+              // Note: Abstract types (unions/interfaces) are handled in a limited way.
+              // We add them to the traversal stack but don't use __typename to discriminate
+              // between concrete types. This works for simple cases where all items are the
+              // same type, but doesn't support mixed-type arrays (see skipped test).
+              else if (isObjectType(unwrappedFieldType) || isAbstractType(unwrappedFieldType)) {
+                if (valueForResponseKey === null) {
+                  errors.push(`Expected object for ${responseKey}, but got null`);
+                } else if (typeof valueForResponseKey === "object") {
+                  nestedValues.push(valueForResponseKey);
+                } else {
+                  errors.push(`Expected object for ${responseKey}, but got ${typeof valueForResponseKey}`);
+                }
               }
+              // Unexpected type - defensive check that should never be reached
+              else {
+                errors.push(`Unexpected type for ${responseKey}: ${unwrappedFieldType}`);
+              }
+            }
+            // No type information - should not happen with valid query
+            else {
+              errors.push(`Cannot validate ${responseKey}: missing type information`);
             }
           }
 
@@ -127,48 +159,64 @@ export function validateFixtureInput(
 }
 
 /**
- * Recursively flattens nested arrays until we reach the leaf values.
+ * Recursively processes nested arrays by flattening them.
+ * Validates nullability constraints as it goes - reports errors for invalid nulls.
+ * Filters out all nulls since they have no field values to validate.
  *
  * @param value - The fixture data value (possibly nested arrays)
- * @param type - The GraphQL type (possibly nested list types)
- * @returns A flat array of leaf values
+ * @param listType - The GraphQL list type (e.g., [Item] or [[Item]])
+ * @param fieldName - The field name for error messages
+ * @returns Object with flattened values and any validation errors
+ *
+ * @example
+ * For `items: [Item]`:
+ * - listType = [Item] (the list type passed in)
+ * - elementType = Item (extracted via listType.ofType)
+ * - Recursion stops here (Item is not a list type)
+ *
+ * For `itemMatrix: [[Item]]`:
+ * - listType = [[Item]] (the list type passed in)
+ * - elementType = [Item] (extracted via listType.ofType)
+ * - Recursion continues (elementType is still a list type)
  *
  * @remarks
  * This is necessary because the GraphQL visitor traverses the query structure,
  * not the data structure. When visiting a field inside a `[[T]]` type,
  * the visitor expects `currentValues` to contain T objects, not arrays.
- *
- * Without recursive flattening:
- * - After one spread of [[T]], we'd have [Array<T>, Array<T>, ...] in currentValues
- * - Trying to access Array<T>['someField'] returns undefined, causing "missing field" errors
- *
- * With recursive flattening:
- * - We fully flatten [[T]] to [T, T, ...] in currentValues
- * - Accessing T['someField'] correctly retrieves the value
  */
-function flattenNestedArrays(
+function processNestedArrays(
   value: any,
-  type: GraphQLType
-): any[] {
+  listType: GraphQLList<any>,
+  fieldName: string
+): { values: any[]; errors: string[] } {
   const result: any[] = [];
-  const unwrappedType = getNullableType(type);
+  const errors: string[] = [];
+  const elementType = listType.ofType;
 
-  if (isListType(unwrappedType)) {
-    // Still a list type - need to go deeper
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        // Recursively flatten each item
-        result.push(...flattenNestedArrays(item, unwrappedType.ofType));
+  for (const [index, element] of value.entries()) {
+    if (element === null) {
+      if (!isNullableType(elementType)) {
+        errors.push(
+          `Null value found in non-nullable array at ${fieldName}[${index}]`
+        );
       }
-    }
-  } else {
-    // Reached the leaf type - spread the current level
-    if (Array.isArray(value)) {
-      result.push(...value);
     } else {
-      result.push(value);
+      if (isListType(elementType)) {
+        // Element type is a list - expect nested array and recurse
+        if (Array.isArray(element)) {
+          const nested = processNestedArrays(element, elementType, `${fieldName}[${index}]`);
+          result.push(...nested.values);
+          errors.push(...nested.errors);
+        } else {
+          // Error: fixture structure doesn't match schema nesting
+          errors.push(`Expected array at ${fieldName}[${index}], but got ${typeof element}`);
+        }
+      } else {
+        // Non-list type - add directly
+        result.push(element);
+      }
     }
   }
 
-  return result;
+  return { values: result, errors };
 }

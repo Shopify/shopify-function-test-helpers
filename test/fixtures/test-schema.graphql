@@ -10,10 +10,11 @@ type Query {
 type DataContainer {
   items(first: Int): [Item!]!
   metadata: Metadata
+  requiredMetadata: Metadata!
   metafield(namespace: String!, key: String!): Metafield
   searchResults: [SearchResult!]!
-  itemMatrix: [[Item!]!]!
-  metadataCube: [[[Metadata!]!]!]!
+  itemMatrix: [[Item]]
+  metadataCube: [[[Metadata]]]
 }
 
 union SearchResult = Item | Metadata
@@ -27,6 +28,12 @@ type Item {
 type ItemDetails {
   id: ID!
   name: String!
+  attributes: [ItemAttribute]
+}
+
+type ItemAttribute {
+  key: String!
+  value: String!
 }
 
 type Metadata {
