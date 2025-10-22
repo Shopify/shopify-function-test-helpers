@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { validateFixtureInput } from "../../src/methods/validate-fixture-input.ts";
 import { loadSchema } from "../../src/methods/load-schema.ts";
+import { loadInputQuery } from "../../src/methods/load-input-query.ts";
+import { loadFixture } from "../../src/methods/load-fixture.ts";
 import { GraphQLSchema, parse } from "graphql";
 
 describe("validateFixtureInput", () => {
@@ -11,42 +13,10 @@ describe("validateFixtureInput", () => {
   });
 
   describe("Valid Fixtures", () => {
-    it("validates basic fixture with all fields present", () => {
-      const queryAST = parse(`
-        query Query {
-          data {
-            items {
-              id
-              count
-              details {
-                id
-                name
-              }
-            }
-            metadata {
-              email
-            }
-          }
-        }
-      `);
-
-      const fixtureInput = {
-        data: {
-          items: [
-            {
-              id: "gid://test/Item/1",
-              count: 2,
-              details: {
-                id: "gid://test/ItemDetails/123",
-                name: "Test Item"
-              }
-            }
-          ],
-          metadata: {
-            email: "test@example.com"
-          }
-        }
-      };
+    it("validates default fixture", async () => {
+      const queryAST = await loadInputQuery("./test/fixtures/valid-query.graphql");
+      const fixture = await loadFixture("./test/fixtures/valid-fixture.json");
+      const fixtureInput = fixture.input;
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
@@ -657,7 +627,8 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // count is Int! so null should not be allowed
-      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0]).toBe('Expected non-nullable type "Int!" not to be null. At ""');
     });
 
     it("should detect null in non-nullable array", () => {
@@ -685,7 +656,8 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // items is [Item!]! so null should not be allowed
-      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0]).toBe('Null value found in non-nullable array at items[1]');
     });
 
     it("should detect null in non-nullable object field", () => {
@@ -709,8 +681,8 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // requiredMetadata is Metadata! so null should not be allowed
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0]).toContain("requiredMetadata");
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0]).toBe("Expected object for requiredMetadata, but got null");
     });
 
     it("detects missing fields in fixture data", () => {
@@ -779,11 +751,12 @@ describe("validateFixtureInput", () => {
         }
       };
 
-
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors.some(e => e.includes('count'))).toBe(true);
+      // When implemented, should detect that 'count' is not in the query
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0]).toContain('count');
+      expect(result.errors[0]).toContain('not in query');
     });
 
     it("detects type mismatches (object vs scalar)", () => {
@@ -903,8 +876,9 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect that we got objects where we expected arrays
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors.some(e => e.includes("Expected array"))).toBe(true);
+      expect(result.errors.length).toBe(2);
+      expect(result.errors[0]).toBe('Expected array at itemMatrix[0], but got object');
+      expect(result.errors[1]).toBe('Expected array at itemMatrix[1], but got object');
     });
 
     it("should detect non-array value where array is expected", () => {
@@ -930,8 +904,8 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect that we got an object where we expected an array
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors.some(e => e.includes("Expected array for items"))).toBe(true);
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0]).toBe('Expected array for items, but got object');
     });
 
     it("detects fields with missing type information", () => {
@@ -961,8 +935,8 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect missing type information for the invalid field
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors.some(e => e.includes("missing type information"))).toBe(true);
+      expect(result.errors.length).toBe(1);
+      expect(result.errors[0]).toBe('Cannot validate nonExistentField: missing type information');
     });
   });
 });
