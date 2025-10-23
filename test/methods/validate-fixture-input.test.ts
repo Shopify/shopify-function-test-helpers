@@ -627,7 +627,7 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // count is Int! so null should not be allowed
-      expect(result.errors.length).toBe(1);
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe('Expected non-nullable type "Int!" not to be null. At ""');
     });
 
@@ -656,7 +656,7 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // items is [Item!]! so null should not be allowed
-      expect(result.errors.length).toBe(1);
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe('Null value found in non-nullable array at items[1]');
     });
 
@@ -681,7 +681,7 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // requiredMetadata is Metadata! so null should not be allowed
-      expect(result.errors.length).toBe(1);
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe("Expected object for requiredMetadata, but got null");
     });
 
@@ -715,7 +715,7 @@ describe("validateFixtureInput", () => {
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
-      expect(result.errors.length).toBe(3);
+      expect(result.errors).toHaveLength(3);
       expect(result.errors[0]).toBe("Missing expected fixture data for count");
       expect(result.errors[1]).toBe(
         "Missing expected fixture data for details"
@@ -754,7 +754,7 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // When implemented, should detect that 'count' is not in the query
-      expect(result.errors.length).toBe(1);
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toContain('count');
       expect(result.errors[0]).toContain('not in query');
     });
@@ -783,7 +783,7 @@ describe("validateFixtureInput", () => {
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
-      expect(result.errors.length).toBe(1);
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe("Expected object for data, but got string");
     });
 
@@ -812,7 +812,7 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      expect(result.errors.length).toBe(1);
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe(
         'Int cannot represent non-integer value: "not a number" At ""'
       );
@@ -844,7 +844,7 @@ describe("validateFixtureInput", () => {
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
-      expect(result.errors.length).toBe(1);
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe(
         "Missing expected fixture data for metadata"
       );
@@ -876,7 +876,7 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect that we got objects where we expected arrays
-      expect(result.errors.length).toBe(2);
+      expect(result.errors).toHaveLength(2);
       expect(result.errors[0]).toBe('Expected array at itemMatrix[0], but got object');
       expect(result.errors[1]).toBe('Expected array at itemMatrix[1], but got object');
     });
@@ -904,7 +904,7 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect that we got an object where we expected an array
-      expect(result.errors.length).toBe(1);
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe('Expected array for items, but got object');
     });
 
@@ -935,7 +935,7 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect missing type information for the invalid field
-      expect(result.errors.length).toBe(1);
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe('Cannot validate nonExistentField: missing type information');
     });
   });
