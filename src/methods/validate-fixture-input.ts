@@ -185,7 +185,7 @@ export function validateFixtureInput(
  * the visitor expects `currentValues` to contain T objects, not arrays.
  */
 function processNestedArrays(
-  value: any,
+  value: any[],
   listType: GraphQLList<any>,
   fieldName: string
 ): { values: any[]; errors: string[] } {
