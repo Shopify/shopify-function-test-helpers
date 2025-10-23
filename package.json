@@ -25,7 +25,6 @@
     "prepublishOnly": "pnpm run build && pnpm run test && pnpm run lint"
   },
   "dependencies": {
-    "@iarna/toml": "^2.2.5",
     "graphql": "^16.11.0"
   },
   "devDependencies": {
