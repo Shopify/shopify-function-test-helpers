@@ -5,23 +5,24 @@
   "main": "dist/wasm-testing-helpers.js",
   "types": "dist/wasm-testing-helpers.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/wasm-testing-helpers.js",
+      "types": "./dist/wasm-testing-helpers.d.ts"
+    }
+  },
   "files": [
     "dist/"
-  ],
-  "workspaces": [
-    "test-app",
-    "test-app/extensions/*",
-    "test-app/extensions/*/tests"
   ],
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:examples": "npm run test -w test-app/extensions/cart-validation-js/tests && npm run test -w test-app/extensions/discount-function/tests",
+    "test:examples": "pnpm --filter cart-validation-js-tests test && pnpm --filter discount-function-tests test",
     "lint": "eslint src/ test/",
     "lint:fix": "eslint src/ test/ --fix",
-    "prepublishOnly": "npm run build && npm run test && npm run lint"
+    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run lint"
   },
   "dependencies": {
     "graphql": "^16.11.0"

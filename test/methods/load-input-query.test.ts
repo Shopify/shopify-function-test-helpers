@@ -5,10 +5,10 @@ import { loadInputQuery } from '../../src/wasm-testing-helpers.ts';
 
 describe('loadInputQuery', () => {
   it('should load and parse a GraphQL query file', async () => {
-    const queryPath = path.join(process.cwd(), 'test/fixtures/test-query.graphql');
-    
+    const queryPath = path.join(process.cwd(), 'test/fixtures/valid-query.graphql');
+
     const document = await loadInputQuery(queryPath);
-    
+
     expect(document).toBeDefined();
     expect(document.kind).toBe('Document');
     expect(document.definitions).toHaveLength(1);
@@ -23,8 +23,8 @@ describe('loadInputQuery', () => {
   });
 
   it('should throw an error for invalid GraphQL', async () => {
-    const queryPath = path.join(process.cwd(), 'test/fixtures/invalid-query.graphql');
-    
+    const queryPath = path.join(process.cwd(), 'test/fixtures/malformed-query.graphql');
+
     await expect(loadInputQuery(queryPath)).rejects.toThrow('Failed to load input query from');
   });
 });

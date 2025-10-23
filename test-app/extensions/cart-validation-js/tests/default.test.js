@@ -2,15 +2,6 @@ import path from "path";
 import fs from "fs";
 import { buildFunction, loadFixture, runFunction, validateTestAssets, loadSchema, loadInputQuery } from "@shopify/shopify-function-test-helpers";
 
-function logValidationResults(fixtureFile, validationResult) {
-  console.log(`Validation for ${path.basename(fixtureFile)}:`);
-  console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
-  console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
-  console.log(`  Input Query-Fixture Match: ${validationResult.inputQueryFixtureMatch.valid ? '✅' : '❌'}`);
-  console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
-  console.log(`  Overall: ${(validationResult.inputQuery.valid && validationResult.inputFixture.valid && validationResult.inputQueryFixtureMatch.valid && validationResult.outputFixture.valid) ? '✅' : '❌'}`);
-}
-
 describe("Default Integration Test", () => {
   let schema;
   let inputQueryAST;
@@ -49,10 +40,9 @@ describe("Default Integration Test", () => {
       // logValidationResults(fixtureFile, validationResult);
 
       // Assert that all validation steps pass
-      expect(validationResult.inputQuery.valid).toBe(true);
-      expect(validationResult.inputFixture.valid).toBe(true);
-      expect(validationResult.inputQueryFixtureMatch.valid).toBe(true);
-      expect(validationResult.outputFixture.valid).toBe(true);
+      expect(validationResult.inputQuery.errors).toHaveLength(0);
+      expect(validationResult.inputFixture.errors).toHaveLength(0);
+      expect(validationResult.outputFixture.errors).toHaveLength(0);
 
       // Run the actual function
       const runResult = await runFunction(
