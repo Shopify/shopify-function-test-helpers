@@ -10,6 +10,7 @@ import {
   isAbstractType,
   isObjectType,
   getNamedType,
+  GraphQLCompositeType,
 } from "graphql";
 import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
 
@@ -56,7 +57,15 @@ export function validateFixtureInput(
 
             // Field is missing from fixture
             if (valueForResponseKey === undefined) {
-              errors.push(`Missing expected fixture data for ${responseKey}`);
+              const parentType = typeInfo.getParentType();
+              if (!parentType) {
+                // This shouldn't happen with a valid query and schema - TypeInfo should always
+                // provide parent type information when traversing fields. This check is here to
+                // satisfy TypeScript's type requirements (getParentType() can return null).
+                errors.push(`Cannot validate ${responseKey}: missing parent type information`);
+              } else if (isValueExpectedForType(currentValue, parentType)) {
+                errors.push(`Missing expected fixture data for ${responseKey}`);
+              }
             }
             // Scalars and Enums (including wrapped types)
             else if (isInputType(fieldType)) {
@@ -100,10 +109,6 @@ export function validateFixtureInput(
                 }
               }
               // Objects - validate and add to traversal stack
-              // Note: Abstract types (unions/interfaces) are handled in a limited way.
-              // We add them to the traversal stack but don't use __typename to discriminate
-              // between concrete types. This works for simple cases where all items are the
-              // same type, but doesn't support mixed-type arrays (see skipped test).
               else if (isObjectType(unwrappedFieldType) || isAbstractType(unwrappedFieldType)) {
                 if (valueForResponseKey === null) {
                   errors.push(`Expected object for ${responseKey}, but got null`);
@@ -219,4 +224,38 @@ function processNestedArrays(
   }
 
   return { values: result, errors };
+}
+
+/**
+ * Determines if a fixture value is expected for a given parent type based on its __typename.
+ *
+ * @param fixtureValue - The fixture value to check
+ * @param parentType - The parent type from typeInfo (concrete type if inside inline fragment, abstract if on union/interface)
+ * @returns True if the value is expected for the parent type, false otherwise
+ *
+ * @remarks
+ * When the parent type is abstract (union/interface), all values are expected.
+ * When the parent type is concrete (inside an inline fragment), only values
+ * whose __typename matches the concrete type are expected.
+ */
+function isValueExpectedForType(
+  fixtureValue: any,
+  parentType: GraphQLCompositeType
+): boolean {
+  // If parent type is abstract (union/interface), all values are expected.
+  // This means we're validating a field selected directly on the abstract type (e.g., __typename on a union),
+  // so it should be present on all values regardless of their concrete type.
+  if (isAbstractType(parentType)) {
+    return true;
+  }
+
+  // Parent is a concrete type - check if fixture value's __typename matches
+  const valueTypename = fixtureValue.__typename;
+  if (!valueTypename) {
+    // No __typename in value - can't discriminate, so expect it
+    return true;
+  }
+
+  // Only expect the value for this type if its __typename matches the parent type
+  return valueTypename === parentType.name;
 }

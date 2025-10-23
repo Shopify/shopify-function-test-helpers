@@ -129,11 +129,7 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    // This test is skipped because the validator doesn't yet support unions where
-    // different items in the array can be different types. Currently, it expects
-    // all fields from all inline fragments to be present in every item, instead of
-    // filtering by __typename.
-    it.skip("handles inline fragments with multiple types in union", () => {
+    it("handles inline fragments with multiple types in union", () => {
       const queryAST = parse(`
         query {
           data {
@@ -171,6 +167,37 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles single inline fragment on union without __typename", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              ... on Item {
+                id
+                count
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // With only one inline fragment, no __typename is needed for discrimination
       expect(result.errors).toHaveLength(0);
     });
 
@@ -937,6 +964,54 @@ describe("validateFixtureInput", () => {
       // Should detect missing type information for the invalid field
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe('Cannot validate nonExistentField: missing type information');
+    });
+
+    it("detects missing fields when __typename is not selected in union with inline fragments", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              ... on Item {
+                id
+                count
+              }
+              ... on Metadata {
+                email
+                phone
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {
+              email: "test@example.com",
+              phone: "555-0001"
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Without __typename, we can't discriminate which fields are expected for each object
+      // So the validator conservatively expects all fields from all inline fragments
+      // First error: Missing __typename field for abstract type (required for discrimination)
+      // First object is missing email and phone (from Metadata fragment)
+      // Second object is missing id and count (from Item fragment)
+      expect(result.errors).toHaveLength(5);
+      expect(result.errors[0]).toBe("Missing __typename field for abstract type SearchResult");
+      expect(result.errors[1]).toBe("Missing expected fixture data for id");
+      expect(result.errors[2]).toBe("Missing expected fixture data for count");
+      expect(result.errors[3]).toBe("Missing expected fixture data for email");
+      expect(result.errors[4]).toBe("Missing expected fixture data for phone");
     });
   });
 });
