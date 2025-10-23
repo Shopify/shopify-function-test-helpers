@@ -38,6 +38,7 @@ export function validateFixtureInput(
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
   const valueStack: any[][] = [[value]];
+  const expectedFieldsStack: Set<string>[] = [new Set()]; // Initial set tracks root level fields
   const errors: string[] = [];
   visit(
     inlineFragmentSpreadsAst,
@@ -48,6 +49,9 @@ export function validateFixtureInput(
           const nestedValues = [];
 
           const responseKey = node.alias?.value || node.name.value;
+
+          // Track this field as expected in the parent's set
+          expectedFieldsStack[expectedFieldsStack.length - 1].add(responseKey);
 
           const fieldDefinition = typeInfo.getFieldDef();
           const fieldType = fieldDefinition?.type;
@@ -129,10 +133,21 @@ export function validateFixtureInput(
             }
           }
 
+          // If this field has nested selections, prepare to track expected child fields
+          if (node.selectionSet) {
+            expectedFieldsStack.push(new Set<string>());
+          }
+
           valueStack.push(nestedValues);
         },
-        leave() {
-          valueStack.pop();
+        leave(node) {
+          const nestedValues = valueStack.pop()!;
+
+          // If this field had nested selections, check for extra fields
+          if (node.selectionSet) {
+            const expectedFields = expectedFieldsStack.pop()!;
+            errors.push(...checkForExtraFields(nestedValues, expectedFields));
+          }
         },
       },
       SelectionSet: {
@@ -160,6 +175,11 @@ export function validateFixtureInput(
       },
     })
   );
+
+  // The query's root SelectionSet has no parent Field node, so there's no Field.leave event to check it.
+  // We manually perform the same check here that would happen in Field.leave for nested objects.
+  errors.push(...checkForExtraFields(valueStack[0], expectedFieldsStack[0]));
+
   return { errors };
 }
 
@@ -258,4 +278,32 @@ function isValueExpectedForType(
 
   // Only expect the value for this type if its __typename matches the parent type
   return valueTypename === parentType.name;
+}
+
+/**
+ * Checks fixture objects for fields that are not present in the GraphQL query.
+ *
+ * @param fixtureObjects - Array of fixture objects to validate
+ * @param expectedFields - Set of field names that are expected based on the query
+ * @returns Array of error messages for any extra fields found (empty if valid)
+ *
+ * @remarks
+ * Only validates object types - skips null values and arrays.
+ */
+function checkForExtraFields(
+  fixtureObjects: any[],
+  expectedFields: Set<string>
+): string[] {
+  const errors: string[] = [];
+  for (const fixtureObject of fixtureObjects) {
+    if (typeof fixtureObject === "object" && fixtureObject !== null && !Array.isArray(fixtureObject)) {
+      const fixtureFields = Object.keys(fixtureObject);
+      for (const fixtureField of fixtureFields) {
+        if (!expectedFields.has(fixtureField)) {
+          errors.push(`Extra field "${fixtureField}" found in fixture data not in query`);
+        }
+      }
+    }
+  }
+  return errors;
 }

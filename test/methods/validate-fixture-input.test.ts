@@ -74,16 +74,12 @@ describe("validateFixtureInput", () => {
           firstItems: [
             {
               id: "gid://test/Item/1",
-              count: 5,
-              details: {
-                name: "First Item"
-              }
+              count: 5
             }
           ],
           secondItems: [
             {
               id: "gid://test/Item/1",
-              count: 5,
               details: {
                 name: "First Item"
               }
@@ -752,40 +748,6 @@ describe("validateFixtureInput", () => {
       );
     });
 
-    // This test is skipped because the validator doesn't yet detect extra fields
-    // in fixture data that aren't present in the query. Currently, it only validates
-    // that all required fields from the query are present in the fixture, but doesn't
-    // flag additional fields that shouldn't be there.
-    it.skip("detects extra fields not in query", () => {
-      const queryAST = parse(`
-        query Query {
-          data {
-            items {
-              id
-            }
-          }
-        }
-      `);
-
-      const fixtureInput = {
-        data: {
-          items: [
-            {
-              id: "gid://test/Item/1",
-              count: 5,
-            }
-          ]
-        }
-      };
-
-      const result = validateFixtureInput(queryAST, schema, fixtureInput);
-
-      // When implemented, should detect that 'count' is not in the query
-      expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toContain('count');
-      expect(result.errors[0]).toContain('not in query');
-    });
-
     it("detects type mismatches (object vs scalar)", () => {
       const queryAST = parse(`
         query Query {
@@ -1012,6 +974,264 @@ describe("validateFixtureInput", () => {
       expect(result.errors[2]).toBe("Missing expected fixture data for count");
       expect(result.errors[3]).toBe("Missing expected fixture data for email");
       expect(result.errors[4]).toBe("Missing expected fixture data for phone");
+    });
+
+    it("detects extra fields not in query", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            items {
+              id
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Should detect that 'count' is not in the query
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe('Extra field "count" found in fixture data not in query');
+    });
+
+    it("detects extra fields with multiple aliases for the same field", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            firstItems: items {
+              id
+              count
+            }
+            secondItems: items {
+              id
+              details {
+                name
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          firstItems: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+              details: {
+                name: "First Item"
+              }
+            }
+          ],
+          secondItems: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+              details: {
+                name: "First Item"
+              }
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Each alias is validated independently, so extra fields in each should be detected
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors[0]).toBe('Extra field "details" found in fixture data not in query');
+      expect(result.errors[1]).toBe('Extra field "count" found in fixture data not in query');
+    });
+
+    it("detects extra fields in inline fragments with __typename discrimination", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              __typename
+              ... on Item {
+                id
+              }
+              ... on Metadata {
+                email
+                nonExistentField
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              __typename: "Item",
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {
+              __typename: "Metadata",
+              email: "test@example.com",
+              phone: "555-0001",
+              nonExistentField: "not a real field"
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Should detect:
+      // 1. nonExistentField in query but not in schema (missing type information)
+      // 2. count field in Item fixture but not selected in query (extra field)
+      // 3. phone field in Metadata fixture but not selected in query (extra field)
+      expect(result.errors).toHaveLength(3);
+      expect(result.errors[0]).toBe('Cannot validate nonExistentField: missing type information');
+      expect(result.errors[1]).toBe('Extra field "count" found in fixture data not in query');
+      expect(result.errors[2]).toBe('Extra field "phone" found in fixture data not in query');
+    });
+
+    it("detects extra fields in nested objects", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            items {
+              id
+              details {
+                name
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              details: {
+                name: "Test Item",
+                id: "gid://test/ItemDetails/1"
+              }
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Should detect 'id' field in details object that wasn't selected
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe('Extra field "id" found in fixture data not in query');
+    });
+
+    it("detects extra fields at root level", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            items {
+              id
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1"
+            }
+          ]
+        },
+        extraRootField: "should not be here"
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Should detect 'extraRootField' at the actual root level (same level as 'data')
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe('Extra field "extraRootField" found in fixture data not in query');
+    });
+
+    it("detects extra fields in nested arrays [[Item]]", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            itemMatrix {
+              id
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          itemMatrix: [
+            [
+              { id: "1", count: 10 },
+              { id: "2", count: 20 }
+            ],
+            null,
+            [
+              { id: "3", count: 30 }
+            ]
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Should detect 'count' field in all nested items
+      expect(result.errors).toHaveLength(3);
+      expect(result.errors[0]).toBe('Extra field "count" found in fixture data not in query');
+      expect(result.errors[1]).toBe('Extra field "count" found in fixture data not in query');
+      expect(result.errors[2]).toBe('Extra field "count" found in fixture data not in query');
+    });
+
+    it("detects extra fields with named fragments", () => {
+      const queryAST = parse(`
+        fragment ItemFields on Item {
+          id
+        }
+
+        query {
+          data {
+            items {
+              ...ItemFields
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Should detect 'count' field that wasn't selected in fragment
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe('Extra field "count" found in fixture data not in query');
     });
   });
 });
