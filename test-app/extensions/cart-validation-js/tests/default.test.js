@@ -8,7 +8,7 @@ describe("Default Integration Test", () => {
   let inputQueryAST;
   let functionDir;
   let schemaPath;
-  let inputQueryPath;
+  let targeting;
   let functionRunnerPath;
   let wasmPath;
 
@@ -38,14 +38,13 @@ describe("Default Integration Test", () => {
     }
 
     const functionInfo = JSON.parse(functionInfoJson);
-    schemaPath = functionInfo.functionSchemaPath;
-    inputQueryPath = functionInfo.functionInputQueryPath;
+    schemaPath = functionInfo.schemaPath;
     functionRunnerPath = functionInfo.functionRunnerPath;
-    wasmPath = functionInfo.functionWasmPath;
+    wasmPath = functionInfo.wasmPath;
+    targeting = functionInfo.targeting;
 
     schema = await loadSchema(schemaPath);
-    inputQueryAST = await loadInputQuery(inputQueryPath);
-  }, 20000); // 20 second timeout for building the function
+  }, 20000); // 20 second timeout for building and obtaining information about the function
 
   const fixturesDir = path.join(__dirname, "fixtures");
   const fixtureFiles = fs
@@ -56,6 +55,9 @@ describe("Default Integration Test", () => {
   fixtureFiles.forEach((fixtureFile) => {
     test(`runs ${path.relative(fixturesDir, fixtureFile)}`, async () => {
       const fixture = await loadFixture(fixtureFile);
+      const inputQueryPath = targeting[fixture.target]["inputQueryPath"];
+      console.debug('inputQueryPath for fixture targeting %s is %s', fixture.target, inputQueryPath);
+      inputQueryAST = await loadInputQuery(inputQueryPath);
 
       // Validate fixture using our comprehensive validation system
       const validationResult = await validateTestAssets({
@@ -63,19 +65,17 @@ describe("Default Integration Test", () => {
         fixture,
         inputQueryAST
       });
-
-      // Assert that all validation steps pass
       expect(validationResult.inputQuery.errors).toHaveLength(0);
       expect(validationResult.inputFixture.errors).toHaveLength(0);
       expect(validationResult.outputFixture.errors).toHaveLength(0);
 
       // Run the actual function
       const runResult = await runFunction(
-          functionRunnerPath,
-          wasmPath,
-          fixture,
-          inputQueryPath,
-          schemaPath
+        functionRunnerPath,
+        wasmPath,
+        fixture,
+        inputQueryPath,
+        schemaPath
       );
 
       const { result, error } = runResult;
