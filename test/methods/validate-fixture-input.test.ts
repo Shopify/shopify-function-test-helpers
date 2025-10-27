@@ -211,6 +211,52 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
+    it("handles inline fragment on interface type", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            products {
+              __typename
+              ... on Purchasable {
+                price
+                currency
+              }
+              ... on GiftCard {
+                code
+                balance
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          products: [
+            {
+              __typename: "PhysicalProduct",
+              price: 1000,
+              currency: "USD"
+            },
+            {
+              __typename: "DigitalProduct",
+              price: 500,
+              currency: "USD"
+            },
+            {
+              __typename: "GiftCard",
+              code: "GIFT123",
+              balance: 5000
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      expect(result.errors).toHaveLength(0);
+    });
+
     it("handles single inline fragment on union without __typename", () => {
       const queryAST = parse(`
         query {
