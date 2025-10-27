@@ -67,7 +67,7 @@ export function validateFixtureInput(
                 errors.push(`Cannot validate ${responseKey}: missing parent type information`);
               } else {
                 const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
-                if (isValueExpectedForType(currentValue, parentType, typenameResponseKey)) {
+                if (isValueExpectedForType(currentValue, parentType, schema, typenameResponseKey)) {
                   errors.push(`Missing expected fixture data for ${responseKey}`);
                 }
               }
@@ -253,28 +253,23 @@ function processNestedArrays(
  * Determines if a fixture value is expected for a given parent type based on its __typename.
  *
  * @param fixtureValue - The fixture value to check
- * @param parentType - The parent type from typeInfo (concrete type if inside inline fragment, abstract if on union/interface)
+ * @param parentType - The parent type from typeInfo
+ * @param schema - The GraphQL schema to resolve possible types for abstract types
  * @param typenameKey - The response key for the __typename field (supports aliases like `type: __typename`)
  * @returns True if the value is expected for the parent type, false otherwise
  *
  * @remarks
- * When the parent type is abstract (union/interface), all values are expected.
- * When the parent type is concrete (inside an inline fragment), only values
+ * When the parent type is abstract (union/interface), checks if the value's __typename
+ * is one of the possible types for that abstract type.
+ * When the parent type is concrete (e.g., inside `... on ConcreteType`), only values
  * whose __typename matches the concrete type are expected.
  */
 function isValueExpectedForType(
   fixtureValue: any,
   parentType: GraphQLCompositeType,
+  schema: GraphQLSchema,
   typenameKey?: string
 ): boolean {
-  // If parent type is abstract (union/interface), all values are expected.
-  // This means we're validating a field selected directly on the abstract type (e.g., __typename on a union),
-  // so it should be present on all values regardless of their concrete type.
-  if (isAbstractType(parentType)) {
-    return true;
-  }
-
-  // Parent is a concrete type - check if fixture value's __typename matches
   // If __typename wasn't selected in the query, we can't discriminate, so expect all values
   if (!typenameKey) {
     return true;
@@ -286,6 +281,12 @@ function isValueExpectedForType(
     return true;
   }
 
-  // Only expect the value for this type if its __typename matches the parent type
+  // If parent type is abstract (union/interface), check if the value's type is one of the possible types
+  if (isAbstractType(parentType)) {
+    const possibleTypes = schema.getPossibleTypes(parentType);
+    return possibleTypes.some(type => type.name === valueTypename);
+  }
+
+  // Parent is a concrete type - check if fixture value's __typename matches
   return valueTypename === parentType.name;
 }

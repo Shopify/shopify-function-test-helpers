@@ -15,9 +15,17 @@ type DataContainer {
   searchResults: [SearchResult!]!
   itemMatrix: [[Item]]
   metadataCube: [[[Metadata]]]
+  products: [Product!]!
 }
 
 union SearchResult = Item | Metadata
+
+union Product = PhysicalProduct | DigitalProduct | GiftCard
+
+interface Purchasable {
+  price: Int!
+  currency: String!
+}
 
 type Item {
   id: ID
@@ -78,4 +86,23 @@ input HttpRequest {
   method: String!
   headers: String
   body: String
+}
+
+type PhysicalProduct implements Purchasable {
+  price: Int!
+  currency: String!
+  weight: Int!
+  sku: String!
+}
+
+type DigitalProduct implements Purchasable {
+  price: Int!
+  currency: String!
+  downloadUrl: String!
+  fileSize: Int!
+}
+
+type GiftCard {
+  code: String!
+  balance: Int!
 }
