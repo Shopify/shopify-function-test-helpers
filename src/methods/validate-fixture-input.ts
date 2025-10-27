@@ -39,6 +39,8 @@ export function validateFixtureInput(
   const typeInfo = new TypeInfo(schema);
   const valueStack: any[][] = [[value]];
   const errors: string[] = [];
+  const typenameResponseKeyStack: (string | undefined)[] = [];
+
   visit(
     inlineFragmentSpreadsAst,
     visitWithTypeInfo(typeInfo, {
@@ -63,8 +65,11 @@ export function validateFixtureInput(
                 // provide parent type information when traversing fields. This check is here to
                 // satisfy TypeScript's type requirements (getParentType() can return null).
                 errors.push(`Cannot validate ${responseKey}: missing parent type information`);
-              } else if (isValueExpectedForType(currentValue, parentType)) {
-                errors.push(`Missing expected fixture data for ${responseKey}`);
+              } else {
+                const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+                if (isValueExpectedForType(currentValue, parentType, typenameResponseKey)) {
+                  errors.push(`Missing expected fixture data for ${responseKey}`);
+                }
               }
             }
             // Scalars and Enums (including wrapped types)
@@ -137,6 +142,21 @@ export function validateFixtureInput(
       },
       SelectionSet: {
         enter(node) {
+          // Look ahead to find __typename field and track its response key
+          const typenameField = node.selections.find(
+            (selection) =>
+              selection.kind === Kind.FIELD &&
+              selection.name.value === "__typename"
+          );
+
+          // If this SelectionSet has __typename, use its response key.
+          // Otherwise, inherit from parent.
+          const typenameResponseKey = typenameField && typenameField.kind === Kind.FIELD
+            ? typenameField.alias?.value || "__typename"
+            : typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+
+          typenameResponseKeyStack.push(typenameResponseKey);
+
           if (isAbstractType(getNamedType(typeInfo.getType()))) {
             const hasTypename = node.selections.some(
               (selection) =>
@@ -156,6 +176,9 @@ export function validateFixtureInput(
               );
             }
           }
+        },
+        leave() {
+          typenameResponseKeyStack.pop();
         },
       },
     })
@@ -231,6 +254,7 @@ function processNestedArrays(
  *
  * @param fixtureValue - The fixture value to check
  * @param parentType - The parent type from typeInfo (concrete type if inside inline fragment, abstract if on union/interface)
+ * @param typenameKey - The response key for the __typename field (supports aliases like `type: __typename`)
  * @returns True if the value is expected for the parent type, false otherwise
  *
  * @remarks
@@ -240,7 +264,8 @@ function processNestedArrays(
  */
 function isValueExpectedForType(
   fixtureValue: any,
-  parentType: GraphQLCompositeType
+  parentType: GraphQLCompositeType,
+  typenameKey?: string
 ): boolean {
   // If parent type is abstract (union/interface), all values are expected.
   // This means we're validating a field selected directly on the abstract type (e.g., __typename on a union),
@@ -250,7 +275,12 @@ function isValueExpectedForType(
   }
 
   // Parent is a concrete type - check if fixture value's __typename matches
-  const valueTypename = fixtureValue.__typename;
+  // If __typename wasn't selected in the query, we can't discriminate, so expect all values
+  if (!typenameKey) {
+    return true;
+  }
+
+  const valueTypename = fixtureValue[typenameKey];
   if (!valueTypename) {
     // No __typename in value - can't discriminate, so expect it
     return true;

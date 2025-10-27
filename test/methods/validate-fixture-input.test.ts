@@ -170,6 +170,47 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
+    it("handles aliased __typename in inline fragments", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              type: __typename
+              ... on Item {
+                id
+                count
+              }
+              ... on Metadata {
+                email
+                phone
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              type: "Item",
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {
+              type: "Metadata",
+              email: "test@example.com",
+              phone: "555-0001"
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      expect(result.errors).toHaveLength(0);
+    });
+
     it("handles single inline fragment on union without __typename", () => {
       const queryAST = parse(`
         query {
