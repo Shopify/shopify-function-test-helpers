@@ -276,9 +276,8 @@ function processNestedArrays(
  * When the parent type is concrete (e.g., inside `... on ConcreteType`), only values
  * whose __typename matches the concrete type are expected.
  *
- * Special case: Empty objects {} are treated as valid when __typename is not selected.
- * This handles GraphQL responses where union/interface members that don't match any
- * selected inline fragments are returned as empty objects.
+ * Special case: Empty objects {} are valid when __typename is not selected and the inline
+ * fragment narrows the possible types.
  */
 function isValueExpectedForType(
   fixtureValue: any,
@@ -289,9 +288,20 @@ function isValueExpectedForType(
 ): boolean {
   // If __typename wasn't selected in the query, we can't discriminate
   if (!typenameKey) {
-    // Empty objects {} are valid if the grandparent type is a union/interface
+    // Empty objects {} are valid only if we've narrowed the type through inline fragments
+    // Compare the set of possible types at grandparent vs parent level
     if (grandparentType && isAbstractType(grandparentType) && Object.keys(fixtureValue).length === 0) {
-      return false; // Don't expect any fields on empty objects in union/interface contexts
+      const grandparentPossibleTypes = schema.getPossibleTypes(grandparentType);
+      const parentPossibleTypes = isAbstractType(parentType)
+        ? schema.getPossibleTypes(parentType)
+        : [parentType];
+
+      // If the sets are different, we've narrowed the type → empty objects are valid (return false)
+      // If the sets are equal, no narrowing happened → empty objects are invalid (return true)
+      const setsAreEqual = grandparentPossibleTypes.length === parentPossibleTypes.length &&
+        grandparentPossibleTypes.every(t => parentPossibleTypes.includes(t));
+
+      return setsAreEqual;
     }
     return true; // Otherwise, expect all values
   }

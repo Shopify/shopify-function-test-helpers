@@ -320,7 +320,7 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    it("handles empty objects in interface fragment inside union", () => {
+    it("handles empty objects when narrowing from union to interface subset", () => {
       const queryAST = parse(`
         query {
           data {
@@ -348,7 +348,10 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      // Empty object {} is valid - represents a union member that doesn't implement the interface
+      // Empty object {} is valid
+      // Grandparent (Product union) has 3 types: {PhysicalProduct, DigitalProduct, GiftCard}
+      // Parent (Purchasable interface) has 2 types: {PhysicalProduct, DigitalProduct}
+      // Sets are different → type was narrowed → empty object represents GiftCard
       expect(result.errors).toHaveLength(0);
     });
 
@@ -1183,6 +1186,33 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(2);
       expect(result.errors[0]).toBe("Missing expected fixture data for id");
       expect(result.errors[1]).toBe("Missing expected fixture data for count");
+    });
+
+    it("detects empty objects when inline fragment is on same type as field", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            purchasable {
+              ... on Purchasable {
+                price
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          purchasable: {}  // Empty object when selecting on interface itself - should error
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object {} is invalid when inline fragment is on the same type as the field
+      // We're not discriminating between union members, so all fields are required
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe("Missing expected fixture data for price");
     });
 
     it("detects missing fields when __typename is not selected in union with inline fragments", () => {

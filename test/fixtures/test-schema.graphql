@@ -16,6 +16,7 @@ type DataContainer {
   itemMatrix: [[Item]]
   metadataCube: [[[Metadata]]]
   products: [Product!]!
+  purchasable: Purchasable
 }
 
 union SearchResult = Item | Metadata
