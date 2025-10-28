@@ -67,7 +67,7 @@ export function validateFixtureInput(
                 errors.push(`Cannot validate ${responseKey}: missing parent type information`);
               } else {
                 const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
-                if (isValueExpectedForType(currentValue, parentType, schema, typenameResponseKey)) {
+                if (isValueExpectedForType(currentValue, parentType, schema, typeInfo, typenameResponseKey)) {
                   errors.push(`Missing expected fixture data for ${responseKey}`);
                 }
               }
@@ -255,6 +255,7 @@ function processNestedArrays(
  * @param fixtureValue - The fixture value to check
  * @param parentType - The parent type from typeInfo
  * @param schema - The GraphQL schema to resolve possible types for abstract types
+ * @param typeInfo - TypeInfo instance to check for abstract types in ancestry
  * @param typenameKey - The response key for the __typename field (supports aliases like `type: __typename`)
  * @returns True if the value is expected for the parent type, false otherwise
  *
@@ -263,16 +264,28 @@ function processNestedArrays(
  * is one of the possible types for that abstract type.
  * When the parent type is concrete (e.g., inside `... on ConcreteType`), only values
  * whose __typename matches the concrete type are expected.
+ *
+ * Special case: Empty objects {} are treated as valid when __typename is not selected.
+ * This handles GraphQL responses where union/interface members that don't match any
+ * selected inline fragments are returned as empty objects.
  */
 function isValueExpectedForType(
   fixtureValue: any,
   parentType: GraphQLCompositeType,
   schema: GraphQLSchema,
+  typeInfo: TypeInfo,
   typenameKey?: string
 ): boolean {
-  // If __typename wasn't selected in the query, we can't discriminate, so expect all values
+  // If __typename wasn't selected in the query, we can't discriminate
   if (!typenameKey) {
-    return true;
+    // Empty objects {} are valid if the parent field returns a union/interface
+    // Check if the grandparent type (one level back in the stack) is abstract
+    const parentStack = (typeInfo as any)._parentTypeStack;
+    const grandparentType = parentStack[parentStack.length - 2];
+    if (grandparentType && isAbstractType(grandparentType) && Object.keys(fixtureValue).length === 0) {
+      return false; // Don't expect any fields on empty objects in union/interface contexts
+    }
+    return true; // Otherwise, expect all values
   }
 
   const valueTypename = fixtureValue[typenameKey];

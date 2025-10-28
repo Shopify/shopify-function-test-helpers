@@ -288,6 +288,106 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
+    it("handles empty objects in union when inline fragment doesn't match", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              ... on Item {
+                id
+                count
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {}  // Empty object - represents Metadata that didn't match the Item fragment
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object {} is valid - GraphQL returns this for union members that don't match any fragments
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles empty objects in interface fragment inside union", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            products {
+              ... on Purchasable {
+                price
+                currency
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          products: [
+            {
+              price: 1000,
+              currency: "USD"
+            },
+            {}  // Empty object - GiftCard that doesn't implement Purchasable
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object {} is valid - represents a union member that doesn't implement the interface
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles objects with only __typename when inline fragment doesn't match", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              __typename
+              ... on Item {
+                id
+                count
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              __typename: "Item",
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {
+              __typename: "Metadata"  // Only typename, no other fields
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Object with only __typename is valid - Metadata doesn't match the Item fragment
+      expect(result.errors).toHaveLength(0);
+    });
+
     it("handles nested inline fragments", () => {
       const queryAST = parse(`
         query {
@@ -1051,6 +1151,38 @@ describe("validateFixtureInput", () => {
       // Should detect missing type information for the invalid field
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe('Cannot validate nonExistentField: missing type information');
+    });
+
+    it("detects empty objects in non-union context", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            items {
+              id
+              count
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {}  // Empty object in non-union context - should error
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object {} is invalid in non-union context - missing required fields
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors[0]).toBe("Missing expected fixture data for id");
+      expect(result.errors[1]).toBe("Missing expected fixture data for count");
     });
 
     it("detects missing fields when __typename is not selected in union with inline fragments", () => {
