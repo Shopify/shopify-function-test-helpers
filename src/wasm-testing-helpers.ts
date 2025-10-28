@@ -11,6 +11,7 @@ export { loadSchema } from "./methods/load-schema.js";
 export { loadInputQuery } from "./methods/load-input-query.js";
 export { buildFunction } from "./methods/build-function.js";
 export { runFunction } from "./methods/run-function.js";
+export { getFunctionInfo } from "./methods/get-function-info.js";
 export { validateTestAssets } from "./methods/validate-test-assets.js";
 export { validateInputQuery } from "./methods/validate-input-query.js";
 export { validateFixtureOutput } from "./methods/validate-fixture-output.js";
@@ -20,6 +21,7 @@ export { validateFixtureInput } from "./methods/validate-fixture-input.js";
 export type { FixtureData } from "./methods/load-fixture.js";
 export type { BuildFunctionResult } from "./methods/build-function.js";
 export type { RunFunctionResult } from "./methods/run-function.js";
+export type { FunctionInfo } from "./methods/get-function-info.js";
 export type {
   ValidateTestAssetsOptions,
   CompleteValidationResult,
