@@ -1,16 +1,21 @@
-import { visit, DocumentNode, Kind } from "graphql";
-import { TypeInfo, visitWithTypeInfo, coerceInputValue } from "graphql";
 import {
+  coerceInputValue,
+  DocumentNode,
+  getNamedType,
+  getNullableType,
+  GraphQLCompositeType,
+  GraphQLList,
+  GraphQLNamedType,
+  GraphQLSchema,
+  isAbstractType,
   isInputType,
   isListType,
   isNullableType,
-  GraphQLSchema,
-  GraphQLList,
-  getNullableType,
-  isAbstractType,
   isObjectType,
-  getNamedType,
-  GraphQLCompositeType,
+  Kind,
+  TypeInfo,
+  visit,
+  visitWithTypeInfo,
 } from "graphql";
 import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
 
@@ -38,8 +43,10 @@ export function validateFixtureInput(
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
   const valueStack: any[][] = [[value]];
-  const errors: string[] = [];
+  const typeStack: (GraphQLNamedType | undefined)[] = [];
   const typenameResponseKeyStack: (string | undefined)[] = [];
+
+  const errors: string[] = [];
 
   visit(
     inlineFragmentSpreadsAst,
@@ -54,6 +61,8 @@ export function validateFixtureInput(
           const fieldDefinition = typeInfo.getFieldDef();
           const fieldType = fieldDefinition?.type;
 
+          typeStack.push(getNamedType(fieldType));
+
           for (const currentValue of currentValues) {
             const valueForResponseKey = currentValue[responseKey];
 
@@ -67,7 +76,8 @@ export function validateFixtureInput(
                 errors.push(`Cannot validate ${responseKey}: missing parent type information`);
               } else {
                 const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
-                if (isValueExpectedForType(currentValue, parentType, schema, typeInfo, typenameResponseKey)) {
+                const grandparentType = typeStack[typeStack.length - 2];
+                if (isValueExpectedForType(currentValue, parentType, grandparentType, schema, typenameResponseKey)) {
                   errors.push(`Missing expected fixture data for ${responseKey}`);
                 }
               }
@@ -138,6 +148,7 @@ export function validateFixtureInput(
         },
         leave() {
           valueStack.pop();
+          typeStack.pop();
         },
       },
       SelectionSet: {
@@ -254,8 +265,8 @@ function processNestedArrays(
  *
  * @param fixtureValue - The fixture value to check
  * @param parentType - The parent type from typeInfo
+ * @param grandparentType - The type returned by the grandparent field (used to detect union/interface contexts)
  * @param schema - The GraphQL schema to resolve possible types for abstract types
- * @param typeInfo - TypeInfo instance to check for abstract types in ancestry
  * @param typenameKey - The response key for the __typename field (supports aliases like `type: __typename`)
  * @returns True if the value is expected for the parent type, false otherwise
  *
@@ -272,16 +283,13 @@ function processNestedArrays(
 function isValueExpectedForType(
   fixtureValue: any,
   parentType: GraphQLCompositeType,
+  grandparentType: GraphQLNamedType | undefined,
   schema: GraphQLSchema,
-  typeInfo: TypeInfo,
   typenameKey?: string
 ): boolean {
   // If __typename wasn't selected in the query, we can't discriminate
   if (!typenameKey) {
-    // Empty objects {} are valid if the parent field returns a union/interface
-    // Check if the grandparent type (one level back in the stack) is abstract
-    const parentStack = (typeInfo as any)._parentTypeStack;
-    const grandparentType = parentStack[parentStack.length - 2];
+    // Empty objects {} are valid if the grandparent type is a union/interface
     if (grandparentType && isAbstractType(grandparentType) && Object.keys(fixtureValue).length === 0) {
       return false; // Don't expect any fields on empty objects in union/interface contexts
     }
