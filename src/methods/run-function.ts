@@ -48,7 +48,7 @@ export async function runFunction(
       functionName = path.basename(functionDir);
     }
     
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const shopifyProcess = spawn('shopify', [
         'app', 'function', 'run',
         '--export', exportName,
