@@ -3,12 +3,12 @@ import {
   DocumentNode,
   getNamedType,
   getNullableType,
-  GraphQLCompositeType,
   GraphQLList,
   GraphQLNamedType,
   GraphQLSchema,
   isAbstractType,
   isInputType,
+  isLeafType,
   isListType,
   isNullableType,
   isObjectType,
@@ -16,6 +16,7 @@ import {
   TypeInfo,
   visit,
   visitWithTypeInfo,
+  BREAK,
 } from "graphql";
 import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
 
@@ -43,7 +44,10 @@ export function validateFixtureInput(
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
   const valueStack: any[][] = [[value]];
+  // based on field depth
   const typeStack: (GraphQLNamedType | undefined)[] = [];
+  // based on selection set depth
+  const possibleTypesStack: Set<string>[] = [new Set([schema.getQueryType()!.name])];
   const typenameResponseKeyStack: (string | undefined)[] = [];
 
   const errors: string[] = [];
@@ -51,6 +55,23 @@ export function validateFixtureInput(
   visit(
     inlineFragmentSpreadsAst,
     visitWithTypeInfo(typeInfo, {
+      InlineFragment: {
+        enter(node) {
+          let possibleTypes = new Set(possibleTypesStack[possibleTypesStack.length - 1]);
+          if (node.typeCondition) {
+            const namedType = schema.getType(node.typeCondition!.name.value);
+            if (namedType && isAbstractType(namedType)) {
+              possibleTypes = possibleTypes.intersection(new Set(schema.getPossibleTypes(namedType).map(type => type.name)));
+            } else if (namedType && isObjectType(namedType)) {
+              possibleTypes = new Set([namedType.name]);
+            }
+          }
+          possibleTypesStack.push(possibleTypes);
+        },
+        leave() {
+          possibleTypesStack.pop();
+        },
+      },
       Field: {
         enter(node) {
           const currentValues = valueStack[valueStack.length - 1];
@@ -59,9 +80,11 @@ export function validateFixtureInput(
           const responseKey = node.alias?.value || node.name.value;
 
           const fieldDefinition = typeInfo.getFieldDef();
-          const fieldType = fieldDefinition?.type;
-
-          typeStack.push(getNamedType(fieldType));
+          if (fieldDefinition === undefined || fieldDefinition === null) {
+            errors.push(`Cannot validate ${responseKey}: missing field definition`);
+            return BREAK;
+          }
+          const fieldType = fieldDefinition.type;
 
           for (const currentValue of currentValues) {
             const valueForResponseKey = currentValue[responseKey];
@@ -76,8 +99,11 @@ export function validateFixtureInput(
                 errors.push(`Cannot validate ${responseKey}: missing parent type information`);
               } else {
                 const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
-                const grandparentType = typeStack[typeStack.length - 2];
-                if (isValueExpectedForType(currentValue, parentType, grandparentType, schema, typenameResponseKey)) {
+                // Get the type of the parent field (the field that returned this object)
+                // This skips inline fragments since they don't push to typeStack
+                const parentFieldType = typeStack[typeStack.length - 1]!;
+                const possibleTypes = possibleTypesStack[possibleTypesStack.length - 1];
+                if (isValueExpectedForType(currentValue, parentFieldType, possibleTypes, schema, typenameResponseKey)) {
                   errors.push(`Missing expected fixture data for ${responseKey}`);
                 }
               }
@@ -144,11 +170,25 @@ export function validateFixtureInput(
             }
           }
 
+          const namedType = getNamedType(fieldType);
+          let possibleTypes: string[] = [];
+          if (isLeafType(namedType)) {
+            // do nothing
+          } else if (isAbstractType(namedType)) {
+            possibleTypes = schema.getPossibleTypes(namedType).map(type => type.name);
+          } else if (isObjectType(namedType)) {
+            possibleTypes = [namedType.name];
+          }
+
+          possibleTypesStack.push(new Set(possibleTypes));
+          typeStack.push(getNamedType(fieldType));
+
           valueStack.push(nestedValues);
         },
         leave() {
           valueStack.pop();
           typeStack.pop();
+          possibleTypesStack.pop();
         },
       },
       SelectionSet: {
@@ -261,48 +301,48 @@ function processNestedArrays(
 }
 
 /**
- * Determines if a fixture value is expected for a given parent type based on its __typename.
+ * Determines if a fixture value is expected
  *
  * @param fixtureValue - The fixture value to check
- * @param parentType - The parent type from typeInfo
- * @param grandparentType - The type returned by the grandparent field (used to detect union/interface contexts)
+ * @param parentFieldType - The type returned by the parent field (e.g., InterfaceImplementersUnion from `interfaceImplementers` field)
+ * @param possibleTypes - Set of possible type names after inline fragment narrowing (e.g., {"InterfaceImplementer1"} after `...on HasDescription`)
  * @param schema - The GraphQL schema to resolve possible types for abstract types
  * @param typenameKey - The response key for the __typename field (supports aliases like `type: __typename`)
- * @returns True if the value is expected for the parent type, false otherwise
+ * @returns True if the value is expected (field should be present), false otherwise (field can be skipped)
  *
  * @remarks
- * When the parent type is abstract (union/interface), checks if the value's __typename
- * is one of the possible types for that abstract type.
- * When the parent type is concrete (e.g., inside `... on ConcreteType`), only values
- * whose __typename matches the concrete type are expected.
+ * When __typename is selected:
+ * - Checks if value's __typename is in the possibleTypes set
  *
- * Special case: Empty objects {} are valid when __typename is not selected and the inline
- * fragment narrows the possible types.
+ * When __typename is NOT selected:
+ * - Compares parent field's possible types vs current possibleTypes using symmetricDifference
+ * - If sets differ (narrowing occurred), empty objects {} are valid (return false)
+ * - Non-empty objects conservatively expect all fields (return true)
+ * - Since typeStack only tracks fields (not inline fragments), parentFieldType is the original
+ *   field's type, enabling correct narrowing detection at any nesting depth
  */
 function isValueExpectedForType(
   fixtureValue: any,
-  parentType: GraphQLCompositeType,
-  grandparentType: GraphQLNamedType | undefined,
+  parentFieldType: GraphQLNamedType,
+  possibleTypes: Set<string>,
   schema: GraphQLSchema,
   typenameKey?: string
 ): boolean {
-  // If __typename wasn't selected in the query, we can't discriminate
   if (!typenameKey) {
-    // Empty objects {} are valid only if we've narrowed the type through inline fragments
-    // Compare the set of possible types at grandparent vs parent level
-    if (grandparentType && isAbstractType(grandparentType) && Object.keys(fixtureValue).length === 0) {
-      const grandparentPossibleTypes = schema.getPossibleTypes(grandparentType);
-      const parentPossibleTypes = isAbstractType(parentType)
-        ? schema.getPossibleTypes(parentType)
-        : [parentType];
-
-      // If the sets are different, we've narrowed the type → empty objects are valid (return false)
-      // If the sets are equal, no narrowing happened → empty objects are invalid (return true)
-      const setsAreEqual = grandparentPossibleTypes.length === parentPossibleTypes.length &&
-        grandparentPossibleTypes.every(t => parentPossibleTypes.includes(t));
-
-      return setsAreEqual;
+    let parentFieldPossibleTypes: string[] = [];
+    if (isAbstractType(parentFieldType)) {
+      parentFieldPossibleTypes = schema.getPossibleTypes(parentFieldType).map(type => type.name);
+    } else {
+      parentFieldPossibleTypes = [parentFieldType.name];
     }
+
+    const parentFieldPossibleTypesSet = new Set(parentFieldPossibleTypes);
+    const difference = parentFieldPossibleTypesSet.symmetricDifference(possibleTypes);
+
+    if (difference.size > 0 && Object.keys(fixtureValue).length === 0) {
+      return false;
+    }
+
     return true; // Otherwise, expect all values
   }
 
@@ -312,12 +352,5 @@ function isValueExpectedForType(
     return true;
   }
 
-  // If parent type is abstract (union/interface), check if the value's type is one of the possible types
-  if (isAbstractType(parentType)) {
-    const possibleTypes = schema.getPossibleTypes(parentType);
-    return possibleTypes.some(type => type.name === valueTypename);
-  }
-
-  // Parent is a concrete type - check if fixture value's __typename matches
-  return valueTypename === parentType.name;
+  return possibleTypes.has(valueTypename);
 }

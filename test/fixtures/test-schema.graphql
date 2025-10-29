@@ -17,6 +17,7 @@ type DataContainer {
   metadataCube: [[[Metadata]]]
   products: [Product!]!
   purchasable: Purchasable
+  interfaceImplementers: [InterfaceImplementersUnion!]!
 }
 
 union SearchResult = Item | Metadata
@@ -27,6 +28,39 @@ interface Purchasable {
   price: Int!
   currency: String!
 }
+
+interface HasId {
+  id: ID!
+}
+
+interface HasName {
+  name: String!
+}
+
+interface HasDescription {
+  description: String!
+}
+
+type InterfaceImplementer1 implements HasId & HasName & HasDescription {
+  id: ID!
+  name: String!
+  description: String!
+}
+
+type InterfaceImplementer2 implements HasId & HasName {
+  id: ID!
+  name: String!
+}
+
+type InterfaceImplementer3 implements HasId {
+  id: ID!
+}
+
+type InterfaceImplementer4 {
+  value: String
+}
+
+union InterfaceImplementersUnion = InterfaceImplementer1 | InterfaceImplementer2 | InterfaceImplementer3 | InterfaceImplementer4
 
 type Item {
   id: ID

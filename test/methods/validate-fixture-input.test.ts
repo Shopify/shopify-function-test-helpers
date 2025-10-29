@@ -355,6 +355,204 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
+    it("handles deeply nested interface fragments with empty objects", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            interfaceImplementers {
+              ...on HasId {
+                id
+                ...on HasName {
+                  name
+                  ...on HasDescription {
+                    description
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          interfaceImplementers: [
+            {
+              id: "1",
+              name: "Implementer1",
+              description: "Has all three interfaces"
+            },
+            {
+              id: "2",
+              name: "Implementer2",
+              description: "Also has all three"
+            },
+            {}
+            // Empty object - InterfaceImplementer4 that doesn't implement any interface
+            // Valid because InterfaceImplementersUnion {1,2,3,4} was narrowed to HasId {1,2,3}
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object is valid - demonstrates narrowing through 3 nested interface fragments
+      // Progressive narrowing: InterfaceImplementersUnion {1,2,3,4} → HasId {1,2,3} → HasName {1,2} → HasDescription {1}
+      // parentFieldType = InterfaceImplementersUnion (4 types), parentType = HasId (3 types after first fragment)
+      // Sets are different → type was narrowed → empty object valid
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles deeply nested fragments with field only at innermost level", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            interfaceImplementers {
+              ...on HasId {
+                ...on HasName {
+                  ...on HasDescription {
+                    description
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          interfaceImplementers: [
+            {
+              description: "Implementer1 - implements all three"
+            },
+            {},
+            {},
+            {}
+            // Three empty objects representing Implementer2, 3, 4 that don't implement HasDescription
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // All empty objects are valid - they don't match the HasDescription fragment
+      // parentFieldType = InterfaceImplementersUnion (4 types)
+      // parentType = HasDescription (1 type)
+      // Sets are different → narrowing detected → empty objects valid
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles nested interface fragments with __typename and partial field sets", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            interfaceImplementers {
+              __typename
+              ...on HasId {
+                id
+                ...on HasName {
+                  name
+                  ...on HasDescription {
+                    description
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          interfaceImplementers: [
+            {
+              __typename: "InterfaceImplementer1",
+              id: "1",
+              name: "Implementer1",
+              description: "Implements all three"
+            },
+            {
+              __typename: "InterfaceImplementer2",
+              id: "2",
+              name: "Implementer2"
+              // Implements HasId & HasName, but not HasDescription
+            },
+            {
+              __typename: "InterfaceImplementer3",
+              id: "3"
+              // Implements HasId only
+            },
+            {
+              __typename: "InterfaceImplementer4"
+              // Doesn't implement any interface
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // With __typename, validator correctly discriminates which fields are expected for each type
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("requires __typename for nested interface fragments with partial field sets", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            interfaceImplementers {
+              ...on HasId {
+                id
+                ...on HasName {
+                  name
+                  ...on HasDescription {
+                    description
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          interfaceImplementers: [
+            {
+              id: "1",
+              name: "Implementer1",
+              description: "Implements all three"
+            },
+            {
+              id: "2",
+              name: "Implementer2"
+              // InterfaceImplementer2: implements HasId & HasName, but not HasDescription
+              // This is a valid response - nested fragment doesn't match
+            },
+            {
+              id: "3"
+              // InterfaceImplementer3: implements HasId only
+              // This is a valid response - nested fragments don't match
+            },
+            {}
+            // InterfaceImplementer4: doesn't implement any interface
+            // Empty object is valid - handled by empty object logic
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Without __typename, validator cannot determine if missing fields are valid
+      // (due to type not implementing nested interfaces) or invalid (incomplete data)
+      // So it conservatively expects all selected fields on non-empty objects
+      expect(result.errors).toHaveLength(3);
+      expect(result.errors[0]).toBe("Missing expected fixture data for name");
+      expect(result.errors[1]).toBe("Missing expected fixture data for description");
+      expect(result.errors[2]).toBe("Missing expected fixture data for description");
+    });
+
     it("handles objects with only __typename when inline fragment doesn't match", () => {
       const queryAST = parse(`
         query {
@@ -1153,7 +1351,7 @@ describe("validateFixtureInput", () => {
 
       // Should detect missing type information for the invalid field
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe('Cannot validate nonExistentField: missing type information');
+      expect(result.errors[0]).toBe('Cannot validate nonExistentField: missing field definition');
     });
 
     it("detects empty objects in non-union context", () => {
