@@ -20,7 +20,7 @@ describe("Default Integration Test", () => {
     ({ schemaPath, functionRunnerPath, wasmPath, targeting } = functionInfo);
 
     schema = await loadSchema(schemaPath);
-  }, 20000); // 20 second timeout for building and obtaining information about the function
+  }, 60000); // 60 second timeout for building and obtaining information about the function
 
   const fixturesDir = path.join(__dirname, "fixtures");
   const fixtureFiles = fs

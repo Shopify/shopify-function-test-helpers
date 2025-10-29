@@ -176,6 +176,14 @@ describe("runFunction", () => {
 
     const result = await resultPromise;
 
+    // Simulate spawn error
+    setImmediate(() => {
+      const error = new Error("ENOENT: no such file or directory");
+      mockProcess.emit("error", error);
+    });
+
+    const result = await resultPromise;
+
     expect(result).toBeDefined();
     expect(result.error).toContain("Failed to start function-runner");
     expect(result.error).toContain("ENOENT");

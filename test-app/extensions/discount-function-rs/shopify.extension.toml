@@ -2,7 +2,7 @@ api_version = "2025-04"
 
 [[extensions]]
 name = "t:name"
-handle = "discount-function"
+handle = "discount-function-rs"
 type = "function"
 uid = "630829f6-2180-df6b-6a08-656aa871d3f31c3e344a"
 description = "t:description"
@@ -19,5 +19,5 @@ description = "t:description"
 
   [extensions.build]
   command = "cargo build --target=wasm32-wasip1 --release"
-  path = "target/wasm32-wasip1/release/discount-function.wasm"
+  path = "target/wasm32-wasip1/release/discount-function-rs.wasm"
   watch = [ "src/**/*.rs" ]

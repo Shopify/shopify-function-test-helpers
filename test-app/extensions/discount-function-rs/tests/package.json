@@ -1,5 +1,5 @@
 {
-  "name": "discount-function-tests",
+  "name": "discount-function-rs-tests",
   "version": "1.0.0",
   "private": true,
   "scripts": {
