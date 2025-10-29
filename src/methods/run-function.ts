@@ -3,8 +3,13 @@
  */
 
 import { spawn } from "child_process";
+<<<<<<< HEAD
 
 import { FixtureData } from "./load-fixture.js";
+=======
+import path from "path";
+import { fileURLToPath } from "url";
+>>>>>>> e4448c7 (Fixing linting now that CI will run)
 
 /**
  * Interface for the run function result
@@ -59,6 +64,7 @@ export async function runFunction(
       let stdout = "";
       let stderr = "";
 
+<<<<<<< HEAD
       runnerProcess.stdout.on("data", (data) => {
         stdout += data.toString();
       });
@@ -68,6 +74,17 @@ export async function runFunction(
       });
 
       runnerProcess.on("close", (code) => {
+=======
+      shopifyProcess.stdout.on("data", (data) => {
+        stdout += data.toString();
+      });
+
+      shopifyProcess.stderr.on("data", (data) => {
+        stderr += data.toString();
+      });
+
+      shopifyProcess.on("close", (code) => {
+>>>>>>> e4448c7 (Fixing linting now that CI will run)
         if (code !== 0) {
           resolve({
             result: null,
@@ -100,7 +117,11 @@ export async function runFunction(
         }
       });
 
+<<<<<<< HEAD
       runnerProcess.on("error", (error) => {
+=======
+      shopifyProcess.on("error", (error) => {
+>>>>>>> e4448c7 (Fixing linting now that CI will run)
         resolve({
           result: null,
           error: `Failed to start function-runner: ${error.message}`,

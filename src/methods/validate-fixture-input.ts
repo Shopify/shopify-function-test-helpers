@@ -248,14 +248,14 @@ export function validateFixtureInput(
           if (isAbstractType(getNamedType(typeInfo.getType()))) {
             const hasTypename = node.selections.some(
               (selection) =>
-                selection.kind == Kind.FIELD &&
-                selection.name.value == "__typename",
+                selection.kind === Kind.FIELD &&
+                selection.name.value === "__typename",
             );
 
             const fragmentSpreadCount = node.selections.filter(
               (selection) =>
-                selection.kind == Kind.FRAGMENT_SPREAD ||
-                selection.kind == Kind.INLINE_FRAGMENT,
+                selection.kind === Kind.FRAGMENT_SPREAD ||
+                selection.kind === Kind.INLINE_FRAGMENT,
             ).length;
 
             if (!hasTypename && fragmentSpreadCount > 1) {
