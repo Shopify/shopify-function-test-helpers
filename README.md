@@ -1,5 +1,7 @@
 # Shopify Functions WASM Testing Helpers
 
+[![CI](https://github.com/Shopify/shopify-function-test-helpers/actions/workflows/ci.yml/badge.svg)](https://github.com/Shopify/shopify-function-test-helpers/actions/workflows/ci.yml)
+
 A JavaScript library that provides helpers for testing Shopify Functions WASM (WebAssembly) modules. This library provides utilities for loading fixtures, validating test assets, building functions, and running functions.
 
 ## Installation

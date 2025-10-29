@@ -1,15 +1,17 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { EventEmitter } from 'events';
-import { Writable } from 'stream';
-import { spawn } from 'child_process';
-import { runFunction } from '../../src/methods/run-function.ts';
-import { FixtureData } from '../../src/methods/load-fixture.ts';
+import { EventEmitter } from "events";
+import { Writable } from "stream";
+import { spawn } from "child_process";
 
-vi.mock('child_process', () => ({
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+import { runFunction } from "../../src/methods/run-function.ts";
+import { FixtureData } from "../../src/methods/load-fixture.ts";
+
+vi.mock("child_process", () => ({
   spawn: vi.fn(),
 }));
 
-describe('runFunction', () => {
+describe("runFunction", () => {
   const mockSpawn = vi.mocked(spawn);
   let mockStdin: Writable & { end: ReturnType<typeof vi.fn> };
   let mockStdout: EventEmitter;
@@ -44,42 +46,42 @@ describe('runFunction', () => {
     vi.clearAllMocks();
   });
 
-  it('should run a function successfully and return result', async () => {
+  it("should run a function successfully and return result", async () => {
     const fixture: FixtureData = {
-      export: 'cart-validations-generate-run',
+      export: "cart-validations-generate-run",
       input: {
         cart: {
-          lines: [{ quantity: 1 }]
-        }
+          lines: [{ quantity: 1 }],
+        },
       },
       expectedOutput: {
-        operations: []
+        operations: [],
       },
-      target: 'cart.validations.generate.run'
+      target: "cart.validations.generate.run",
     };
 
-    const functionRunnerPath = '/path/to/function-runner';
-    const wasmPath = '/path/to/function.wasm';
-    const inputQueryPath = '/path/to/query.graphql';
-    const schemaPath = '/path/to/schema.graphql';
+    const functionRunnerPath = "/path/to/function-runner";
+    const wasmPath = "/path/to/function.wasm";
+    const inputQueryPath = "/path/to/query.graphql";
+    const schemaPath = "/path/to/schema.graphql";
 
     const resultPromise = runFunction(
       fixture,
       functionRunnerPath,
       wasmPath,
       inputQueryPath,
-      schemaPath
+      schemaPath,
     );
 
     // Simulate successful function execution
     const expectedOutput = {
       output: {
-        operations: []
-      }
+        operations: [],
+      },
     };
     setImmediate(() => {
-      mockStdout.emit('data', Buffer.from(JSON.stringify(expectedOutput)));
-      mockProcess.emit('close', 0);
+      mockStdout.emit("data", Buffer.from(JSON.stringify(expectedOutput)));
+      mockProcess.emit("close", 0);
     });
 
     const result = await resultPromise;
@@ -92,157 +94,159 @@ describe('runFunction', () => {
     expect(mockSpawn).toHaveBeenCalledWith(
       functionRunnerPath,
       [
-        '-f', wasmPath,
-        '--export', fixture.export,
-        '--query-path', inputQueryPath,
-        '--schema-path', schemaPath,
-        '--json',
+        "-f",
+        wasmPath,
+        "--export",
+        fixture.export,
+        "--query-path",
+        inputQueryPath,
+        "--schema-path",
+        schemaPath,
+        "--json",
       ],
-      { stdio: ['pipe', 'pipe', 'pipe'] }
+      { stdio: ["pipe", "pipe", "pipe"] },
     );
 
     // Verify input was written to stdin
-    expect(mockStdin.write).toHaveBeenCalledWith(
-      JSON.stringify(fixture.input)
-    );
+    expect(mockStdin.write).toHaveBeenCalledWith(JSON.stringify(fixture.input));
     expect(mockStdin.end).toHaveBeenCalled();
   });
 
-  it('should handle function execution errors with non-zero exit code', async () => {
+  it("should handle function execution errors with non-zero exit code", async () => {
     const fixture: FixtureData = {
-      export: 'invalid_export',
+      export: "invalid_export",
       input: { cart: { lines: [] } },
       expectedOutput: {},
-      target: 'cart.validations.generate.run'
+      target: "cart.validations.generate.run",
     };
 
-    const functionRunnerPath = '/path/to/function-runner';
-    const wasmPath = '/path/to/function.wasm';
-    const inputQueryPath = '/path/to/query.graphql';
-    const schemaPath = '/path/to/schema.graphql';
+    const functionRunnerPath = "/path/to/function-runner";
+    const wasmPath = "/path/to/function.wasm";
+    const inputQueryPath = "/path/to/query.graphql";
+    const schemaPath = "/path/to/schema.graphql";
 
     const resultPromise = runFunction(
       fixture,
       functionRunnerPath,
       wasmPath,
       inputQueryPath,
-      schemaPath
+      schemaPath,
     );
 
     // Simulate function-runner error
     setImmediate(() => {
-      mockStderr.emit('data', Buffer.from('Error: Export not found'));
-      mockProcess.emit('close', 1);
+      mockStderr.emit("data", Buffer.from("Error: Export not found"));
+      mockProcess.emit("close", 1);
     });
 
     const result = await resultPromise;
 
     expect(result).toBeDefined();
-    expect(result.error).toContain('function-runner failed with exit code 1');
-    expect(result.error).toContain('Error: Export not found');
+    expect(result.error).toContain("function-runner failed with exit code 1");
+    expect(result.error).toContain("Error: Export not found");
     expect(result.result).toBeNull();
   });
 
-  it('should handle process spawn errors', async () => {
+  it("should handle process spawn errors", async () => {
     const fixture: FixtureData = {
-      export: 'cart-validations-generate-run',
+      export: "cart-validations-generate-run",
       input: { cart: { lines: [] } },
       expectedOutput: {},
-      target: 'cart.validations.generate.run'
+      target: "cart.validations.generate.run",
     };
 
-    const functionRunnerPath = '/path/to/nonexistent-runner';
-    const wasmPath = '/path/to/function.wasm';
-    const inputQueryPath = '/path/to/query.graphql';
-    const schemaPath = '/path/to/schema.graphql';
+    const functionRunnerPath = "/path/to/nonexistent-runner";
+    const wasmPath = "/path/to/function.wasm";
+    const inputQueryPath = "/path/to/query.graphql";
+    const schemaPath = "/path/to/schema.graphql";
 
     const resultPromise = runFunction(
       fixture,
       functionRunnerPath,
       wasmPath,
       inputQueryPath,
-      schemaPath
+      schemaPath,
     );
 
     // Simulate spawn error
     setImmediate(() => {
-      const error = new Error('ENOENT: no such file or directory');
-      mockProcess.emit('error', error);
+      const error = new Error("ENOENT: no such file or directory");
+      mockProcess.emit("error", error);
     });
 
     const result = await resultPromise;
 
     expect(result).toBeDefined();
-    expect(result.error).toContain('Failed to start function-runner');
-    expect(result.error).toContain('ENOENT');
+    expect(result.error).toContain("Failed to start function-runner");
+    expect(result.error).toContain("ENOENT");
     expect(result.result).toBeNull();
   });
 
-  it('should handle invalid JSON output from function-runner', async () => {
+  it("should handle invalid JSON output from function-runner", async () => {
     const fixture: FixtureData = {
-      export: 'cart-validations-generate-run',
+      export: "cart-validations-generate-run",
       input: { cart: { lines: [] } },
       expectedOutput: {},
-      target: 'cart.validations.generate.run'
+      target: "cart.validations.generate.run",
     };
 
-    const functionRunnerPath = '/path/to/function-runner';
-    const wasmPath = '/path/to/function.wasm';
-    const inputQueryPath = '/path/to/query.graphql';
-    const schemaPath = '/path/to/schema.graphql';
+    const functionRunnerPath = "/path/to/function-runner";
+    const wasmPath = "/path/to/function.wasm";
+    const inputQueryPath = "/path/to/query.graphql";
+    const schemaPath = "/path/to/schema.graphql";
 
     const resultPromise = runFunction(
       fixture,
       functionRunnerPath,
       wasmPath,
       inputQueryPath,
-      schemaPath
+      schemaPath,
     );
 
     // Simulate invalid JSON output
     setImmediate(() => {
-      mockStdout.emit('data', Buffer.from('invalid json {{{'));
-      mockProcess.emit('close', 0);
+      mockStdout.emit("data", Buffer.from("invalid json {{{"));
+      mockProcess.emit("close", 0);
     });
 
     const result = await resultPromise;
 
     expect(result).toBeDefined();
-    expect(result.error).toContain('Failed to parse function-runner output');
+    expect(result.error).toContain("Failed to parse function-runner output");
     expect(result.result).toBeNull();
   });
 
-  it('should handle multiple stdout/stderr chunks', async () => {
+  it("should handle multiple stdout/stderr chunks", async () => {
     const fixture: FixtureData = {
-      export: 'cart-validations-generate-run',
+      export: "cart-validations-generate-run",
       input: { cart: { lines: [] } },
       expectedOutput: {},
-      target: 'cart.validations.generate.run'
+      target: "cart.validations.generate.run",
     };
 
-    const functionRunnerPath = '/path/to/function-runner';
-    const wasmPath = '/path/to/function.wasm';
-    const inputQueryPath = '/path/to/query.graphql';
-    const schemaPath = '/path/to/schema.graphql';
+    const functionRunnerPath = "/path/to/function-runner";
+    const wasmPath = "/path/to/function.wasm";
+    const inputQueryPath = "/path/to/query.graphql";
+    const schemaPath = "/path/to/schema.graphql";
 
     const resultPromise = runFunction(
       fixture,
       functionRunnerPath,
       wasmPath,
       inputQueryPath,
-      schemaPath
+      schemaPath,
     );
 
     // Simulate output in multiple chunks
     const outputPart1 = '{"output":';
     const outputPart2 = '{"operations":[]}';
-    const outputPart3 = '}';
+    const outputPart3 = "}";
 
     setImmediate(() => {
-      mockStdout.emit('data', Buffer.from(outputPart1));
-      mockStdout.emit('data', Buffer.from(outputPart2));
-      mockStdout.emit('data', Buffer.from(outputPart3));
-      mockProcess.emit('close', 0);
+      mockStdout.emit("data", Buffer.from(outputPart1));
+      mockStdout.emit("data", Buffer.from(outputPart2));
+      mockStdout.emit("data", Buffer.from(outputPart3));
+      mockProcess.emit("close", 0);
     });
 
     const result = await resultPromise;
@@ -251,45 +255,52 @@ describe('runFunction', () => {
     expect(result.error).toBeNull();
     expect(result.result).toEqual({
       output: {
-        operations: []
-      }
+        operations: [],
+      },
     });
   });
 
-  it('should reject output without explicit output wrapper', async () => {
+  it("should reject output without explicit output wrapper", async () => {
     const fixture: FixtureData = {
-      export: 'cart-validations-generate-run',
+      export: "cart-validations-generate-run",
       input: { cart: { lines: [] } },
       expectedOutput: {},
-      target: 'cart.validations.generate.run'
+      target: "cart.validations.generate.run",
     };
 
-    const functionRunnerPath = '/path/to/function-runner';
-    const wasmPath = '/path/to/function.wasm';
-    const inputQueryPath = '/path/to/query.graphql';
-    const schemaPath = '/path/to/schema.graphql';
+    const functionRunnerPath = "/path/to/function-runner";
+    const wasmPath = "/path/to/function.wasm";
+    const inputQueryPath = "/path/to/query.graphql";
+    const schemaPath = "/path/to/schema.graphql";
 
     const resultPromise = runFunction(
       fixture,
       functionRunnerPath,
       wasmPath,
       inputQueryPath,
-      schemaPath
+      schemaPath,
     );
 
     // Simulate output without "output" wrapper
     setImmediate(() => {
-      mockStdout.emit('data', Buffer.from(JSON.stringify({
-        operations: []
-      })));
-      mockProcess.emit('close', 0);
+      mockStdout.emit(
+        "data",
+        Buffer.from(
+          JSON.stringify({
+            operations: [],
+          }),
+        ),
+      );
+      mockProcess.emit("close", 0);
     });
 
     const result = await resultPromise;
 
     expect(result).toBeDefined();
-    expect(result.error).toContain('function-runner returned unexpected format');
-    expect(result.error).toContain('missing \'output\' field');
+    expect(result.error).toContain(
+      "function-runner returned unexpected format",
+    );
+    expect(result.error).toContain("missing 'output' field");
     expect(result.result).toBeNull();
   });
 });
