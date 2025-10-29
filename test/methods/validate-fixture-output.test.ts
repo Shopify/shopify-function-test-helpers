@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { GraphQLSchema } from "graphql";
+
 import { validateFixtureOutput } from "../../src/methods/validate-fixture-output.ts";
 import { loadSchema } from "../../src/wasm-testing-helpers.ts";
-import { GraphQLSchema } from "graphql";
 
 describe("validateFixtureOutput", () => {
   let schema: GraphQLSchema;
@@ -12,13 +13,13 @@ describe("validateFixtureOutput", () => {
     items: [
       {
         name: "Item 1",
-        value: 100
+        value: 100,
       },
       {
         name: "Item 2",
-        value: 200
-      }
-    ]
+        value: 200,
+      },
+    ],
   };
 
   beforeAll(async () => {
@@ -31,7 +32,7 @@ describe("validateFixtureOutput", () => {
         fixtureOutput,
         schema,
         "processData",
-        "result"
+        "result",
       );
 
       expect(result.errors).toHaveLength(0);
@@ -60,7 +61,7 @@ describe("validateFixtureOutput", () => {
         outputWithComplexData,
         schema,
         "processData",
-        "result"
+        "result",
       );
 
       expect(result.errors).toHaveLength(0);
@@ -71,12 +72,12 @@ describe("validateFixtureOutput", () => {
         fixtureOutput,
         schema,
         "nonExistentMutation",
-        "result"
+        "result",
       );
 
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toContain(
-        "Mutation 'nonExistentMutation' not found"
+        "Mutation 'nonExistentMutation' not found",
       );
     });
 
@@ -85,12 +86,12 @@ describe("validateFixtureOutput", () => {
         fixtureOutput,
         schema,
         "processData",
-        "nonExistentParam"
+        "nonExistentParam",
       );
 
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toContain(
-        "Parameter 'nonExistentParam' not found"
+        "Parameter 'nonExistentParam' not found",
       );
     });
 
@@ -109,7 +110,7 @@ describe("validateFixtureOutput", () => {
         fetchOutputData,
         schema,
         "fetchData",
-        "input"
+        "input",
       );
 
       expect(result.mutationName).toBe("fetchData");
@@ -128,12 +129,12 @@ describe("validateFixtureOutput", () => {
         invalidOutputData,
         schema,
         "processData",
-        "result"
+        "result",
       );
 
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0].message).toBe(
-        'Int cannot represent non-integer value: "this should be a number" At "count"'
+        'Int cannot represent non-integer value: "this should be a number" At "count"',
       );
     });
 
@@ -153,7 +154,7 @@ describe("validateFixtureOutput", () => {
         outputWithExtraFields,
         schema,
         "processData",
-        "result"
+        "result",
       );
 
       // Should detect each extra field as a separate error
@@ -161,13 +162,13 @@ describe("validateFixtureOutput", () => {
 
       // Check each extra field gets its own specific error
       expect(result.errors[0].message).toBe(
-        'Field "extraField1" is not defined by type "ProcessDataResult". At ""'
+        'Field "extraField1" is not defined by type "ProcessDataResult". At ""',
       );
       expect(result.errors[1].message).toBe(
-        'Field "extraField2" is not defined by type "ProcessDataResult". At ""'
+        'Field "extraField2" is not defined by type "ProcessDataResult". At ""',
       );
       expect(result.errors[2].message).toBe(
-        'Field "nestedExtra" is not defined by type "ProcessDataResult". At ""'
+        'Field "nestedExtra" is not defined by type "ProcessDataResult". At ""',
       );
     });
   });

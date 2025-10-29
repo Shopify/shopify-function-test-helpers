@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeAll } from "vitest";
+import { GraphQLSchema, parse } from "graphql";
+
 import { validateFixtureInput } from "../../src/methods/validate-fixture-input.ts";
 import { loadSchema } from "../../src/methods/load-schema.ts";
 import { loadInputQuery } from "../../src/methods/load-input-query.ts";
 import { loadFixture } from "../../src/methods/load-fixture.ts";
-import { GraphQLSchema, parse } from "graphql";
 
 describe("validateFixtureInput", () => {
   let schema: GraphQLSchema;
@@ -14,7 +15,9 @@ describe("validateFixtureInput", () => {
 
   describe("Valid Fixtures", () => {
     it("validates default fixture", async () => {
-      const queryAST = await loadInputQuery("./test/fixtures/valid-query.graphql");
+      const queryAST = await loadInputQuery(
+        "./test/fixtures/valid-query.graphql",
+      );
       const fixture = await loadFixture("./test/fixtures/valid-fixture.json");
       const fixtureInput = fixture.input;
 
@@ -40,10 +43,10 @@ describe("validateFixtureInput", () => {
           allItems: [
             {
               id: "gid://test/Item/1",
-              count: 5
-            }
-          ]
-        }
+              count: 5,
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -76,20 +79,20 @@ describe("validateFixtureInput", () => {
               id: "gid://test/Item/1",
               count: 5,
               details: {
-                name: "First Item"
-              }
-            }
+                name: "First Item",
+              },
+            },
           ],
           secondItems: [
             {
               id: "gid://test/Item/1",
               count: 5,
               details: {
-                name: "First Item"
-              }
-            }
-          ]
-        }
+                name: "First Item",
+              },
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -118,10 +121,10 @@ describe("validateFixtureInput", () => {
           items: [
             {
               id: "gid://test/Item/1",
-              count: 5
-            }
-          ]
-        }
+              count: 5,
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -154,15 +157,15 @@ describe("validateFixtureInput", () => {
             {
               __typename: "Item",
               id: "gid://test/Item/1",
-              count: 5
+              count: 5,
             },
             {
               __typename: "Metadata",
               email: "test@example.com",
-              phone: "555-0001"
-            }
-          ]
-        }
+              phone: "555-0001",
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -714,11 +717,11 @@ describe("validateFixtureInput", () => {
               count: 5,
               details: {
                 id: "gid://test/ItemDetails/1",
-                name: "Test Item"
-              }
-            }
-          ]
-        }
+                name: "Test Item",
+              },
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -757,11 +760,11 @@ describe("validateFixtureInput", () => {
               itemId: "gid://test/Item/1",
               itemCount: 5,
               details: {
-                name: "Test Item"
-              }
-            }
-          ]
-        }
+                name: "Test Item",
+              },
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -790,10 +793,10 @@ describe("validateFixtureInput", () => {
           items: [
             {
               identifier: "gid://test/Item/1",
-              quantity: 5
-            }
-          ]
-        }
+              quantity: 5,
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -818,14 +821,14 @@ describe("validateFixtureInput", () => {
           items: [
             {
               id: "gid://test/Item/1",
-              count: 5
+              count: 5,
             },
             {
               id: "gid://test/Item/2",
-              count: 10
-            }
-          ]
-        }
+              count: 10,
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -857,11 +860,11 @@ describe("validateFixtureInput", () => {
               count: 5,
               details: {
                 id: "gid://test/ItemDetails/123",
-                name: "Test Item"
-              }
-            }
-          ]
-        }
+                name: "Test Item",
+              },
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -884,23 +887,17 @@ describe("validateFixtureInput", () => {
       const fixtureInput = {
         data: {
           itemMatrix: [
-            [
-              { id: "1", count: 10 },
-              null,
-              { id: "2", count: 20 }
-            ],
+            [{ id: "1", count: 10 }, null, { id: "2", count: 20 }],
             null,
             [
               { id: "3", count: 30 },
               { id: "4", count: 40 },
               null,
-              { id: "5", count: 50 }
+              { id: "5", count: 50 },
             ],
-            [
-              { id: "6", count: 60 }
-            ]
-          ]
-        }
+            [{ id: "6", count: 60 }],
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -941,9 +938,9 @@ describe("validateFixtureInput", () => {
                   attributes: [
                     { key: "color", value: "blue" },
                     null,
-                    { key: "size", value: "large" }
-                  ]
-                }
+                    { key: "size", value: "large" },
+                  ],
+                },
               },
               {
                 id: "gid://test/Item/2",
@@ -951,9 +948,9 @@ describe("validateFixtureInput", () => {
                 details: {
                   id: "gid://test/ItemDetails/2",
                   name: "Another Item",
-                  attributes: null
-                }
-              }
+                  attributes: null,
+                },
+              },
             ],
             null,
             [
@@ -966,9 +963,9 @@ describe("validateFixtureInput", () => {
                   attributes: [
                     { key: "material", value: "cotton" },
                     null,
-                    { key: "weight", value: "heavy" }
-                  ]
-                }
+                    { key: "weight", value: "heavy" },
+                  ],
+                },
               },
               null,
               {
@@ -977,12 +974,12 @@ describe("validateFixtureInput", () => {
                 details: {
                   id: "gid://test/ItemDetails/4",
                   name: "Fourth Item",
-                  attributes: null
-                }
-              }
-            ]
-          ]
-        }
+                  attributes: null,
+                },
+              },
+            ],
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1010,10 +1007,10 @@ describe("validateFixtureInput", () => {
           items: [
             {
               id: "gid://test/Item/1",
-              details: null
-            }
-          ]
-        }
+              details: null,
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1040,35 +1037,28 @@ describe("validateFixtureInput", () => {
               [
                 { email: "user1@example.com", phone: "555-0001" },
                 null,
-                { email: "user2@example.com", phone: "555-0002" }
+                { email: "user2@example.com", phone: "555-0002" },
               ],
               null,
-              [
-                { email: "user3@example.com", phone: "555-0003" }
-              ]
+              [{ email: "user3@example.com", phone: "555-0003" }],
             ],
             null,
-            [
-              [
-                { email: "user4@example.com", phone: "555-0004" },
-                null
-              ]
-            ],
+            [[{ email: "user4@example.com", phone: "555-0004" }, null]],
             [
               [
                 { email: "user5@example.com", phone: "555-0005" },
-                { email: "user6@example.com", phone: "555-0006" }
+                { email: "user6@example.com", phone: "555-0006" },
               ],
               [
                 null,
                 { email: "user7@example.com", phone: "555-0007" },
                 { email: "user8@example.com", phone: "555-0008" },
                 null,
-                { email: "user9@example.com", phone: "555-0009" }
-              ]
-            ]
-          ]
-        }
+                { email: "user9@example.com", phone: "555-0009" },
+              ],
+            ],
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1101,11 +1091,11 @@ describe("validateFixtureInput", () => {
               id: "gid://test/Item/1",
               details: {
                 name: "Test Item",
-                id: "gid://test/ItemDetails/1"
-              }
-            }
-          ]
-        }
+                id: "gid://test/ItemDetails/1",
+              },
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1130,17 +1120,17 @@ describe("validateFixtureInput", () => {
 
       const fixtureInput = {
         data: {
-          items: [
-            { id: "1", count: null }
-          ]
-        }
+          items: [{ id: "1", count: null }],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // count is Int! so null should not be allowed
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe('Expected non-nullable type "Int!" not to be null. At ""');
+      expect(result.errors[0]).toBe(
+        'Expected non-nullable type "Int!" not to be null. At ""',
+      );
     });
 
     it("should detect null in non-nullable array", () => {
@@ -1157,19 +1147,17 @@ describe("validateFixtureInput", () => {
 
       const fixtureInput = {
         data: {
-          items: [
-            { id: "1", count: 10 },
-            null,
-            { id: "2", count: 20 }
-          ]
-        }
+          items: [{ id: "1", count: 10 }, null, { id: "2", count: 20 }],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // items is [Item!]! so null should not be allowed
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe('Null value found in non-nullable array at items[1]');
+      expect(result.errors[0]).toBe(
+        "Null value found in non-nullable array at items[1]",
+      );
     });
 
     it("should detect null in non-nullable object field", () => {
@@ -1186,15 +1174,17 @@ describe("validateFixtureInput", () => {
 
       const fixtureInput = {
         data: {
-          requiredMetadata: null
-        }
+          requiredMetadata: null,
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // requiredMetadata is Metadata! so null should not be allowed
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe("Expected object for requiredMetadata, but got null");
+      expect(result.errors[0]).toBe(
+        "Expected object for requiredMetadata, but got null",
+      );
     });
 
     it("detects missing fields in fixture data", () => {
@@ -1220,20 +1210,20 @@ describe("validateFixtureInput", () => {
         data: {
           items: [
             {
-              id: "gid://test/Item/1"
-            }
-          ]
-        }
+              id: "gid://test/Item/1",
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
       expect(result.errors).toHaveLength(3);
       expect(result.errors[0]).toBe("Missing expected fixture data for count");
       expect(result.errors[1]).toBe(
-        "Missing expected fixture data for details"
+        "Missing expected fixture data for details",
       );
       expect(result.errors[2]).toBe(
-        "Missing expected fixture data for metadata"
+        "Missing expected fixture data for metadata",
       );
     });
 
@@ -1258,17 +1248,17 @@ describe("validateFixtureInput", () => {
             {
               id: "gid://test/Item/1",
               count: 5,
-            }
-          ]
-        }
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // When implemented, should detect that 'count' is not in the query
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toContain('count');
-      expect(result.errors[0]).toContain('not in query');
+      expect(result.errors[0]).toContain("count");
+      expect(result.errors[0]).toContain("not in query");
     });
 
     it("detects type mismatches (object vs scalar)", () => {
@@ -1291,7 +1281,7 @@ describe("validateFixtureInput", () => {
       `);
 
       const fixtureInput = {
-        data: "this should be an object, not a string"
+        data: "this should be an object, not a string",
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1316,17 +1306,17 @@ describe("validateFixtureInput", () => {
           items: [
             {
               id: 123,
-              count: "not a number"
-            }
-          ]
-        }
+              count: "not a number",
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe(
-        'Int cannot represent non-integer value: "not a number" At ""'
+        'Int cannot represent non-integer value: "not a number" At ""',
       );
     });
 
@@ -1351,14 +1341,14 @@ describe("validateFixtureInput", () => {
 
       const fixtureInput = {
         data: {
-          items: []
-        }
+          items: [],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
       expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe(
-        "Missing expected fixture data for metadata"
+        "Missing expected fixture data for metadata",
       );
     });
 
@@ -1380,17 +1370,21 @@ describe("validateFixtureInput", () => {
         data: {
           itemMatrix: [
             { id: "1", count: 10 },
-            { id: "2", count: 20 }
-          ]
-        }
+            { id: "2", count: 20 },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect that we got objects where we expected arrays
       expect(result.errors).toHaveLength(2);
-      expect(result.errors[0]).toBe('Expected array at itemMatrix[0], but got object');
-      expect(result.errors[1]).toBe('Expected array at itemMatrix[1], but got object');
+      expect(result.errors[0]).toBe(
+        "Expected array at itemMatrix[0], but got object",
+      );
+      expect(result.errors[1]).toBe(
+        "Expected array at itemMatrix[1], but got object",
+      );
     });
 
     it("should detect non-array value where array is expected", () => {
@@ -1409,15 +1403,15 @@ describe("validateFixtureInput", () => {
       // But fixture provides a single object instead
       const fixtureInput = {
         data: {
-          items: { id: "1", count: 10 }
-        }
+          items: { id: "1", count: 10 },
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect that we got an object where we expected an array
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe('Expected array for items, but got object');
+      expect(result.errors[0]).toBe("Expected array for items, but got object");
     });
 
     it("detects fields with missing type information", () => {
@@ -1438,10 +1432,10 @@ describe("validateFixtureInput", () => {
           items: [
             {
               id: "gid://test/Item/1",
-              nonExistentField: "some value"
-            }
-          ]
-        }
+              nonExistentField: "some value",
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);

@@ -20,6 +20,7 @@ import {
   visitWithTypeInfo,
   BREAK,
 } from "graphql";
+
 import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
 
 export interface ValidateFixtureInputResult {
@@ -41,7 +42,7 @@ export interface ValidateFixtureInputResult {
 export function validateFixtureInput(
   queryAST: DocumentNode,
   schema: GraphQLSchema,
-  value: any
+  value: any,
 ): ValidateFixtureInputResult {
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
@@ -112,7 +113,7 @@ export function validateFixtureInput(
                 fieldType,
                 (path, _invalidValue, error) => {
                   errors.push(`${error.message} At "${path.join(".")}"`);
-                }
+                },
               );
             }
             // Nullable fields with null value
@@ -129,37 +130,46 @@ export function validateFixtureInput(
               // Lists - process recursively
               if (isListType(unwrappedFieldType)) {
                 if (Array.isArray(valueForResponseKey)) {
-                  const { values: flattened, errors: flattenErrors } = processNestedArrays(
-                    valueForResponseKey,
-                    unwrappedFieldType,
-                    responseKey
-                  );
+                  const { values: flattened, errors: flattenErrors } =
+                    processNestedArrays(
+                      valueForResponseKey,
+                      unwrappedFieldType,
+                      responseKey,
+                    );
                   nestedValues.push(...flattened);
                   errors.push(...flattenErrors);
                 } else {
                   errors.push(
-                    `Expected array for ${responseKey}, but got ${typeof valueForResponseKey}`
+                    `Expected array for ${responseKey}, but got ${typeof valueForResponseKey}`,
                   );
                 }
               }
               // Objects - validate and add to traversal stack
               else if (isObjectType(unwrappedFieldType) || isAbstractType(unwrappedFieldType)) {
                 if (valueForResponseKey === null) {
-                  errors.push(`Expected object for ${responseKey}, but got null`);
+                  errors.push(
+                    `Expected object for ${responseKey}, but got null`,
+                  );
                 } else if (typeof valueForResponseKey === "object") {
                   nestedValues.push(valueForResponseKey);
                 } else {
-                  errors.push(`Expected object for ${responseKey}, but got ${typeof valueForResponseKey}`);
+                  errors.push(
+                    `Expected object for ${responseKey}, but got ${typeof valueForResponseKey}`,
+                  );
                 }
               }
               // Unexpected type - defensive check that should never be reached
               else {
-                errors.push(`Unexpected type for ${responseKey}: ${unwrappedFieldType}`);
+                errors.push(
+                  `Unexpected type for ${responseKey}: ${unwrappedFieldType}`,
+                );
               }
             }
             // No type information - should not happen with valid query
             else {
-              errors.push(`Cannot validate ${responseKey}: missing type information`);
+              errors.push(
+                `Cannot validate ${responseKey}: missing type information`,
+              );
             }
           }
 
@@ -209,19 +219,19 @@ export function validateFixtureInput(
           if (isAbstractType(getNamedType(typeInfo.getType()))) {
             const hasTypename = node.selections.some(
               (selection) =>
-                selection.kind == Kind.FIELD &&
-                selection.name.value == "__typename"
+                selection.kind === Kind.FIELD &&
+                selection.name.value === "__typename",
             );
 
             const fragmentSpreadCount = node.selections.filter(
               (selection) =>
-                selection.kind == Kind.FRAGMENT_SPREAD ||
-                selection.kind == Kind.INLINE_FRAGMENT
+                selection.kind === Kind.FRAGMENT_SPREAD ||
+                selection.kind === Kind.INLINE_FRAGMENT,
             ).length;
 
             if (!hasTypename && fragmentSpreadCount > 1) {
               errors.push(
-                `Missing __typename field for abstract type ${getNamedType(typeInfo.getType())?.name}`
+                `Missing __typename field for abstract type ${getNamedType(typeInfo.getType())?.name}`,
               );
               return BREAK;
             }
@@ -231,7 +241,7 @@ export function validateFixtureInput(
           typenameResponseKeyStack.pop();
         },
       },
-    })
+    }),
   );
   return { errors };
 }
@@ -265,7 +275,7 @@ export function validateFixtureInput(
 function processNestedArrays(
   value: any[],
   listType: GraphQLList<any>,
-  fieldName: string
+  fieldName: string,
 ): { values: any[]; errors: string[] } {
   const result: any[] = [];
   const errors: string[] = [];
@@ -275,24 +285,28 @@ function processNestedArrays(
     if (element === null) {
       if (!isNullableType(elementType)) {
         errors.push(
-          `Null value found in non-nullable array at ${fieldName}[${index}]`
+          `Null value found in non-nullable array at ${fieldName}[${index}]`,
+        );
+      }
+    } else if (isListType(elementType)) {
+      // Element type is a list - expect nested array and recurse
+      if (Array.isArray(element)) {
+        const nested = processNestedArrays(
+          element,
+          elementType,
+          `${fieldName}[${index}]`,
+        );
+        result.push(...nested.values);
+        errors.push(...nested.errors);
+      } else {
+        // Error: fixture structure doesn't match schema nesting
+        errors.push(
+          `Expected array at ${fieldName}[${index}], but got ${typeof element}`,
         );
       }
     } else {
-      if (isListType(elementType)) {
-        // Element type is a list - expect nested array and recurse
-        if (Array.isArray(element)) {
-          const nested = processNestedArrays(element, elementType, `${fieldName}[${index}]`);
-          result.push(...nested.values);
-          errors.push(...nested.errors);
-        } else {
-          // Error: fixture structure doesn't match schema nesting
-          errors.push(`Expected array at ${fieldName}[${index}], but got ${typeof element}`);
-        }
-      } else {
-        // Non-list type - add directly
-        result.push(element);
-      }
+      // Non-list type - add directly
+      result.push(element);
     }
   }
 

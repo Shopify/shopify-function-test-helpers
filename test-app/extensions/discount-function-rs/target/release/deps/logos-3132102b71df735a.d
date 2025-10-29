@@ -1,0 +1,10 @@
+/Users/sagarikadasgupta/src/github.com/Shopify/shopify-function-test-helpers/test-app/extensions/discount-function/target/release/deps/logos-3132102b71df735a.d: /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/lib.rs /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/lexer.rs /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/source.rs /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/internal.rs
+
+/Users/sagarikadasgupta/src/github.com/Shopify/shopify-function-test-helpers/test-app/extensions/discount-function/target/release/deps/liblogos-3132102b71df735a.rlib: /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/lib.rs /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/lexer.rs /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/source.rs /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/internal.rs
+
+/Users/sagarikadasgupta/src/github.com/Shopify/shopify-function-test-helpers/test-app/extensions/discount-function/target/release/deps/liblogos-3132102b71df735a.rmeta: /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/lib.rs /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/lexer.rs /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/source.rs /Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/internal.rs
+
+/Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/lib.rs:
+/Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/lexer.rs:
+/Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/source.rs:
+/Users/sagarikadasgupta/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/logos-0.15.1/src/internal.rs:

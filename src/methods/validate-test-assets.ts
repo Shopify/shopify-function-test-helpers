@@ -1,8 +1,10 @@
+import { GraphQLSchema, GraphQLError, DocumentNode } from "graphql";
+
+import { determineMutationFromTarget } from "../utils/determine-mutation-from-target.js";
+
 import { validateInputQuery } from "./validate-input-query.js";
 import { validateFixtureOutput } from "./validate-fixture-output.js";
 import { validateFixtureInput } from "./validate-fixture-input.js";
-import { determineMutationFromTarget } from "../utils/determine-mutation-from-target.js";
-import { GraphQLSchema, GraphQLError, DocumentNode } from "graphql";
 import { FixtureData } from "./load-fixture.js";
 
 /**
@@ -23,7 +25,7 @@ export interface CompleteValidationResult {
   mutationName?: string;
   resultParameterName?: string;
   inputQuery: {
-    errors: readonly GraphQLError[];
+    errors: ReadonlyArray<GraphQLError>;
   };
   inputFixture: {
     errors: string[];
@@ -87,7 +89,7 @@ export async function validateTestAssets({
     const inputFixtureResult = validateFixtureInput(
       inputQueryAST,
       schema,
-      fixture.input
+      fixture.input,
     );
     results.inputFixture = {
       errors: inputFixtureResult.errors,
@@ -99,7 +101,7 @@ export async function validateTestAssets({
       const target = fixture.target;
       if (!target) {
         throw new Error(
-          "Fixture must contain target when mutationName and resultParameterName are not provided"
+          "Fixture must contain target when mutationName and resultParameterName are not provided",
         );
       }
 
@@ -113,7 +115,7 @@ export async function validateTestAssets({
     // Step 5: Validate output fixture
     if (!results.mutationName || !results.resultParameterName) {
       throw new Error(
-        "Unable to determine mutation name or result parameter name for output fixture validation"
+        "Unable to determine mutation name or result parameter name for output fixture validation",
       );
     }
 
@@ -121,7 +123,7 @@ export async function validateTestAssets({
       fixture.expectedOutput,
       schema,
       results.mutationName,
-      results.resultParameterName
+      results.resultParameterName,
     );
     results.outputFixture = {
       errors: outputFixtureResult.errors,
