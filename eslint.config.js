@@ -8,8 +8,6 @@ export default [
   ...shopifyPlugin.configs.prettier,
   {
     rules: {
-      // Relax some rules for a library project
-      '@typescript-eslint/no-explicit-any': 'warn',
       // This library doesn't use component boundaries
       '@shopify/strict-component-boundaries': 'off',
       // Allow file extensions in imports (standard for ES modules)
