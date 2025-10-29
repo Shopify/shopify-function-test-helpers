@@ -27,9 +27,9 @@ export interface RunFunctionResult {
  */
 
 export async function runFunction(
+  fixture: FixtureData,
   functionRunnerPath: string,
   wasmPath: string,
-  fixture: FixtureData,
   queryPath: string,
   schemaPath: string,
 ): Promise<RunFunctionResult> {
@@ -72,8 +72,16 @@ export async function runFunction(
           const result = JSON.parse(stdout);
 
           // function-runner output format: { output: {...} }
+          if (!result.output) {
+            resolve({
+              result: null,
+              error: `function-runner returned unexpected format - missing 'output' field. Received: ${JSON.stringify(result)}`
+            });
+            return;
+          }
+
           resolve({
-            result: { output: result.output || result },
+            result: { output: result.output },
             error: null
           });
         } catch (parseError) {
@@ -85,7 +93,6 @@ export async function runFunction(
       });
 
       runnerProcess.on('error', (error) => {
-        const endTime = Date.now();
         resolve({
           result: null,
           error: `Failed to start function-runner: ${error.message}`

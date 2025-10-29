@@ -49,9 +49,9 @@ describe("Default Integration Test", () => {
 
       // Run the actual function
       const runResult = await runFunction(
+        fixture,
         functionRunnerPath,
         wasmPath,
-        fixture,
         inputQueryPath,
         schemaPath
       );

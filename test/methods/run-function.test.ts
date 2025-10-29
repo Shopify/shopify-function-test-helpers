@@ -62,9 +62,9 @@ describe('runFunction', () => {
     const schemaPath = '/path/to/schema.graphql';
 
     const resultPromise = runFunction(
+      fixture,
       functionRunnerPath,
       wasmPath,
-      fixture,
       inputQueryPath,
       schemaPath
     );
@@ -123,9 +123,9 @@ describe('runFunction', () => {
     const schemaPath = '/path/to/schema.graphql';
 
     const resultPromise = runFunction(
+      fixture,
       functionRunnerPath,
       wasmPath,
-      fixture,
       inputQueryPath,
       schemaPath
     );
@@ -158,9 +158,9 @@ describe('runFunction', () => {
     const schemaPath = '/path/to/schema.graphql';
 
     const resultPromise = runFunction(
+      fixture,
       functionRunnerPath,
       wasmPath,
-      fixture,
       inputQueryPath,
       schemaPath
     );
@@ -193,9 +193,9 @@ describe('runFunction', () => {
     const schemaPath = '/path/to/schema.graphql';
 
     const resultPromise = runFunction(
+      fixture,
       functionRunnerPath,
       wasmPath,
-      fixture,
       inputQueryPath,
       schemaPath
     );
@@ -227,9 +227,9 @@ describe('runFunction', () => {
     const schemaPath = '/path/to/schema.graphql';
 
     const resultPromise = runFunction(
+      fixture,
       functionRunnerPath,
       wasmPath,
-      fixture,
       inputQueryPath,
       schemaPath
     );
@@ -257,7 +257,7 @@ describe('runFunction', () => {
     });
   });
 
-  it('should handle output without explicit output wrapper', async () => {
+  it('should reject output without explicit output wrapper', async () => {
     const fixture: FixtureData = {
       export: 'cart-validations-generate-run',
       input: { cart: { lines: [] } },
@@ -271,9 +271,9 @@ describe('runFunction', () => {
     const schemaPath = '/path/to/schema.graphql';
 
     const resultPromise = runFunction(
+      fixture,
       functionRunnerPath,
       wasmPath,
-      fixture,
       inputQueryPath,
       schemaPath
     );
@@ -289,11 +289,8 @@ describe('runFunction', () => {
     const result = await resultPromise;
 
     expect(result).toBeDefined();
-    expect(result.error).toBeNull();
-    expect(result.result).toEqual({
-      output: {
-        operations: []
-      }
-    });
+    expect(result.error).toContain('function-runner returned unexpected format');
+    expect(result.error).toContain('missing \'output\' field');
+    expect(result.result).toBeNull();
   });
 });
