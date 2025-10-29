@@ -10,62 +10,24 @@ A JavaScript library that provides helpers for testing Shopify Functions WASM (W
 npm install @shopify/shopify-function-test-helpers
 ```
 
-## Usage
+Or with pnpm:
 
-### Basic Usage
-
-```javascript
-import {
-  buildFunction,
-  loadFixture,
-  loadSchema,
-  loadInputQuery,
-  validateTestAssets,
-  runFunction,
-} from "@shopify/shopify-function-test-helpers";
-
-// Load the GraphQL schema and input query
-const schema = await loadSchema("/path/to/schema.graphql");
-const inputQueryAST = await loadInputQuery("/path/to/src/run.graphql");
-
-// Load a test fixture
-const fixture = await loadFixture("/path/to/fixtures/my-test.json");
-
-// Build the function
-await buildFunction("/path/to/function");
-
-// Validate the test assets
-const validationResult = await validateTestAssets({
-  schema,
-  fixture,
-  inputQueryAST,
-});
-
-console.log(`  Input Query: ${validationResult.inputQuery.valid ? '✅' : '❌'}`);
-console.log(`  Input Fixture: ${validationResult.inputFixture.valid ? '✅' : '❌'}`);
-console.log(`  Input Query-Fixture Match: ${validationResult.inputQueryFixtureMatch.valid ? '✅' : '❌'}`);
-console.log(`  Output Fixture: ${validationResult.outputFixture.valid ? '✅' : '❌'}`);
-
-// Run the function
-const runResult = await runFunction(
-  fixture.export,
-  fixture.input,
-  "/path/to/function"
-);
-
-console.log("Output:", runResult.result.output);
-console.log("Expected:", fixture.expectedOutput);
+```bash
+pnpm add @shopify/shopify-function-test-helpers
 ```
+
+## Usage
 
 ### Complete Test Example
 
-For a full test suite that runs multiple fixtures:
+For a full test suite that runs multiple fixtures using `getFunctionInfo`:
 
 ```javascript
 import path from "path";
 import fs from "fs";
 import {
   buildFunction,
+  getFunctionInfo,
   loadFixture,
   runFunction,
   validateTestAssets,
@@ -75,18 +37,18 @@ import {
 
 describe("Function Tests", () => {
   let schema;
-  let inputQueryAST;
   let functionDir;
+  let functionInfo;
 
   beforeAll(async () => {
     functionDir = path.dirname(__dirname);
     await buildFunction(functionDir);
 
-    const schemaPath = path.join(functionDir, "schema.graphql");
-    const inputQueryPath = path.join(functionDir, "src/run.graphql");
+    // Get function information from Shopify CLI
+    functionInfo = await getFunctionInfo(functionDir);
 
-    schema = await loadSchema(schemaPath);
-    inputQueryAST = await loadInputQuery(inputQueryPath);
+    // Load schema
+    schema = await loadSchema(functionInfo.schemaPath);
   }, 20000);
 
   const fixturesDir = path.join(__dirname, "fixtures");
@@ -96,24 +58,31 @@ describe("Function Tests", () => {
     .map((file) => path.join(fixturesDir, file));
 
   fixtureFiles.forEach((fixtureFile) => {
-    test(`runs ${path.basename(fixtureFile)}`, async () => {
+    test(\`runs \${path.basename(fixtureFile)}\`, async () => {
       const fixture = await loadFixture(fixtureFile);
 
+      // Get the correct input query for this fixture's target
+      const targetInputQueryPath = functionInfo.targeting[fixture.target].inputQueryPath;
+      const inputQueryAST = await loadInputQuery(targetInputQueryPath);
+
+      // Validate test assets
       const validationResult = await validateTestAssets({
         schema,
         fixture,
         inputQueryAST,
       });
 
-      expect(validationResult.inputQuery.valid).toBe(true);
-      expect(validationResult.inputFixture.valid).toBe(true);
-      expect(validationResult.inputQueryFixtureMatch.valid).toBe(true);
-      expect(validationResult.outputFixture.valid).toBe(true);
+      expect(validationResult.inputQuery.errors).toHaveLength(0);
+      expect(validationResult.inputFixture.errors).toHaveLength(0);
+      expect(validationResult.outputFixture.errors).toHaveLength(0);
 
+      // Run the function
       const runResult = await runFunction(
-        fixture.export,
-        fixture.input,
-        functionDir
+        fixture,
+        functionInfo.functionRunnerPath,
+        functionInfo.wasmPath,
+        targetInputQueryPath,
+        functionInfo.schemaPath
       );
 
       expect(runResult.error).toBeNull();
@@ -123,16 +92,71 @@ describe("Function Tests", () => {
 });
 ```
 
+### Simplified Example (Without getFunctionInfo)
+
+If you prefer to specify paths manually:
+
+```javascript
+import path from "path";
+import {
+  buildFunction,
+  loadFixture,
+  loadSchema,
+  loadInputQuery,
+  validateTestAssets,
+  runFunction,
+} from "@shopify/shopify-function-test-helpers";
+
+describe("Function Tests", () => {
+  beforeAll(async () => {
+    const functionDir = path.dirname(__dirname);
+    await buildFunction(functionDir);
+  }, 20000);
+
+  test("validates and runs a fixture", async () => {
+    const functionDir = path.dirname(__dirname);
+    const schemaPath = path.join(functionDir, "schema.graphql");
+    const inputQueryPath = path.join(functionDir, "src/run.graphql");
+
+    const schema = await loadSchema(schemaPath);
+    const inputQueryAST = await loadInputQuery(inputQueryPath);
+    const fixture = await loadFixture("path/to/fixture.json");
+
+    // Validate
+    const validationResult = await validateTestAssets({
+      schema,
+      fixture,
+      inputQueryAST,
+    });
+
+    expect(validationResult.inputQuery.errors).toHaveLength(0);
+    expect(validationResult.inputFixture.errors).toHaveLength(0);
+    expect(validationResult.outputFixture.errors).toHaveLength(0);
+
+    // Run
+    const runResult = await runFunction(
+      fixture.export,
+      fixture.input,
+      functionDir
+    );
+
+    expect(runResult.error).toBeNull();
+    expect(runResult.result.output).toEqual(fixture.expectedOutput);
+  });
+});
+```
+
 ## API Reference
 
 ### Core Functions
 
-- [`loadFixture`](./src/methods/load-fixture.ts) - Load a fixture file from the specified path
-- [`loadSchema`](./src/methods/load-schema.ts) - Load a GraphQL schema from a file
-- [`loadInputQuery`](./src/methods/load-input-query.ts) - Load and parse a GraphQL input query
-- [`validateTestAssets`](./src/methods/validate-test-assets.ts) - Validate test assets including input query, fixture input/output, and query-fixture match
-- [`buildFunction`](./src/methods/build-function.ts) - Build a Shopify function using the Shopify CLI
-- [`runFunction`](./src/methods/run-function.ts) - Run a Shopify function using the Shopify CLI
+- **[buildFunction](./src/methods/build-function.ts)** - Build a Shopify function using the Shopify CLI
+- **[getFunctionInfo](./src/methods/get-function-info.ts)** - Get function information from Shopify CLI (paths, targets, etc.)
+- **[loadFixture](./src/methods/load-fixture.ts)** - Load a test fixture file
+- **[loadSchema](./src/methods/load-schema.ts)** - Load a GraphQL schema from a file
+- **[loadInputQuery](./src/methods/load-input-query.ts)** - Load and parse a GraphQL input query
+- **[validateTestAssets](./src/methods/validate-test-assets.ts)** - Validate test assets (input query, fixture input/output, query-fixture match)
+- **[runFunction](./src/methods/run-function.ts)** - Run a Shopify function
 
 See [wasm-testing-helpers.ts](./src/wasm-testing-helpers.ts) for all exported types.
 
@@ -149,9 +173,6 @@ npm run test:watch
 
 # Run tests with coverage
 npm run test:coverage
-
-# Run example integration tests
-npm run test:examples
 ```
 
 ### Building
@@ -170,6 +191,33 @@ npm run lint
 npm run lint:fix
 ```
 
+### Creating a Package
+
+```bash
+npm run build
+npm pack
+```
+
+This creates a `.tgz` file that can be installed in other projects:
+
+```json
+{
+  "devDependencies": {
+    "@shopify/shopify-function-test-helpers": "file:../path/to/shopify-shopify-function-test-helpers-0.0.1.tgz"
+  }
+}
+```
+
+## CI/CD
+
+This project includes a comprehensive CI pipeline that runs on every push and pull request:
+
+- **Lint & Type-check**: Ensures code quality and type safety
+- **Tests**: Runs on multiple OS (Ubuntu, Windows, macOS) and Node versions (18.x, 20.x, 22.x)
+- **Build**: Verifies the TypeScript compilation and creates the package
+
+The CI configuration can be found in [.github/workflows/ci.yml](./.github/workflows/ci.yml).
+
 ## License
 
 MIT
@@ -180,5 +228,8 @@ MIT
 2. Create a feature branch
 3. Make your changes
 4. Add tests for your changes
-5. Run the test suite
-6. Submit a pull request
+5. Run the test suite (`npm test`)
+6. Run the linter (`npm run lint`)
+7. Submit a pull request
+
+For more details, see the [test examples](./test-app/extensions/) in this repository.

@@ -10,14 +10,14 @@ describe("Default Integration Test", () => {
   beforeAll(async () => {
     functionDir = path.dirname(__dirname);
     await buildFunction(functionDir);
-    
+
     // Load schema and input query once since they don't change across fixtures
     const schemaPath = path.join(functionDir, "schema.graphql");
     const inputQueryPath = path.join(functionDir, "src/cart_lines_discounts_generate_run.graphql");
-    
+
     schema = await loadSchema(schemaPath);
     inputQueryAST = await loadInputQuery(inputQueryPath);
-  }, 20000); // 20 second timeout for building the function
+  }, 60000); // 60 second timeout for building the Rust function
 
   const fixturesDir = path.join(__dirname, "fixtures");
   const fixtureFiles = fs

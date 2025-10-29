@@ -152,17 +152,79 @@ jobs:
           path: '*.tgz'
           retention-days: 7
 
+  integration-tests:
+    name: 'Integration Tests - Ubuntu'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Setup Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-wasip1
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Shopify CLI
+        run: npm install -g @shopify/cli@latest
+
+      - name: Verify CLI installations
+        run: |
+          shopify version
+
+      - name: Install test-app dependencies
+        run: |
+          cd test-app/extensions/cart-validation-js && pnpm install && cd ../discount-function-rs/tests && pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+
+      - name: Run integration tests
+        run: |
+          pnpm --filter cart-validation-js-tests test
+          pnpm --filter discount-function-rs-tests test
+
   all-checks-pass:
     name: 'All Checks Pass'
     if: always()
-    needs: [lint-and-typecheck, test, build]
+    needs: [lint-and-typecheck, test, build, integration-tests]
     runs-on: ubuntu-latest
     steps:
       - name: Check all jobs
         run: |
           if [[ "${{ needs.lint-and-typecheck.result }}" != "success" ]] || \
              [[ "${{ needs.test.result }}" != "success" ]] || \
-             [[ "${{ needs.build.result }}" != "success" ]]; then
+             [[ "${{ needs.build.result }}" != "success" ]] || \
+             [[ "${{ needs.integration-tests.result }}" != "success" ]]; then
             echo "One or more checks failed"
             exit 1
           fi
