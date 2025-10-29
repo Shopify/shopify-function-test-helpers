@@ -1,3 +1,5 @@
+import "core-js/actual/set/intersection.js";
+import "core-js/actual/set/symmetric-difference.js";
 import {
   coerceInputValue,
   DocumentNode,
@@ -315,7 +317,7 @@ function processNestedArrays(
  * - Checks if value's __typename is in the possibleTypes set
  *
  * When __typename is NOT selected:
- * - Compares parent field's possible types vs current possibleTypes using symmetricDifference
+ * - Compares parent field's possible types vs current possibleTypes
  * - If sets differ (narrowing occurred), empty objects {} are valid (return false)
  * - Non-empty objects conservatively expect all fields (return true)
  * - Since typeStack only tracks fields (not inline fragments), parentFieldType is the original

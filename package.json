@@ -25,6 +25,7 @@
     "prepublishOnly": "pnpm run build && pnpm run test && pnpm run lint"
   },
   "dependencies": {
+    "core-js": "^3.46.0",
     "graphql": "^16.11.0"
   },
   "devDependencies": {
@@ -38,7 +39,7 @@
     "vitest": "^3.2.4"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=20.0.0"
   },
   "author": "lopert",
   "license": "MIT",
