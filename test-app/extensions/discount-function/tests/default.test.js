@@ -16,7 +16,7 @@ describe("Default Integration Test", () => {
     await buildFunction(functionDir);
 
     // Get function info from Shopify CLI
-    const functionInfo = getFunctionInfo(functionDir);
+    const functionInfo = await getFunctionInfo(functionDir);
     schemaPath = functionInfo.schemaPath;
     functionRunnerPath = functionInfo.functionRunnerPath;
     wasmPath = functionInfo.wasmPath;
