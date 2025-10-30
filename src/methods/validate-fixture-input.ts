@@ -185,7 +185,7 @@ export function validateFixtureInput(
         },
       },
       SelectionSet: {
-        enter(node) {
+        enter(node, _key, parent) {
           // Look ahead to find __typename field and track its response key
           const typenameField = node.selections.find(
             (selection) =>
@@ -193,11 +193,16 @@ export function validateFixtureInput(
               selection.name.value === "__typename"
           );
 
-          // If this SelectionSet has __typename, use its response key.
-          // Otherwise, inherit from parent.
-          const typenameResponseKey = typenameField && typenameField.kind === Kind.FIELD
-            ? typenameField.alias?.value || "__typename"
-            : typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+          let typenameResponseKey: string | undefined;
+          if (typenameField && typenameField.kind === Kind.FIELD) {
+            typenameResponseKey = typenameField.alias?.value || "__typename";
+          } else if (parent && 'kind' in parent && parent.kind === Kind.INLINE_FRAGMENT) {
+            // Inside an inline fragment without __typename - inherit from parent SelectionSet
+            typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+          } else {
+            // Field SelectionSet or root level - don't inherit (new object context)
+            typenameResponseKey = undefined;
+          }
 
           typenameResponseKeyStack.push(typenameResponseKey);
 

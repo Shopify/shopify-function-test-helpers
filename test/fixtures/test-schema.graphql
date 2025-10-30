@@ -18,6 +18,7 @@ type DataContainer {
   products: [Product!]!
   purchasable: Purchasable
   interfaceImplementers: [InterfaceImplementersUnion!]!
+  nested: [NestedOuter!]!
 }
 
 union SearchResult = Item | Metadata
@@ -61,6 +62,27 @@ type InterfaceImplementer4 {
 }
 
 union InterfaceImplementersUnion = InterfaceImplementer1 | InterfaceImplementer2 | InterfaceImplementer3 | InterfaceImplementer4
+
+union NestedOuter = NestedOuterA | NestedOuterB
+
+type NestedOuterA {
+  id: ID
+  inner: [NestedInner!]!
+}
+
+type NestedOuterB {
+  email: String
+}
+
+union NestedInner = NestedInnerA | NestedInnerB
+
+type NestedInnerA {
+  name: String!
+}
+
+type NestedInnerB {
+  value: String!
+}
 
 type Item {
   id: ID

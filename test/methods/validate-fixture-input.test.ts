@@ -211,6 +211,105 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
+    it("should not inherit typename key across field boundaries", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            nested {
+              outerType: __typename
+              ... on NestedOuterA {
+                id
+                inner {
+                  ... on NestedInnerA {
+                    name
+                  }
+                  ... on NestedInnerB {
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          nested: [
+            {
+              outerType: "NestedOuterA",
+              id: "1",
+              inner: [
+                {
+                  name: "Inner name"
+                  // No __typename - query doesn't select it for inner
+                }
+              ]
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // - inner SelectionSet has typenameResponseKey = undefined (doesn't inherit "outerType")
+      // - Error 1: Missing __typename (inner has 2+ fragments without it)
+      // - Error 2: Missing value field (without typename, can't discriminate, expects all fields)
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors[0]).toBe("Missing __typename field for abstract type NestedInner");
+      expect(result.errors[1]).toBe("Missing expected fixture data for value");
+    });
+
+    it("handles nested unions with typename at each level", () => {
+      // Same structure as previous test, but WITH __typename at inner level
+      const queryAST = parse(`
+        query {
+          data {
+            nested {
+              outerType: __typename
+              ... on NestedOuterA {
+                id
+                inner {
+                  __typename
+                  ... on NestedInnerA {
+                    name
+                  }
+                  ... on NestedInnerB {
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          nested: [
+            {
+              outerType: "NestedOuterA",
+              id: "1",
+              inner: [
+                {
+                  __typename: "NestedInnerA",
+                  name: "Inner name"
+                }
+              ]
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // With __typename selected at inner level, validation works correctly
+      // - outer uses "outerType" alias
+      // - inner uses "__typename" (not inherited)
+      // - Each level properly scoped to its field
+      expect(result.errors).toHaveLength(0);
+    });
+
     it("handles inline fragment on interface type", () => {
       const queryAST = parse(`
         query {
