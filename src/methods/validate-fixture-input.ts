@@ -60,8 +60,8 @@ export function validateFixtureInput(
       InlineFragment: {
         enter(node) {
           let possibleTypes = new Set(possibleTypesStack[possibleTypesStack.length - 1]);
-          if (node.typeCondition) {
-            const namedType = schema.getType(node.typeCondition!.name.value);
+          if (node.typeCondition !== null && node.typeCondition !== undefined) {
+            const namedType = schema.getType(node.typeCondition.name.value);
             if (namedType && isAbstractType(namedType)) {
               possibleTypes = possibleTypes.intersection(new Set(schema.getPossibleTypes(namedType).map(type => type.name)));
             } else if (namedType && isObjectType(namedType)) {
@@ -93,22 +93,13 @@ export function validateFixtureInput(
 
             // Field is missing from fixture
             if (valueForResponseKey === undefined) {
-              const parentType = typeInfo.getParentType();
-              if (!parentType) {
-                // This shouldn't happen with a valid query and schema - TypeInfo should always
-                // provide parent type information when traversing fields. This check is here to
-                // satisfy TypeScript's type requirements (getParentType() can return null).
-                errors.push(`Cannot validate ${responseKey}: missing parent type information`);
-              } else {
-                const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
-                // Get the type of the parent field (the field that returned this object)
-                // This skips inline fragments since they don't push to typeStack
-                const parentFieldType = typeStack[typeStack.length - 1]!;
-                const possibleTypes = possibleTypesStack[possibleTypesStack.length - 1];
-                if (isValueExpectedForType(currentValue, parentFieldType, possibleTypes, schema, typenameResponseKey)) {
-                  errors.push(`Missing expected fixture data for ${responseKey}`);
-                }
+              const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+              const parentFieldType = typeStack[typeStack.length - 1]!;
+              const possibleTypes = possibleTypesStack[possibleTypesStack.length - 1];
+              if (isValueExpectedForType(currentValue, parentFieldType, possibleTypes, schema, typenameResponseKey)) {
+                errors.push(`Missing expected fixture data for ${responseKey}`);
               }
+              
             }
             // Scalars and Enums (including wrapped types)
             else if (isInputType(fieldType)) {
