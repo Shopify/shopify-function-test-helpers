@@ -223,6 +223,7 @@ export function validateFixtureInput(
               errors.push(
                 `Missing __typename field for abstract type ${getNamedType(typeInfo.getType())?.name}`
               );
+              return BREAK;
             }
           }
         },

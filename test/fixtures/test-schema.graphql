@@ -57,11 +57,11 @@ type InterfaceImplementer3 implements HasId {
   id: ID!
 }
 
-type InterfaceImplementer4 {
+type NoInterfacesImplemented {
   value: String
 }
 
-union InterfaceImplementersUnion = InterfaceImplementer1 | InterfaceImplementer2 | InterfaceImplementer3 | InterfaceImplementer4
+union InterfaceImplementersUnion = InterfaceImplementer1 | InterfaceImplementer2 | InterfaceImplementer3 | NoInterfacesImplemented
 
 union NestedOuter = NestedOuterA | NestedOuterB
 

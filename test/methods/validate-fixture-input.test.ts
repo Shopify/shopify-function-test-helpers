@@ -253,11 +253,9 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // - inner SelectionSet has typenameResponseKey = undefined (doesn't inherit "outerType")
-      // - Error 1: Missing __typename (inner has 2+ fragments without it)
-      // - Error 2: Missing value field (without typename, can't discriminate, expects all fields)
-      expect(result.errors).toHaveLength(2);
+      // - Detects missing __typename and BREAKs early
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe("Missing __typename field for abstract type NestedInner");
-      expect(result.errors[1]).toBe("Missing expected fixture data for value");
     });
 
     it("handles nested unions with typename at each level", () => {
@@ -487,7 +485,7 @@ describe("validateFixtureInput", () => {
               description: "Also has all three"
             },
             {}
-            // Empty object - InterfaceImplementer4 that doesn't implement any interface
+            // Empty object - NoInterfacesImplemented that doesn't implement any interface
             // Valid because InterfaceImplementersUnion {1,2,3,4} was narrowed to HasId {1,2,3}
           ]
         }
@@ -583,7 +581,7 @@ describe("validateFixtureInput", () => {
               // Implements HasId only
             },
             {
-              __typename: "InterfaceImplementer4"
+              __typename: "NoInterfacesImplemented"
               // Doesn't implement any interface
             }
           ]
@@ -635,7 +633,7 @@ describe("validateFixtureInput", () => {
               // This is a valid response - nested fragments don't match
             },
             {}
-            // InterfaceImplementer4: doesn't implement any interface
+            // NoInterfacesImplemented: doesn't implement any interface
             // Empty object is valid - handled by empty object logic
           ]
         }
@@ -1512,6 +1510,42 @@ describe("validateFixtureInput", () => {
       expect(result.errors[0]).toBe("Missing expected fixture data for price");
     });
 
+    it("handles multiple inline fragments on same type without typename", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              ... on Item {
+                id
+              }
+              ... on Item {
+                count
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Multiple fragments but all on the same type (Item)
+      // Still errors on missing __typename because fragmentSpreadCount > 1
+      // However, NO cascading field errors because all fragments select on same type
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe("Missing __typename field for abstract type SearchResult");
+    });
+
     it("detects missing fields when __typename is not selected in union with inline fragments", () => {
       const queryAST = parse(`
         query {
@@ -1548,16 +1582,9 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Without __typename, we can't discriminate which fields are expected for each object
-      // So the validator conservatively expects all fields from all inline fragments
-      // First error: Missing __typename field for abstract type (required for discrimination)
-      // First object is missing email and phone (from Metadata fragment)
-      // Second object is missing id and count (from Item fragment)
-      expect(result.errors).toHaveLength(5);
+      // Validator detects missing __typename for abstract type with 2+ fragments and BREAKs early
+      expect(result.errors).toHaveLength(1);
       expect(result.errors[0]).toBe("Missing __typename field for abstract type SearchResult");
-      expect(result.errors[1]).toBe("Missing expected fixture data for id");
-      expect(result.errors[2]).toBe("Missing expected fixture data for count");
-      expect(result.errors[3]).toBe("Missing expected fixture data for email");
-      expect(result.errors[4]).toBe("Missing expected fixture data for phone");
     });
   });
 });
