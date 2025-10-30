@@ -194,7 +194,7 @@ export function validateFixtureInput(
           );
 
           let typenameResponseKey: string | undefined;
-          if (typenameField && typenameField.kind === Kind.FIELD) {
+          if (typenameField?.kind === Kind.FIELD) {
             typenameResponseKey = typenameField.alias?.value || "__typename";
           } else if (parent && 'kind' in parent && parent.kind === Kind.INLINE_FRAGMENT) {
             // Inside an inline fragment without __typename - inherit from parent SelectionSet
