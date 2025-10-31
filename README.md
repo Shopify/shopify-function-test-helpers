@@ -191,8 +191,7 @@ npm run lint
 npm run lint:fix
 ```
 
-### Creating a Package
-
+### Create a tarball from a package 
 ```bash
 npm run build
 npm pack
