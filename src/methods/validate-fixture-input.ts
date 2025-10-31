@@ -211,6 +211,7 @@ export function validateFixtureInput(
           typeStack.push(getNamedType(fieldType));
 
           valueStack.push(nestedValues);
+          return undefined;
         },
         leave() {
           valueStack.pop();
@@ -265,6 +266,7 @@ export function validateFixtureInput(
               return BREAK;
             }
           }
+          return undefined;
         },
         leave() {
           typenameResponseKeyStack.pop();
