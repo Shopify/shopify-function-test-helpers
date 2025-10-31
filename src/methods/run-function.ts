@@ -3,8 +3,7 @@
  */
 
 import { spawn } from 'child_process';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { FixtureData } from './load-fixture.js';
 
 /**
  * Interface for the run function result
@@ -14,112 +13,101 @@ export interface RunFunctionResult {
   error: string | null;
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 /**
- * Run a function with the given payload and return the result
- * @param {String} exportName - The function run payload
- * @param {String} input - The actual function implementation to test
- * @param {String} [functionPath] - Optional path to the function directory
+ * Run a function using Shopify CLI's function runner command
+ *
+ * This function:
+ * - Uses function-runner binary directly to run the function.
+ * @param {String} functionRunnerPath - Path to the function runner binary
+ * @param {String} wasmPath - Path to the WASM file
+ * @param {FixtureData} fixture - The fixture data containing export, input, and target
+ * @param {String} queryPath - Path to the input query file
+ * @param {String} schemaPath - Path to the schema file
  * @returns {Object} The function run result
  */
+
 export async function runFunction(
-  exportName: string,
-  input: Record<string, any>,
-  functionPath?: string
+  fixture: FixtureData,
+  functionRunnerPath: string,
+  wasmPath: string,
+  queryPath: string,
+  schemaPath: string,
 ): Promise<RunFunctionResult> {
   try {
-    const inputJson = JSON.stringify(input);
+    const inputJson = JSON.stringify(fixture.input);
 
-    let functionDir, appRootDir, functionName;
-    
-    if (functionPath !== undefined && functionPath !== null) {
-      // Use provided function path
-      functionDir = path.resolve(functionPath);
-      appRootDir = path.dirname(functionDir);
-      functionName = path.basename(functionDir);
-    } else {
-      // Calculate paths correctly for when used as a dependency:
-      // __dirname = /path/to/function/tests/node_modules/function-testing-helpers/src/methods
-      // Go up 5 levels to get to function directory: ../../../../../ = /path/to/function
-      functionDir = path.dirname(path.dirname(path.dirname(path.dirname(path.dirname(__dirname)))));
-      appRootDir = path.dirname(functionDir);
-      functionName = path.basename(functionDir);
-    }
-    
-    return new Promise((resolve, reject) => {
-      const shopifyProcess = spawn('shopify', [
-        'app', 'function', 'run',
-        '--export', exportName,
+    return new Promise((resolve) => {
+      const runnerProcess = spawn(functionRunnerPath, [
+        '-f', wasmPath,
+        '--export', fixture.export,
+        '--query-path', queryPath,
+        '--schema-path', schemaPath,
         '--json',
-        '--path', functionName
       ], {
-        cwd: appRootDir,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       let stdout = '';
       let stderr = '';
 
-      shopifyProcess.stdout.on('data', (data) => {
+      runnerProcess.stdout.on('data', (data) => {
         stdout += data.toString();
       });
 
-      shopifyProcess.stderr.on('data', (data) => {
+      runnerProcess.stderr.on('data', (data) => {
         stderr += data.toString();
       });
 
-      shopifyProcess.on('close', (code) => {
+      runnerProcess.on('close', (code) => {
+
         if (code !== 0) {
           resolve({
             result: null,
-            error: `Command failed with exit code ${code}: ${stderr}`,
+            error: `function-runner failed with exit code ${code}: ${stderr}`
           });
           return;
         }
 
-        let result;
         try {
-          result = JSON.parse(stdout);
+          const result = JSON.parse(stdout);
 
-          let actualOutput;
-          if (result?.output?.humanized) {
-            actualOutput = JSON.parse(result.output.humanized);
-          } else if (result?.output) {
-            actualOutput = result.output;
-          } else {
-            actualOutput = result;
+          // function-runner output format: { output: {...} }
+          if (!result.output) {
+            resolve({
+              result: null,
+              error: `function-runner returned unexpected format - missing 'output' field. Received: ${JSON.stringify(result)}`
+            });
+            return;
           }
 
           resolve({
-            result: { output: actualOutput },
-            error: null,
+            result: { output: result.output },
+            error: null
           });
         } catch (parseError) {
           resolve({
-            result: { output: stdout.trim() },
-            error: null,
+            result: null,
+            error: `Failed to parse function-runner output: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
           });
         }
       });
 
-      shopifyProcess.on('error', (error) => {
+      runnerProcess.on('error', (error) => {
         resolve({
           result: null,
-          error: `Failed to start shopify command: ${error.message}`,
+          error: `Failed to start function-runner: ${error.message}`
         });
       });
 
-      shopifyProcess.stdin.write(inputJson);
-      shopifyProcess.stdin.end();
+      runnerProcess.stdin.write(inputJson);
+      runnerProcess.stdin.end();
     });
 
   } catch (error) {
     if (error instanceof Error) {
       return {
         result: null,
-        error: error.message,
+        error: error.message
       };
     } else {
       return {
@@ -129,4 +117,3 @@ export async function runFunction(
     }
   }
 }
-

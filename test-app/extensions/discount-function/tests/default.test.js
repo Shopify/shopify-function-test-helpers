@@ -1,23 +1,26 @@
 import path from "path";
 import fs from "fs";
-import { buildFunction, loadFixture, runFunction, validateTestAssets, loadSchema, loadInputQuery } from "@shopify/shopify-function-test-helpers";
+import { buildFunction, loadFixture, runFunction, validateTestAssets, loadSchema, loadInputQuery, getFunctionInfo } from "@shopify/shopify-function-test-helpers";
 
 describe("Default Integration Test", () => {
   let schema;
   let inputQueryAST;
   let functionDir;
+  let schemaPath;
+  let targeting;
+  let functionRunnerPath;
+  let wasmPath;
 
   beforeAll(async () => {
     functionDir = path.dirname(__dirname);
     await buildFunction(functionDir);
-    
-    // Load schema and input query once since they don't change across fixtures
-    const schemaPath = path.join(functionDir, "schema.graphql");
-    const inputQueryPath = path.join(functionDir, "src/cart_lines_discounts_generate_run.graphql");
-    
+
+    // Get function info from Shopify CLI
+    const functionInfo = await getFunctionInfo(functionDir);
+    ({ schemaPath, functionRunnerPath, wasmPath, targeting } = functionInfo);
+
     schema = await loadSchema(schemaPath);
-    inputQueryAST = await loadInputQuery(inputQueryPath);
-  }, 20000); // 20 second timeout for building the function
+  }, 20000); // 20 second timeout for building and obtaining information about the function
 
   const fixturesDir = path.join(__dirname, "fixtures");
   const fixtureFiles = fs
@@ -28,6 +31,8 @@ describe("Default Integration Test", () => {
   fixtureFiles.forEach((fixtureFile) => {
     test(`runs ${path.relative(fixturesDir, fixtureFile)}`, async () => {
       const fixture = await loadFixture(fixtureFile);
+      const inputQueryPath = targeting[fixture.target].inputQueryPath;
+      inputQueryAST = await loadInputQuery(inputQueryPath);
 
       // Validate fixture using our comprehensive validation system
       const validationResult = await validateTestAssets({
@@ -35,20 +40,17 @@ describe("Default Integration Test", () => {
         fixture,
         inputQueryAST
       });
-
-      // Log validation results for debugging
-      // logValidationResults(fixtureFile, validationResult);
-
-      // Assert that all validation steps pass
       expect(validationResult.inputQuery.errors).toHaveLength(0);
       expect(validationResult.inputFixture.errors).toHaveLength(0);
       expect(validationResult.outputFixture.errors).toHaveLength(0);
 
       // Run the actual function
       const runResult = await runFunction(
-        fixture.export,
-        fixture.input,
-        functionDir
+        fixture,
+        functionRunnerPath,
+        wasmPath,
+        inputQueryPath,
+        schemaPath
       );
 
       const { result, error } = runResult;
