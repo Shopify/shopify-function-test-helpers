@@ -145,13 +145,6 @@ jobs:
       - name: Create package
         run: pnpm pack
 
-      - name: Upload package artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-package
-          path: '*.tgz'
-          retention-days: 7
-
   integration-tests:
     name: 'Integration Tests - Ubuntu'
     runs-on: ubuntu-latest
@@ -206,7 +199,6 @@ jobs:
 
       - name: Build
         run: pnpm run build
-
 
       - name: Run integration tests
         run: |
