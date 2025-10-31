@@ -4,10 +4,7 @@ export default defineConfig({
   test: {
     globals: true, // Enable global test APIs (describe, test, expect)
     environment: "node",
-    include: [
-      "test/**/*.test.ts",
-      "test-app/extensions/*/tests/**/*.test.js",
-    ],
+    include: ["test/**/*.test.ts", "test-app/extensions/*/tests/**/*.test.js"],
     exclude: [
       ...(process.env.CI === "true" ? ["test-app/**"] : []),
       "**/node_modules/**",
