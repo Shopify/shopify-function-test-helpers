@@ -17,10 +17,7 @@ describe("Default Integration Test", () => {
 
     // Get function info from Shopify CLI
     const functionInfo = await getFunctionInfo(functionDir);
-    schemaPath = functionInfo.schemaPath;
-    functionRunnerPath = functionInfo.functionRunnerPath;
-    wasmPath = functionInfo.wasmPath;
-    targeting = functionInfo.targeting;
+    ({ schemaPath, functionRunnerPath, wasmPath, targeting } = functionInfo);
 
     schema = await loadSchema(schemaPath);
   }, 20000); // 20 second timeout for building and obtaining information about the function

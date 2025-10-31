@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
 import { Writable } from 'stream';
-import * as childProcess from 'child_process';
+import { spawn } from 'child_process';
 import { runFunction } from '../../src/methods/run-function.ts';
 import { FixtureData } from '../../src/methods/load-fixture.ts';
 
-// Mock child_process
-vi.mock('child_process');
+vi.mock('child_process', () => ({
+  spawn: vi.fn(),
+}));
 
 describe('runFunction', () => {
+  const mockSpawn = vi.mocked(spawn);
   let mockStdin: Writable & { end: ReturnType<typeof vi.fn> };
   let mockStdout: EventEmitter;
   let mockStderr: EventEmitter;
@@ -34,8 +36,8 @@ describe('runFunction', () => {
     mockProcess.stdout = mockStdout;
     mockProcess.stderr = mockStderr;
 
-    // Mock spawn to return our mock process
-    vi.mocked(childProcess.spawn).mockReturnValue(mockProcess as any);
+    // Configure the mock to return our mock process
+    mockSpawn.mockReturnValue(mockProcess as any);
   });
 
   afterEach(() => {
@@ -70,12 +72,13 @@ describe('runFunction', () => {
     );
 
     // Simulate successful function execution
+    const expectedOutput = {
+      output: {
+        operations: []
+      }
+    };
     setImmediate(() => {
-      mockStdout.emit('data', Buffer.from(JSON.stringify({
-        output: {
-          operations: []
-        }
-      })));
+      mockStdout.emit('data', Buffer.from(JSON.stringify(expectedOutput)));
       mockProcess.emit('close', 0);
     });
 
@@ -83,14 +86,10 @@ describe('runFunction', () => {
 
     expect(result).toBeDefined();
     expect(result.error).toBeNull();
-    expect(result.result).toEqual({
-      output: {
-        operations: []
-      }
-    });
+    expect(result.result).toEqual(expectedOutput);
 
     // Verify spawn was called with correct arguments
-    expect(childProcess.spawn).toHaveBeenCalledWith(
+    expect(mockSpawn).toHaveBeenCalledWith(
       functionRunnerPath,
       [
         '-f', wasmPath,

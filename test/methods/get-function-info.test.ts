@@ -1,28 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter } from "events";
+import { spawn } from "child_process";
 
 import { getFunctionInfo } from "../../src/methods/get-function-info.ts";
 
-// Mock child_process module
 vi.mock("child_process", () => ({
   spawn: vi.fn(),
 }));
 
 describe("getFunctionInfo", () => {
-  let mockSpawn: any;
+  const mockSpawn = vi.mocked(spawn);
   let mockProcess: any;
 
-  beforeEach(async () => {
-    // Import the mocked spawn function
-    const { spawn } = await import("child_process");
-    mockSpawn = spawn as any;
-
+  beforeEach(() => {
     // Create a mock process object that extends EventEmitter
     mockProcess = new EventEmitter();
     mockProcess.stdout = new EventEmitter();
     mockProcess.stderr = new EventEmitter();
 
-    // Reset the mock before each test
+    // Configure the mock to return our mock process
     mockSpawn.mockReturnValue(mockProcess);
   });
 
