@@ -1,15 +1,24 @@
-import { visit, DocumentNode, Kind } from "graphql";
-import { TypeInfo, visitWithTypeInfo, coerceInputValue } from "graphql";
+import "core-js/actual/set/intersection.js";
+import "core-js/actual/set/symmetric-difference.js";
 import {
+  coerceInputValue,
+  DocumentNode,
+  getNamedType,
+  getNullableType,
+  GraphQLList,
+  GraphQLNamedType,
+  GraphQLSchema,
+  isAbstractType,
   isInputType,
+  isLeafType,
   isListType,
   isNullableType,
-  GraphQLSchema,
-  GraphQLList,
-  getNullableType,
-  isAbstractType,
   isObjectType,
-  getNamedType,
+  Kind,
+  TypeInfo,
+  visit,
+  visitWithTypeInfo,
+  BREAK,
 } from "graphql";
 import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
 
@@ -37,10 +46,34 @@ export function validateFixtureInput(
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
   const valueStack: any[][] = [[value]];
+  // based on field depth
+  const typeStack: (GraphQLNamedType | undefined)[] = [];
+  // based on selection set depth
+  const possibleTypesStack: Set<string>[] = [new Set([schema.getQueryType()!.name])];
+  const typenameResponseKeyStack: (string | undefined)[] = [];
+
   const errors: string[] = [];
+
   visit(
     inlineFragmentSpreadsAst,
     visitWithTypeInfo(typeInfo, {
+      InlineFragment: {
+        enter(node) {
+          let possibleTypes = new Set(possibleTypesStack[possibleTypesStack.length - 1]);
+          if (node.typeCondition !== null && node.typeCondition !== undefined) {
+            const namedType = schema.getType(node.typeCondition.name.value);
+            if (namedType && isAbstractType(namedType)) {
+              possibleTypes = possibleTypes.intersection(new Set(schema.getPossibleTypes(namedType).map(type => type.name)));
+            } else if (namedType && isObjectType(namedType)) {
+              possibleTypes = new Set([namedType.name]);
+            }
+          }
+          possibleTypesStack.push(possibleTypes);
+        },
+        leave() {
+          possibleTypesStack.pop();
+        },
+      },
       Field: {
         enter(node) {
           const currentValues = valueStack[valueStack.length - 1];
@@ -49,14 +82,24 @@ export function validateFixtureInput(
           const responseKey = node.alias?.value || node.name.value;
 
           const fieldDefinition = typeInfo.getFieldDef();
-          const fieldType = fieldDefinition?.type;
+          if (fieldDefinition === undefined || fieldDefinition === null) {
+            errors.push(`Cannot validate ${responseKey}: missing field definition`);
+            return BREAK;
+          }
+          const fieldType = fieldDefinition.type;
 
           for (const currentValue of currentValues) {
             const valueForResponseKey = currentValue[responseKey];
 
             // Field is missing from fixture
             if (valueForResponseKey === undefined) {
-              errors.push(`Missing expected fixture data for ${responseKey}`);
+              const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+              const parentFieldType = typeStack[typeStack.length - 1]!;
+              const possibleTypes = possibleTypesStack[possibleTypesStack.length - 1];
+              if (isValueExpectedForType(currentValue, parentFieldType, possibleTypes, schema, typenameResponseKey)) {
+                errors.push(`Missing expected fixture data for ${responseKey}`);
+              }
+              
             }
             // Scalars and Enums (including wrapped types)
             else if (isInputType(fieldType)) {
@@ -100,10 +143,6 @@ export function validateFixtureInput(
                 }
               }
               // Objects - validate and add to traversal stack
-              // Note: Abstract types (unions/interfaces) are handled in a limited way.
-              // We add them to the traversal stack but don't use __typename to discriminate
-              // between concrete types. This works for simple cases where all items are the
-              // same type, but doesn't support mixed-type arrays (see skipped test).
               else if (isObjectType(unwrappedFieldType) || isAbstractType(unwrappedFieldType)) {
                 if (valueForResponseKey === null) {
                   errors.push(`Expected object for ${responseKey}, but got null`);
@@ -124,14 +163,49 @@ export function validateFixtureInput(
             }
           }
 
+          const namedType = getNamedType(fieldType);
+          let possibleTypes: string[] = [];
+          if (isLeafType(namedType)) {
+            // do nothing
+          } else if (isAbstractType(namedType)) {
+            possibleTypes = schema.getPossibleTypes(namedType).map(type => type.name);
+          } else if (isObjectType(namedType)) {
+            possibleTypes = [namedType.name];
+          }
+
+          possibleTypesStack.push(new Set(possibleTypes));
+          typeStack.push(getNamedType(fieldType));
+
           valueStack.push(nestedValues);
         },
         leave() {
           valueStack.pop();
+          typeStack.pop();
+          possibleTypesStack.pop();
         },
       },
       SelectionSet: {
-        enter(node) {
+        enter(node, _key, parent) {
+          // Look ahead to find __typename field and track its response key
+          const typenameField = node.selections.find(
+            (selection) =>
+              selection.kind === Kind.FIELD &&
+              selection.name.value === "__typename"
+          );
+
+          let typenameResponseKey: string | undefined;
+          if (typenameField?.kind === Kind.FIELD) {
+            typenameResponseKey = typenameField.alias?.value || "__typename";
+          } else if (parent && 'kind' in parent && parent.kind === Kind.INLINE_FRAGMENT) {
+            // Inside an inline fragment without __typename - inherit from parent SelectionSet
+            typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+          } else {
+            // Field SelectionSet or root level - don't inherit (new object context)
+            typenameResponseKey = undefined;
+          }
+
+          typenameResponseKeyStack.push(typenameResponseKey);
+
           if (isAbstractType(getNamedType(typeInfo.getType()))) {
             const hasTypename = node.selections.some(
               (selection) =>
@@ -149,8 +223,12 @@ export function validateFixtureInput(
               errors.push(
                 `Missing __typename field for abstract type ${getNamedType(typeInfo.getType())?.name}`
               );
+              return BREAK;
             }
           }
+        },
+        leave() {
+          typenameResponseKeyStack.pop();
         },
       },
     })
@@ -219,4 +297,59 @@ function processNestedArrays(
   }
 
   return { values: result, errors };
+}
+
+/**
+ * Determines if a fixture value is expected
+ *
+ * @param fixtureValue - The fixture value to check
+ * @param parentFieldType - The type returned by the parent field (e.g., InterfaceImplementersUnion from `interfaceImplementers` field)
+ * @param possibleTypes - Set of possible type names after inline fragment narrowing (e.g., {"InterfaceImplementer1"} after `...on HasDescription`)
+ * @param schema - The GraphQL schema to resolve possible types for abstract types
+ * @param typenameKey - The response key for the __typename field (supports aliases like `type: __typename`)
+ * @returns True if the value is expected (field should be present), false otherwise (field can be skipped)
+ *
+ * @remarks
+ * When __typename is selected:
+ * - Checks if value's __typename is in the possibleTypes set
+ *
+ * When __typename is NOT selected:
+ * - Compares parent field's possible types vs current possibleTypes
+ * - If sets differ (narrowing occurred), empty objects {} are valid (return false)
+ * - Non-empty objects conservatively expect all fields (return true)
+ * - Since typeStack only tracks fields (not inline fragments), parentFieldType is the original
+ *   field's type, enabling correct narrowing detection at any nesting depth
+ */
+function isValueExpectedForType(
+  fixtureValue: any,
+  parentFieldType: GraphQLNamedType,
+  possibleTypes: Set<string>,
+  schema: GraphQLSchema,
+  typenameKey?: string
+): boolean {
+  if (!typenameKey) {
+    let parentFieldPossibleTypes: string[] = [];
+    if (isAbstractType(parentFieldType)) {
+      parentFieldPossibleTypes = schema.getPossibleTypes(parentFieldType).map(type => type.name);
+    } else {
+      parentFieldPossibleTypes = [parentFieldType.name];
+    }
+
+    const parentFieldPossibleTypesSet = new Set(parentFieldPossibleTypes);
+    const difference = parentFieldPossibleTypesSet.symmetricDifference(possibleTypes);
+
+    if (difference.size > 0 && Object.keys(fixtureValue).length === 0) {
+      return false;
+    }
+
+    return true; // Otherwise, expect all values
+  }
+
+  const valueTypename = fixtureValue[typenameKey];
+  if (!valueTypename) {
+    // No __typename in value - can't discriminate, so expect it
+    return true;
+  }
+
+  return possibleTypes.has(valueTypename);
 }

@@ -129,11 +129,7 @@ describe("validateFixtureInput", () => {
       expect(result.errors).toHaveLength(0);
     });
 
-    // This test is skipped because the validator doesn't yet support unions where
-    // different items in the array can be different types. Currently, it expects
-    // all fields from all inline fragments to be present in every item, instead of
-    // filtering by __typename.
-    it.skip("handles inline fragments with multiple types in union", () => {
+    it("handles inline fragments with multiple types in union", () => {
       const queryAST = parse(`
         query {
           data {
@@ -171,6 +167,522 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles aliased __typename in inline fragments", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              type: __typename
+              ... on Item {
+                id
+                count
+              }
+              ... on Metadata {
+                email
+                phone
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              type: "Item",
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {
+              type: "Metadata",
+              email: "test@example.com",
+              phone: "555-0001"
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("should not inherit typename key across field boundaries", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            nested {
+              outerType: __typename
+              ... on NestedOuterA {
+                id
+                inner {
+                  ... on NestedInnerA {
+                    name
+                  }
+                  ... on NestedInnerB {
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          nested: [
+            {
+              outerType: "NestedOuterA",
+              id: "1",
+              inner: [
+                {
+                  name: "Inner name"
+                  // No __typename - query doesn't select it for inner
+                }
+              ]
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // - inner SelectionSet has typenameResponseKey = undefined (doesn't inherit "outerType")
+      // - Detects missing __typename and BREAKs early
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe("Missing __typename field for abstract type NestedInner");
+    });
+
+    it("handles nested unions with typename at each level", () => {
+      // Same structure as previous test, but WITH __typename at inner level
+      const queryAST = parse(`
+        query {
+          data {
+            nested {
+              outerType: __typename
+              ... on NestedOuterA {
+                id
+                inner {
+                  __typename
+                  ... on NestedInnerA {
+                    name
+                  }
+                  ... on NestedInnerB {
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          nested: [
+            {
+              outerType: "NestedOuterA",
+              id: "1",
+              inner: [
+                {
+                  __typename: "NestedInnerA",
+                  name: "Inner name"
+                }
+              ]
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // With __typename selected at inner level, validation works correctly
+      // - outer uses "outerType" alias
+      // - inner uses "__typename" (not inherited)
+      // - Each level properly scoped to its field
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles inline fragment on interface type", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            products {
+              __typename
+              ... on Purchasable {
+                price
+                currency
+              }
+              ... on GiftCard {
+                code
+                balance
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          products: [
+            {
+              __typename: "PhysicalProduct",
+              price: 1000,
+              currency: "USD"
+            },
+            {
+              __typename: "DigitalProduct",
+              price: 500,
+              currency: "USD"
+            },
+            {
+              __typename: "GiftCard",
+              code: "GIFT123",
+              balance: 5000
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles single inline fragment on union without __typename", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              ... on Item {
+                id
+                count
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // With only one inline fragment, no __typename is needed for discrimination
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles empty objects in union when inline fragment doesn't match", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              ... on Item {
+                id
+                count
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {}  // Empty object - represents Metadata that didn't match the Item fragment
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object {} is valid - GraphQL returns this for union members that don't match any fragments
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles empty objects when narrowing from union to interface subset", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            products {
+              ... on Purchasable {
+                price
+                currency
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          products: [
+            {
+              price: 1000,
+              currency: "USD"
+            },
+            {}  // Empty object - GiftCard that doesn't implement Purchasable
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object {} is valid
+      // Grandparent (Product union) has 3 types: {PhysicalProduct, DigitalProduct, GiftCard}
+      // Parent (Purchasable interface) has 2 types: {PhysicalProduct, DigitalProduct}
+      // Sets are different → type was narrowed → empty object represents GiftCard
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles deeply nested interface fragments with empty objects", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            interfaceImplementers {
+              ...on HasId {
+                id
+                ...on HasName {
+                  name
+                  ...on HasDescription {
+                    description
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          interfaceImplementers: [
+            {
+              id: "1",
+              name: "Implementer1",
+              description: "Has all three interfaces"
+            },
+            {
+              id: "2",
+              name: "Implementer2",
+              description: "Also has all three"
+            },
+            {}
+            // Empty object - NoInterfacesImplemented that doesn't implement any interface
+            // Valid because InterfaceImplementersUnion {1,2,3,4} was narrowed to HasId {1,2,3}
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object is valid - demonstrates narrowing through 3 nested interface fragments
+      // Progressive narrowing: InterfaceImplementersUnion {1,2,3,4} → HasId {1,2,3} → HasName {1,2} → HasDescription {1}
+      // parentFieldType = InterfaceImplementersUnion (4 types), parentType = HasId (3 types after first fragment)
+      // Sets are different → type was narrowed → empty object valid
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles deeply nested fragments with field only at innermost level", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            interfaceImplementers {
+              ...on HasId {
+                ...on HasName {
+                  ...on HasDescription {
+                    description
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          interfaceImplementers: [
+            {
+              description: "Implementer1 - implements all three"
+            },
+            {},
+            {},
+            {}
+            // Three empty objects representing Implementer2, 3, 4 that don't implement HasDescription
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // All empty objects are valid - they don't match the HasDescription fragment
+      // parentFieldType = InterfaceImplementersUnion (4 types)
+      // parentType = HasDescription (1 type)
+      // Sets are different → narrowing detected → empty objects valid
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("handles nested interface fragments with __typename and partial field sets", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            interfaceImplementers {
+              __typename
+              ...on HasId {
+                id
+                ...on HasName {
+                  name
+                  ...on HasDescription {
+                    description
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          interfaceImplementers: [
+            {
+              __typename: "InterfaceImplementer1",
+              id: "1",
+              name: "Implementer1",
+              description: "Implements all three"
+            },
+            {
+              __typename: "InterfaceImplementer2",
+              id: "2",
+              name: "Implementer2"
+              // Implements HasId & HasName, but not HasDescription
+            },
+            {
+              __typename: "InterfaceImplementer3",
+              id: "3"
+              // Implements HasId only
+            },
+            {
+              __typename: "NoInterfacesImplemented"
+              // Doesn't implement any interface
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // With __typename, validator correctly discriminates which fields are expected for each type
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it("requires __typename for nested interface fragments with partial field sets", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            interfaceImplementers {
+              ...on HasId {
+                id
+                ...on HasName {
+                  name
+                  ...on HasDescription {
+                    description
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          interfaceImplementers: [
+            {
+              id: "1",
+              name: "Implementer1",
+              description: "Implements all three"
+            },
+            {
+              id: "2",
+              name: "Implementer2"
+              // InterfaceImplementer2: implements HasId & HasName, but not HasDescription
+              // This is a valid response - nested fragment doesn't match
+            },
+            {
+              id: "3"
+              // InterfaceImplementer3: implements HasId only
+              // This is a valid response - nested fragments don't match
+            },
+            {}
+            // NoInterfacesImplemented: doesn't implement any interface
+            // Empty object is valid - handled by empty object logic
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Without __typename, validator cannot determine if missing fields are valid
+      // (due to type not implementing nested interfaces) or invalid (incomplete data)
+      // So it conservatively expects all selected fields on non-empty objects
+      expect(result.errors).toHaveLength(3);
+      expect(result.errors[0]).toBe("Missing expected fixture data for name");
+      expect(result.errors[1]).toBe("Missing expected fixture data for description");
+      expect(result.errors[2]).toBe("Missing expected fixture data for description");
+    });
+
+    it("handles objects with only __typename when inline fragment doesn't match", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              __typename
+              ... on Item {
+                id
+                count
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              __typename: "Item",
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {
+              __typename: "Metadata"  // Only typename, no other fields
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Object with only __typename is valid - Metadata doesn't match the Item fragment
       expect(result.errors).toHaveLength(0);
     });
 
@@ -936,7 +1448,143 @@ describe("validateFixtureInput", () => {
 
       // Should detect missing type information for the invalid field
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe('Cannot validate nonExistentField: missing type information');
+      expect(result.errors[0]).toBe('Cannot validate nonExistentField: missing field definition');
+    });
+
+    it("detects empty objects in non-union context", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            items {
+              id
+              count
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {}  // Empty object in non-union context - should error
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object {} is invalid in non-union context - missing required fields
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors[0]).toBe("Missing expected fixture data for id");
+      expect(result.errors[1]).toBe("Missing expected fixture data for count");
+    });
+
+    it("detects empty objects when inline fragment is on same type as field", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            purchasable {
+              ... on Purchasable {
+                price
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          purchasable: {}  // Empty object when selecting on interface itself - should error
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Empty object {} is invalid when inline fragment is on the same type as the field
+      // We're not discriminating between union members, so all fields are required
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe("Missing expected fixture data for price");
+    });
+
+    it("handles multiple inline fragments on same type without typename", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              ... on Item {
+                id
+              }
+              ... on Item {
+                count
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Multiple fragments but all on the same type (Item)
+      // Still errors on missing __typename because fragmentSpreadCount > 1
+      // However, NO cascading field errors because all fragments select on same type
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe("Missing __typename field for abstract type SearchResult");
+    });
+
+    it("detects missing fields when __typename is not selected in union with inline fragments", () => {
+      const queryAST = parse(`
+        query {
+          data {
+            searchResults {
+              ... on Item {
+                id
+                count
+              }
+              ... on Metadata {
+                email
+                phone
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          searchResults: [
+            {
+              id: "gid://test/Item/1",
+              count: 5
+            },
+            {
+              email: "test@example.com",
+              phone: "555-0001"
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Without __typename, we can't discriminate which fields are expected for each object
+      // Validator detects missing __typename for abstract type with 2+ fragments and BREAKs early
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe("Missing __typename field for abstract type SearchResult");
     });
   });
 });
