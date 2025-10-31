@@ -15,7 +15,7 @@ import {
  * @throws {Error} If a fragment spread references a fragment definition that doesn't exist
  */
 export function inlineNamedFragmentSpreads(
-  document: DocumentNode
+  document: DocumentNode,
 ): DocumentNode {
   return visit(document, {
     FragmentSpread: {
@@ -24,7 +24,7 @@ export function inlineNamedFragmentSpreads(
         const fragmentDefinition: FragmentDefinitionNode | undefined =
           document.definitions.find(
             (def) =>
-              def.kind === "FragmentDefinition" && def.name.value === name
+              def.kind === "FragmentDefinition" && def.name.value === name,
           ) as FragmentDefinitionNode | undefined;
         if (!fragmentDefinition) {
           throw new Error(`Fragment definition not found: ${name}`);

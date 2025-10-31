@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parse, print } from "graphql/language";
+
 import { inlineNamedFragmentSpreads } from "../../src/utils/inline-named-fragment-spreads.js";
 
 describe("inlineNamedFragmentSpreads", () => {

@@ -1,0 +1,12 @@
+{
+  "name": "discount-function-rs-tests",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "vitest --run"
+  },
+  "dependencies": {
+    "@shopify/shopify-function-test-helpers": "workspace:*",
+    "vitest": "^3.2.4"
+  }
+}

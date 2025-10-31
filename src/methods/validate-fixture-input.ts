@@ -20,6 +20,7 @@ import {
   visitWithTypeInfo,
   BREAK,
 } from "graphql";
+
 import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
 
 export interface ValidateFixtureInputResult {
@@ -41,7 +42,7 @@ export interface ValidateFixtureInputResult {
 export function validateFixtureInput(
   queryAST: DocumentNode,
   schema: GraphQLSchema,
-  value: any
+  value: any,
 ): ValidateFixtureInputResult {
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
@@ -49,7 +50,9 @@ export function validateFixtureInput(
   // based on field depth
   const typeStack: (GraphQLNamedType | undefined)[] = [];
   // based on selection set depth
-  const possibleTypesStack: Set<string>[] = [new Set([schema.getQueryType()!.name])];
+  const possibleTypesStack: Set<string>[] = [
+    new Set([schema.getQueryType()!.name]),
+  ];
   const typenameResponseKeyStack: (string | undefined)[] = [];
 
   const errors: string[] = [];
@@ -59,11 +62,17 @@ export function validateFixtureInput(
     visitWithTypeInfo(typeInfo, {
       InlineFragment: {
         enter(node) {
-          let possibleTypes = new Set(possibleTypesStack[possibleTypesStack.length - 1]);
+          let possibleTypes = new Set(
+            possibleTypesStack[possibleTypesStack.length - 1],
+          );
           if (node.typeCondition !== null && node.typeCondition !== undefined) {
             const namedType = schema.getType(node.typeCondition.name.value);
             if (namedType && isAbstractType(namedType)) {
-              possibleTypes = possibleTypes.intersection(new Set(schema.getPossibleTypes(namedType).map(type => type.name)));
+              possibleTypes = possibleTypes.intersection(
+                new Set(
+                  schema.getPossibleTypes(namedType).map((type) => type.name),
+                ),
+              );
             } else if (namedType && isObjectType(namedType)) {
               possibleTypes = new Set([namedType.name]);
             }
@@ -83,7 +92,9 @@ export function validateFixtureInput(
 
           const fieldDefinition = typeInfo.getFieldDef();
           if (fieldDefinition === undefined || fieldDefinition === null) {
-            errors.push(`Cannot validate ${responseKey}: missing field definition`);
+            errors.push(
+              `Cannot validate ${responseKey}: missing field definition`,
+            );
             return BREAK;
           }
           const fieldType = fieldDefinition.type;
@@ -93,13 +104,22 @@ export function validateFixtureInput(
 
             // Field is missing from fixture
             if (valueForResponseKey === undefined) {
-              const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+              const typenameResponseKey =
+                typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
               const parentFieldType = typeStack[typeStack.length - 1]!;
-              const possibleTypes = possibleTypesStack[possibleTypesStack.length - 1];
-              if (isValueExpectedForType(currentValue, parentFieldType, possibleTypes, schema, typenameResponseKey)) {
+              const possibleTypes =
+                possibleTypesStack[possibleTypesStack.length - 1];
+              if (
+                isValueExpectedForType(
+                  currentValue,
+                  parentFieldType,
+                  possibleTypes,
+                  schema,
+                  typenameResponseKey,
+                )
+              ) {
                 errors.push(`Missing expected fixture data for ${responseKey}`);
               }
-              
             }
             // Scalars and Enums (including wrapped types)
             else if (isInputType(fieldType)) {
@@ -112,7 +132,7 @@ export function validateFixtureInput(
                 fieldType,
                 (path, _invalidValue, error) => {
                   errors.push(`${error.message} At "${path.join(".")}"`);
-                }
+                },
               );
             }
             // Nullable fields with null value
@@ -129,37 +149,49 @@ export function validateFixtureInput(
               // Lists - process recursively
               if (isListType(unwrappedFieldType)) {
                 if (Array.isArray(valueForResponseKey)) {
-                  const { values: flattened, errors: flattenErrors } = processNestedArrays(
-                    valueForResponseKey,
-                    unwrappedFieldType,
-                    responseKey
-                  );
+                  const { values: flattened, errors: flattenErrors } =
+                    processNestedArrays(
+                      valueForResponseKey,
+                      unwrappedFieldType,
+                      responseKey,
+                    );
                   nestedValues.push(...flattened);
                   errors.push(...flattenErrors);
                 } else {
                   errors.push(
-                    `Expected array for ${responseKey}, but got ${typeof valueForResponseKey}`
+                    `Expected array for ${responseKey}, but got ${typeof valueForResponseKey}`,
                   );
                 }
               }
               // Objects - validate and add to traversal stack
-              else if (isObjectType(unwrappedFieldType) || isAbstractType(unwrappedFieldType)) {
+              else if (
+                isObjectType(unwrappedFieldType) ||
+                isAbstractType(unwrappedFieldType)
+              ) {
                 if (valueForResponseKey === null) {
-                  errors.push(`Expected object for ${responseKey}, but got null`);
+                  errors.push(
+                    `Expected object for ${responseKey}, but got null`,
+                  );
                 } else if (typeof valueForResponseKey === "object") {
                   nestedValues.push(valueForResponseKey);
                 } else {
-                  errors.push(`Expected object for ${responseKey}, but got ${typeof valueForResponseKey}`);
+                  errors.push(
+                    `Expected object for ${responseKey}, but got ${typeof valueForResponseKey}`,
+                  );
                 }
               }
               // Unexpected type - defensive check that should never be reached
               else {
-                errors.push(`Unexpected type for ${responseKey}: ${unwrappedFieldType}`);
+                errors.push(
+                  `Unexpected type for ${responseKey}: ${unwrappedFieldType}`,
+                );
               }
             }
             // No type information - should not happen with valid query
             else {
-              errors.push(`Cannot validate ${responseKey}: missing type information`);
+              errors.push(
+                `Cannot validate ${responseKey}: missing type information`,
+              );
             }
           }
 
@@ -168,7 +200,9 @@ export function validateFixtureInput(
           if (isLeafType(namedType)) {
             // do nothing
           } else if (isAbstractType(namedType)) {
-            possibleTypes = schema.getPossibleTypes(namedType).map(type => type.name);
+            possibleTypes = schema
+              .getPossibleTypes(namedType)
+              .map((type) => type.name);
           } else if (isObjectType(namedType)) {
             possibleTypes = [namedType.name];
           }
@@ -177,6 +211,7 @@ export function validateFixtureInput(
           typeStack.push(getNamedType(fieldType));
 
           valueStack.push(nestedValues);
+          return undefined;
         },
         leave() {
           valueStack.pop();
@@ -190,15 +225,20 @@ export function validateFixtureInput(
           const typenameField = node.selections.find(
             (selection) =>
               selection.kind === Kind.FIELD &&
-              selection.name.value === "__typename"
+              selection.name.value === "__typename",
           );
 
           let typenameResponseKey: string | undefined;
           if (typenameField?.kind === Kind.FIELD) {
             typenameResponseKey = typenameField.alias?.value || "__typename";
-          } else if (parent && 'kind' in parent && parent.kind === Kind.INLINE_FRAGMENT) {
+          } else if (
+            parent &&
+            "kind" in parent &&
+            parent.kind === Kind.INLINE_FRAGMENT
+          ) {
             // Inside an inline fragment without __typename - inherit from parent SelectionSet
-            typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+            typenameResponseKey =
+              typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
           } else {
             // Field SelectionSet or root level - don't inherit (new object context)
             typenameResponseKey = undefined;
@@ -209,29 +249,30 @@ export function validateFixtureInput(
           if (isAbstractType(getNamedType(typeInfo.getType()))) {
             const hasTypename = node.selections.some(
               (selection) =>
-                selection.kind == Kind.FIELD &&
-                selection.name.value == "__typename"
+                selection.kind === Kind.FIELD &&
+                selection.name.value === "__typename",
             );
 
             const fragmentSpreadCount = node.selections.filter(
               (selection) =>
-                selection.kind == Kind.FRAGMENT_SPREAD ||
-                selection.kind == Kind.INLINE_FRAGMENT
+                selection.kind === Kind.FRAGMENT_SPREAD ||
+                selection.kind === Kind.INLINE_FRAGMENT,
             ).length;
 
             if (!hasTypename && fragmentSpreadCount > 1) {
               errors.push(
-                `Missing __typename field for abstract type ${getNamedType(typeInfo.getType())?.name}`
+                `Missing __typename field for abstract type ${getNamedType(typeInfo.getType())?.name}`,
               );
               return BREAK;
             }
           }
+          return undefined;
         },
         leave() {
           typenameResponseKeyStack.pop();
         },
       },
-    })
+    }),
   );
   return { errors };
 }
@@ -265,7 +306,7 @@ export function validateFixtureInput(
 function processNestedArrays(
   value: any[],
   listType: GraphQLList<any>,
-  fieldName: string
+  fieldName: string,
 ): { values: any[]; errors: string[] } {
   const result: any[] = [];
   const errors: string[] = [];
@@ -275,24 +316,28 @@ function processNestedArrays(
     if (element === null) {
       if (!isNullableType(elementType)) {
         errors.push(
-          `Null value found in non-nullable array at ${fieldName}[${index}]`
+          `Null value found in non-nullable array at ${fieldName}[${index}]`,
+        );
+      }
+    } else if (isListType(elementType)) {
+      // Element type is a list - expect nested array and recurse
+      if (Array.isArray(element)) {
+        const nested = processNestedArrays(
+          element,
+          elementType,
+          `${fieldName}[${index}]`,
+        );
+        result.push(...nested.values);
+        errors.push(...nested.errors);
+      } else {
+        // Error: fixture structure doesn't match schema nesting
+        errors.push(
+          `Expected array at ${fieldName}[${index}], but got ${typeof element}`,
         );
       }
     } else {
-      if (isListType(elementType)) {
-        // Element type is a list - expect nested array and recurse
-        if (Array.isArray(element)) {
-          const nested = processNestedArrays(element, elementType, `${fieldName}[${index}]`);
-          result.push(...nested.values);
-          errors.push(...nested.errors);
-        } else {
-          // Error: fixture structure doesn't match schema nesting
-          errors.push(`Expected array at ${fieldName}[${index}], but got ${typeof element}`);
-        }
-      } else {
-        // Non-list type - add directly
-        result.push(element);
-      }
+      // Non-list type - add directly
+      result.push(element);
     }
   }
 
@@ -325,18 +370,21 @@ function isValueExpectedForType(
   parentFieldType: GraphQLNamedType,
   possibleTypes: Set<string>,
   schema: GraphQLSchema,
-  typenameKey?: string
+  typenameKey?: string,
 ): boolean {
   if (!typenameKey) {
     let parentFieldPossibleTypes: string[] = [];
     if (isAbstractType(parentFieldType)) {
-      parentFieldPossibleTypes = schema.getPossibleTypes(parentFieldType).map(type => type.name);
+      parentFieldPossibleTypes = schema
+        .getPossibleTypes(parentFieldType)
+        .map((type) => type.name);
     } else {
       parentFieldPossibleTypes = [parentFieldType.name];
     }
 
     const parentFieldPossibleTypesSet = new Set(parentFieldPossibleTypes);
-    const difference = parentFieldPossibleTypesSet.symmetricDifference(possibleTypes);
+    const difference =
+      parentFieldPossibleTypesSet.symmetricDifference(possibleTypes);
 
     if (difference.size > 0 && Object.keys(fixtureValue).length === 0) {
       return false;

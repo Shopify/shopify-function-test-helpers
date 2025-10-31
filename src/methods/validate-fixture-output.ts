@@ -30,7 +30,7 @@ export async function validateFixtureOutput(
   outputFixtureData: Record<string, any>,
   originalSchema: GraphQLSchema,
   mutationName: string,
-  resultParameterName: string = "result"
+  resultParameterName = "result",
 ): Promise<OutputValidationResult> {
   try {
     // Get the mutation type from schema
@@ -48,11 +48,11 @@ export async function validateFixtureOutput(
 
     // Get the result parameter type
     const resultArg = mutationField.args.find(
-      (arg) => arg.name === resultParameterName
+      (arg) => arg.name === resultParameterName,
     );
     if (!resultArg) {
       throw new Error(
-        `Parameter '${resultParameterName}' not found in mutation '${mutationName}'`
+        `Parameter '${resultParameterName}' not found in mutation '${mutationName}'`,
       );
     }
 
@@ -67,20 +67,20 @@ export async function validateFixtureOutput(
           errors.push({
             message: `${error.message} At "${path.join(".")}"`,
           });
-        }
+        },
       );
     }
 
     return {
-      errors: errors,
-      mutationName: mutationName,
+      errors,
+      mutationName,
       resultParameterType: resultArg.type.toString(),
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       errors: [{ message: errorMessage }],
-      mutationName: mutationName,
+      mutationName,
       resultParameterType: null,
     };
   }
