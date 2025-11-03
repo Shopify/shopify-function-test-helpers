@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 import { spawn } from "child_process";
+import path from "path";
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
@@ -38,7 +39,8 @@ describe("getFunctionInfo", () => {
       },
     };
 
-    const promise = getFunctionInfo("/path/to/extensions/my-function");
+    const functionDir = "/path/to/extensions/my-function";
+    const promise = getFunctionInfo(functionDir);
 
     // Simulate successful CLI response
     setTimeout(() => {
@@ -48,12 +50,16 @@ describe("getFunctionInfo", () => {
 
     const result = await promise;
 
+    // Calculate expected cwd the same way the implementation does
+    const resolvedFunctionDir = path.resolve(functionDir);
+    const expectedCwd = path.dirname(resolvedFunctionDir);
+
     expect(result).toEqual(mockFunctionInfo);
     expect(mockSpawn).toHaveBeenCalledWith(
       "shopify",
       ["app", "function", "info", "--json", "--path", "my-function"],
       expect.objectContaining({
-        cwd: "/path/to/extensions",
+        cwd: expectedCwd,
         env: expect.objectContaining({
           SHOPIFY_INVOKED_BY: "shopify-function-test-helpers",
         }),
