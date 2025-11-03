@@ -1,27 +1,26 @@
 import { EventEmitter } from "events";
-import * as childProcess from "child_process";
+import { spawn } from "child_process";
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import { buildFunction } from "../../src/methods/build-function.ts";
 
-// Mock child_process
-vi.mock("child_process");
+vi.mock("child_process", () => ({
+  spawn: vi.fn(),
+}));
 
 describe("buildFunction", () => {
-  let mockProcess: EventEmitter & {
-    stdout: EventEmitter;
-    stderr: EventEmitter;
-  };
+  const mockSpawn = vi.mocked(spawn);
+  let mockProcess: any;
 
   beforeEach(() => {
-    // Create mock process with stdout and stderr
-    mockProcess = new EventEmitter() as typeof mockProcess;
+    // Create a mock process object that extends EventEmitter
+    mockProcess = new EventEmitter();
     mockProcess.stdout = new EventEmitter();
     mockProcess.stderr = new EventEmitter();
 
-    // Mock spawn to return our mock process
-    vi.mocked(childProcess.spawn).mockReturnValue(mockProcess as any);
+    // Configure the mock to return our mock process
+    mockSpawn.mockReturnValue(mockProcess);
   });
 
   afterEach(() => {
@@ -50,10 +49,14 @@ describe("buildFunction", () => {
     expect(result.error).toBeNull();
 
     // Verify spawn was called with correct arguments
-    expect(childProcess.spawn).toHaveBeenCalledWith(
+    expect(mockSpawn).toHaveBeenCalledWith(
       "shopify",
       ["app", "function", "build", "--path", expect.any(String)],
       expect.objectContaining({
+        cwd: expect.any(String),
+        env: expect.objectContaining({
+          SHOPIFY_INVOKED_BY: "shopify-function-test-helpers",
+        }),
         stdio: ["pipe", "pipe", "pipe"],
       }),
     );
