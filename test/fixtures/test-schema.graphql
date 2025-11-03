@@ -5,6 +5,7 @@ schema {
 
 type Query {
   data: DataContainer
+  version: String
 }
 
 type DataContainer {

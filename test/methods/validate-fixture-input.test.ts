@@ -77,16 +77,12 @@ describe("validateFixtureInput", () => {
           firstItems: [
             {
               id: "gid://test/Item/1",
-              count: 5,
-              details: {
-                name: "First Item",
-              },
-            },
+              count: 5
+            }
           ],
           secondItems: [
             {
               id: "gid://test/Item/1",
-              count: 5,
               details: {
                 name: "First Item",
               },
@@ -1233,11 +1229,7 @@ describe("validateFixtureInput", () => {
       );
     });
 
-    // This test is skipped because the validator doesn't yet detect extra fields
-    // in fixture data that aren't present in the query. Currently, it only validates
-    // that all required fields from the query are present in the fixture, but doesn't
-    // flag additional fields that shouldn't be there.
-    it.skip("detects extra fields not in query", () => {
+    it("detects extra fields not in query", () => {
       const queryAST = parse(`
         query Query {
           data {
@@ -1261,10 +1253,87 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
-      // When implemented, should detect that 'count' is not in the query
+      // Should detect that 'count' is not in the query
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toContain("count");
-      expect(result.errors[0]).toContain("not in query");
+      expect(result.errors[0]).toBe('Extra field "count" found in fixture data not in query');
+    });
+
+    it("detects extra fields with multiple aliases for the same field", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            firstItems: items {
+              id
+              count
+            }
+            secondItems: items {
+              id
+              details {
+                name
+              }
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          firstItems: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+              details: {
+                name: "First Item"
+              }
+            }
+          ],
+          secondItems: [
+            {
+              id: "gid://test/Item/1",
+              count: 5,
+              details: {
+                name: "First Item"
+              }
+            }
+          ]
+        }
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Each alias is validated independently, so extra fields in each should be detected
+      expect(result.errors).toHaveLength(2);
+      expect(result.errors[0]).toBe('Extra field "details" found in fixture data not in query');
+      expect(result.errors[1]).toBe('Extra field "count" found in fixture data not in query');
+    });
+
+    it("detects extra fields at root level", () => {
+      const queryAST = parse(`
+        query Query {
+          data {
+            items {
+              id
+            }
+          }
+        }
+      `);
+
+      const fixtureInput = {
+        data: {
+          items: [
+            {
+              id: "gid://test/Item/1"
+            }
+          ]
+        },
+        version: "1.0.0"  // Real field from schema, but not selected in query
+      };
+
+      const result = validateFixtureInput(queryAST, schema, fixtureInput);
+
+      // Should detect the version field since it wasn't selected in the query
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toBe('Extra field "version" found in fixture data not in query');
     });
 
     it("detects type mismatches (object vs scalar)", () => {
