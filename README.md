@@ -92,60 +92,6 @@ describe("Function Tests", () => {
 });
 ```
 
-### Simplified Example (Without getFunctionInfo)
-
-If you prefer to specify paths manually:
-
-```javascript
-import path from "path";
-import {
-  buildFunction,
-  loadFixture,
-  loadSchema,
-  loadInputQuery,
-  validateTestAssets,
-  runFunction,
-} from "@shopify/shopify-function-test-helpers";
-
-describe("Function Tests", () => {
-  beforeAll(async () => {
-    const functionDir = path.dirname(__dirname);
-    await buildFunction(functionDir);
-  }, 20000);
-
-  test("validates and runs a fixture", async () => {
-    const functionDir = path.dirname(__dirname);
-    const schemaPath = path.join(functionDir, "schema.graphql");
-    const inputQueryPath = path.join(functionDir, "src/run.graphql");
-
-    const schema = await loadSchema(schemaPath);
-    const inputQueryAST = await loadInputQuery(inputQueryPath);
-    const fixture = await loadFixture("path/to/fixture.json");
-
-    // Validate
-    const validationResult = await validateTestAssets({
-      schema,
-      fixture,
-      inputQueryAST,
-    });
-
-    expect(validationResult.inputQuery.errors).toHaveLength(0);
-    expect(validationResult.inputFixture.errors).toHaveLength(0);
-    expect(validationResult.outputFixture.errors).toHaveLength(0);
-
-    // Run
-    const runResult = await runFunction(
-      fixture.export,
-      fixture.input,
-      functionDir
-    );
-
-    expect(runResult.error).toBeNull();
-    expect(runResult.result.output).toEqual(fixture.expectedOutput);
-  });
-});
-```
-
 ## API Reference
 
 ### Core Functions
@@ -164,37 +110,34 @@ See [wasm-testing-helpers.ts](./src/wasm-testing-helpers.ts) for all exported ty
 
 ### Running Tests
 
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-```
-
 ### Building
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 ### Linting
 
 ```bash
 # Run linter
-npm run lint
+pnpm run lint
 
 # Fix linting issues
-npm run lint:fix
+pnpm run lint:fix
+```
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests in watch mode
+pnpm run test:watch
 ```
 
 ### Create a tarball from a package 
 ```bash
-npm run build
-npm pack
+pnpm run build
+pnpm pack
 ```
 
 This creates a `.tgz` file that can be installed in other projects:
@@ -227,8 +170,8 @@ MIT
 2. Create a feature branch
 3. Make your changes
 4. Add tests for your changes
-5. Run the test suite (`npm test`)
-6. Run the linter (`npm run lint`)
+5. Run the test suite (`pnpm test`)
+6. Run the linter (`pnpm run lint`)
 7. Submit a pull request
 
 For more details, see the [test examples](./test-app/extensions/) in this repository.
