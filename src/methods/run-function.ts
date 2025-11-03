@@ -2,8 +2,9 @@
  * Run a function with the given payload and return the result
  */
 
-import { spawn } from 'child_process';
-import { FixtureData } from './load-fixture.js';
+import { spawn } from "child_process";
+
+import { FixtureData } from "./load-fixture.js";
 
 /**
  * Interface for the run function result
@@ -37,33 +38,40 @@ export async function runFunction(
     const inputJson = JSON.stringify(fixture.input);
 
     return new Promise((resolve) => {
-      const runnerProcess = spawn(functionRunnerPath, [
-        '-f', wasmPath,
-        '--export', fixture.export,
-        '--query-path', queryPath,
-        '--schema-path', schemaPath,
-        '--json',
-      ], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+      const runnerProcess = spawn(
+        functionRunnerPath,
+        [
+          "-f",
+          wasmPath,
+          "--export",
+          fixture.export,
+          "--query-path",
+          queryPath,
+          "--schema-path",
+          schemaPath,
+          "--json",
+        ],
+        {
+          stdio: ["pipe", "pipe", "pipe"],
+        },
+      );
 
-      let stdout = '';
-      let stderr = '';
+      let stdout = "";
+      let stderr = "";
 
-      runnerProcess.stdout.on('data', (data) => {
+      runnerProcess.stdout.on("data", (data) => {
         stdout += data.toString();
       });
 
-      runnerProcess.stderr.on('data', (data) => {
+      runnerProcess.stderr.on("data", (data) => {
         stderr += data.toString();
       });
 
-      runnerProcess.on('close', (code) => {
-
+      runnerProcess.on("close", (code) => {
         if (code !== 0) {
           resolve({
             result: null,
-            error: `function-runner failed with exit code ${code}: ${stderr}`
+            error: `function-runner failed with exit code ${code}: ${stderr}`,
           });
           return;
         }
@@ -75,44 +83,43 @@ export async function runFunction(
           if (!result.output) {
             resolve({
               result: null,
-              error: `function-runner returned unexpected format - missing 'output' field. Received: ${JSON.stringify(result)}`
+              error: `function-runner returned unexpected format - missing 'output' field. Received: ${JSON.stringify(result)}`,
             });
             return;
           }
 
           resolve({
             result: { output: result.output },
-            error: null
+            error: null,
           });
         } catch (parseError) {
           resolve({
             result: null,
-            error: `Failed to parse function-runner output: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
+            error: `Failed to parse function-runner output: ${parseError instanceof Error ? parseError.message : "Unknown error"}`,
           });
         }
       });
 
-      runnerProcess.on('error', (error) => {
+      runnerProcess.on("error", (error) => {
         resolve({
           result: null,
-          error: `Failed to start function-runner: ${error.message}`
+          error: `Failed to start function-runner: ${error.message}`,
         });
       });
 
       runnerProcess.stdin.write(inputJson);
       runnerProcess.stdin.end();
     });
-
   } catch (error) {
     if (error instanceof Error) {
       return {
         result: null,
-        error: error.message
+        error: error.message,
       };
     } else {
       return {
         result: null,
-        error: 'Unknown error occurred',
+        error: "Unknown error occurred",
       };
     }
   }

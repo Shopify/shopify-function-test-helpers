@@ -19,7 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:examples": "pnpm --filter cart-validation-js-tests test && pnpm --filter discount-function-tests test",
+    "test:examples": "pnpm --filter cart-validation-js-tests test && pnpm --filter discount-function-rs-tests test",
     "lint": "eslint src/ test/",
     "lint:fix": "eslint src/ test/ --fix",
     "prepublishOnly": "pnpm run build && pnpm run test && pnpm run lint"

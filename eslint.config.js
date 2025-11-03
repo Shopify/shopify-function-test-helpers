@@ -16,6 +16,8 @@ export default [
       'line-comment-position': 'off',
       // Allow buildSchema (not just buildClientSchema)
       '@shopify/typescript-prefer-build-client-schema': 'off',
+      // Allow process.env for spawning child processes with correct PATH
+      'no-process-env': 'off',
     },
   },
 ];

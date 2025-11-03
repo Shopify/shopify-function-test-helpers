@@ -1,4 +1,4 @@
-import { validate, GraphQLSchema, GraphQLError, DocumentNode } from 'graphql';
+import { validate, GraphQLSchema, GraphQLError, DocumentNode } from "graphql";
 
 /**
  * Validate a GraphQL input query AST against a schema
@@ -7,7 +7,10 @@ import { validate, GraphQLSchema, GraphQLError, DocumentNode } from 'graphql';
  * @returns {readonly GraphQLError[]} Array of GraphQL validation errors (empty if valid).
  *   Each error has a 'message' property with the error description.
  */
-export function validateInputQuery(queryAST: DocumentNode, schema: GraphQLSchema): readonly GraphQLError[] {
+export function validateInputQuery(
+  queryAST: DocumentNode,
+  schema: GraphQLSchema,
+): ReadonlyArray<GraphQLError> {
   try {
     return validate(schema, queryAST);
   } catch (error) {
@@ -15,4 +18,3 @@ export function validateInputQuery(queryAST: DocumentNode, schema: GraphQLSchema
     return [new GraphQLError(`Failed to validate query: ${errorMessage}`)];
   }
 }
-
