@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PNPM_VERSION: '9.15.0'
+  PNPM_VERSION: '10.20.0'
 
 jobs:
   lint-and-typecheck:

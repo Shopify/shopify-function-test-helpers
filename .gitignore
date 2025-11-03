@@ -98,3 +98,21 @@ temp/
 ehthumbs.db
 Thumbs.db
 
+# Discount function Rust
+test-app/extensions/discount-function-rs/target/
+test-app/extensions/discount-function-rs/Cargo.lock
+
+# Discount function Rust tests
+test-app/extensions/discount-function-rs/tests/node_modules/
+test-app/extensions/discount-function-rs/tests/package-lock.json
+test-app/extensions/discount-function-rs/tests/pnpm-lock.yaml
+
+# Cart validation JS
+test-app/extensions/cart-validation-js/node_modules/
+test-app/extensions/cart-validation-js/package-lock.json
+test-app/extensions/cart-validation-js/pnpm-lock.yaml
+
+# Cart validation JS tests
+test-app/extensions/cart-validation-js/tests/node_modules/
+test-app/extensions/cart-validation-js/tests/package-lock.json
+test-app/extensions/cart-validation-js/tests/pnpm-lock.yaml
