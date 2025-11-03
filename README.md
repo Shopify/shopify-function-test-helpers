@@ -113,17 +113,17 @@ See [wasm-testing-helpers.ts](./src/wasm-testing-helpers.ts) for all exported ty
 ### Building
 
 ```bash
-pnpm run build
+pnpm build
 ```
 
 ### Linting
 
 ```bash
 # Run linter
-pnpm run lint
+pnpm lint
 
 # Fix linting issues
-pnpm run lint:fix
+pnpm lint:fix
 ```
 
 ```bash
@@ -131,12 +131,12 @@ pnpm run lint:fix
 pnpm test
 
 # Run tests in watch mode
-pnpm run test:watch
+pnpm test:watch
 ```
 
 ### Create a tarball from a package 
 ```bash
-pnpm run build
+pnpm build
 pnpm pack
 ```
 
@@ -171,7 +171,7 @@ MIT
 3. Make your changes
 4. Add tests for your changes
 5. Run the test suite (`pnpm test`)
-6. Run the linter (`pnpm run lint`)
+6. Run the linter (`pnpm lint`)
 7. Submit a pull request
 
 For more details, see the [test examples](./test-app/extensions/) in this repository.

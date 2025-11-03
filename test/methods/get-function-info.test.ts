@@ -52,10 +52,13 @@ describe("getFunctionInfo", () => {
     expect(mockSpawn).toHaveBeenCalledWith(
       "shopify",
       ["app", "function", "info", "--json", "--path", "my-function"],
-      {
+      expect.objectContaining({
         cwd: "/path/to/extensions",
+        env: expect.objectContaining({
+          SHOPIFY_INVOKED_BY: "shopify-function-test-helpers",
+        }),
         stdio: ["pipe", "pipe", "pipe"],
-      },
+      }),
     );
   });
 
