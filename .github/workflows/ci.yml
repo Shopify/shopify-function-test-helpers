@@ -193,10 +193,6 @@ jobs:
         run: |
           shopify version
 
-      - name: Install test-app dependencies
-        run: |
-          cd test-app/extensions/cart-validation-js && pnpm install && cd ../discount-function-rs/tests && pnpm install
-
       - name: Build
         run: pnpm run build
 
