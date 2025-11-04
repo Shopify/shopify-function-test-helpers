@@ -1,6 +1,6 @@
 {
   "name": "@shopify/shopify-function-test-helpers",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A JavaScript library for testing Shopify Functions WASM modules, with complete test-app examples",
   "main": "dist/wasm-testing-helpers.js",
   "types": "dist/wasm-testing-helpers.d.ts",
