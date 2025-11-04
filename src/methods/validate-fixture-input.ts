@@ -33,8 +33,11 @@ export interface ValidateFixtureInputResult {
  * - type-specific fields (selected inside inline fragments)
  */
 interface ExpectedFields {
-  common: Set<string>;  // Fields that should be present on all objects
-  byType: Map<GraphQLNamedType, { fields: Set<string>, possibleTypes: Set<string> }>;  // Fields specific to inline fragment types
+  common: Set<string>; // Fields that should be present on all objects
+  byType: Map<
+    GraphQLNamedType,
+    { fields: Set<string>; possibleTypes: Set<string> }
+  >; // Fields specific to inline fragment types
 }
 
 /**
@@ -64,7 +67,9 @@ export function validateFixtureInput(
     new Set([schema.getQueryType()!.name]),
   ];
   const typenameResponseKeyStack: (string | undefined)[] = [];
-  const expectedFieldsStack: ExpectedFields[] = [{ common: new Set(), byType: new Map() }];
+  const expectedFieldsStack: ExpectedFields[] = [
+    { common: new Set(), byType: new Map() },
+  ];
   const typeConditionStack: (GraphQLNamedType | null)[] = [null];
 
   const errors: string[] = [];
@@ -74,7 +79,9 @@ export function validateFixtureInput(
     visitWithTypeInfo(typeInfo, {
       InlineFragment: {
         enter(node) {
-          let possibleTypes = new Set(possibleTypesStack[possibleTypesStack.length - 1]);
+          let possibleTypes = new Set(
+            possibleTypesStack[possibleTypesStack.length - 1],
+          );
           let namedType: GraphQLNamedType | undefined;
 
           if (node.typeCondition !== null && node.typeCondition !== undefined) {
@@ -82,7 +89,11 @@ export function validateFixtureInput(
 
             if (namedType) {
               if (isAbstractType(namedType)) {
-                possibleTypes = possibleTypes.intersection(new Set(schema.getPossibleTypes(namedType).map(type => type.name)));
+                possibleTypes = possibleTypes.intersection(
+                  new Set(
+                    schema.getPossibleTypes(namedType).map((type) => type.name),
+                  ),
+                );
               } else if (isObjectType(namedType)) {
                 possibleTypes = new Set([namedType.name]);
               }
@@ -104,19 +115,24 @@ export function validateFixtureInput(
           const responseKey = node.alias?.value || node.name.value;
 
           // Track this field in the appropriate set based on whether we're in an inline fragment
-          const currentExpectedFields = expectedFieldsStack[expectedFieldsStack.length - 1];
-          const currentFragmentType = typeConditionStack[typeConditionStack.length - 1];
+          const currentExpectedFields =
+            expectedFieldsStack[expectedFieldsStack.length - 1];
+          const currentFragmentType =
+            typeConditionStack[typeConditionStack.length - 1];
 
           if (currentFragmentType) {
             // Inside an inline fragment - add to type-specific set
             if (!currentExpectedFields.byType.has(currentFragmentType)) {
-              const fragmentPossibleTypes = possibleTypesStack[possibleTypesStack.length - 1];
+              const fragmentPossibleTypes =
+                possibleTypesStack[possibleTypesStack.length - 1];
               currentExpectedFields.byType.set(currentFragmentType, {
                 fields: new Set(),
-                possibleTypes: fragmentPossibleTypes
+                possibleTypes: fragmentPossibleTypes,
               });
             }
-            currentExpectedFields.byType.get(currentFragmentType)!.fields.add(responseKey);
+            currentExpectedFields.byType
+              .get(currentFragmentType)!
+              .fields.add(responseKey);
           } else {
             // Outside inline fragments - add to common fields
             currentExpectedFields.common.add(responseKey);
@@ -254,7 +270,7 @@ export function validateFixtureInput(
       SelectionSet: {
         enter(node, _key, parent) {
           // If this SelectionSet belongs to a Field, prepare to track expected fields
-          if (parent && 'kind' in parent && parent.kind === Kind.FIELD) {
+          if (parent && "kind" in parent && parent.kind === Kind.FIELD) {
             expectedFieldsStack.push({ common: new Set(), byType: new Map() });
             typeConditionStack.push(null);
           }
@@ -308,11 +324,18 @@ export function validateFixtureInput(
         },
         leave(_node, _key, parent) {
           // If this SelectionSet belongs to a Field, validate for extra fields
-          if (parent && 'kind' in parent && parent.kind === Kind.FIELD) {
+          if (parent && "kind" in parent && parent.kind === Kind.FIELD) {
             const expectedFields = expectedFieldsStack.pop()!;
             const nestedValues = valueStack[valueStack.length - 1];
-            const typenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
-            errors.push(...checkForExtraFields(nestedValues, expectedFields, typenameResponseKey));
+            const typenameResponseKey =
+              typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+            errors.push(
+              ...checkForExtraFields(
+                nestedValues,
+                expectedFields,
+                typenameResponseKey,
+              ),
+            );
 
             typeConditionStack.pop();
           }
@@ -325,8 +348,15 @@ export function validateFixtureInput(
 
   // The query's root SelectionSet has no parent Field node, so there's no Field.leave event to check it.
   // We manually perform the same check here that would happen in Field.leave for nested objects.
-  const rootTypenameResponseKey = typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
-  errors.push(...checkForExtraFields(valueStack[0], expectedFieldsStack[0], rootTypenameResponseKey));
+  const rootTypenameResponseKey =
+    typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+  errors.push(
+    ...checkForExtraFields(
+      valueStack[0],
+      expectedFieldsStack[0],
+      rootTypenameResponseKey,
+    ),
+  );
 
   return { errors };
 }
@@ -475,24 +505,33 @@ function isValueExpectedForType(
 function checkForExtraFields(
   fixtureObjects: any[],
   expectedFields: ExpectedFields,
-  typenameResponseKey: string | undefined
+  typenameResponseKey: string | undefined,
 ): string[] {
   const errors: string[] = [];
 
   for (const fixtureObject of fixtureObjects) {
-    if (typeof fixtureObject === "object" && fixtureObject !== null && !Array.isArray(fixtureObject)) {
+    if (
+      typeof fixtureObject === "object" &&
+      fixtureObject !== null &&
+      !Array.isArray(fixtureObject)
+    ) {
       const fixtureFields = Object.keys(fixtureObject);
 
       // Build the set of expected fields for this specific object
       const expectedForThisObject = new Set(expectedFields.common);
 
-      const objectTypename = typenameResponseKey ? fixtureObject[typenameResponseKey] : fixtureObject.__typename;
+      const objectTypename = typenameResponseKey
+        ? fixtureObject[typenameResponseKey]
+        : fixtureObject.__typename;
 
       if (objectTypename) {
         // Object has __typename - check which fragment types match
-        for (const { fields, possibleTypes } of expectedFields.byType.values()) {
+        for (const {
+          fields,
+          possibleTypes,
+        } of expectedFields.byType.values()) {
           if (possibleTypes.has(objectTypename)) {
-            fields.forEach(field => expectedForThisObject.add(field));
+            fields.forEach((field) => expectedForThisObject.add(field));
           }
         }
       } else if (expectedFields.byType.size > 0) {
@@ -502,14 +541,16 @@ function checkForExtraFields(
         // where byType.size can be > 1. For 2+ sibling fragments (e.g., ... on Item / ... on Metadata)
         // without __typename, validation BREAKs early (line 277) to enforce __typename requirement.
         expectedFields.byType.forEach(({ fields }) => {
-          fields.forEach(field => expectedForThisObject.add(field));
+          fields.forEach((field) => expectedForThisObject.add(field));
         });
       }
 
       // Check each field in the fixture object
       for (const fixtureField of fixtureFields) {
         if (!expectedForThisObject.has(fixtureField)) {
-          errors.push(`Extra field "${fixtureField}" found in fixture data not in query`);
+          errors.push(
+            `Extra field "${fixtureField}" found in fixture data not in query`,
+          );
         }
       }
     }

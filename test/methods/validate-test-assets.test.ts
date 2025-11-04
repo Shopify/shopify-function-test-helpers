@@ -159,9 +159,15 @@ describe("validateTestAssets", () => {
 
       // Input fixture should be invalid due to missing fields and extra field
       expect(result.inputFixture.errors.length).toBe(3);
-      expect(result.inputFixture.errors[0]).toBe('Missing expected fixture data for details');
-      expect(result.inputFixture.errors[1]).toBe('Extra field "invalidField" found in fixture data not in query');
-      expect(result.inputFixture.errors[2]).toBe('Missing expected fixture data for metadata');
+      expect(result.inputFixture.errors[0]).toBe(
+        "Missing expected fixture data for details",
+      );
+      expect(result.inputFixture.errors[1]).toBe(
+        'Extra field "invalidField" found in fixture data not in query',
+      );
+      expect(result.inputFixture.errors[2]).toBe(
+        "Missing expected fixture data for metadata",
+      );
 
       expect(result.outputFixture.errors).toHaveLength(0);
     });

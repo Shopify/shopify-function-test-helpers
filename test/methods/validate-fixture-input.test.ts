@@ -77,8 +77,8 @@ describe("validateFixtureInput", () => {
           firstItems: [
             {
               id: "gid://test/Item/1",
-              count: 5
-            }
+              count: 5,
+            },
           ],
           secondItems: [
             {
@@ -1255,7 +1255,9 @@ describe("validateFixtureInput", () => {
 
       // Should detect that 'count' is not in the query
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe('Extra field "count" found in fixture data not in query');
+      expect(result.errors[0]).toBe(
+        'Extra field "count" found in fixture data not in query',
+      );
     });
 
     it("detects extra fields with multiple aliases for the same field", () => {
@@ -1283,28 +1285,32 @@ describe("validateFixtureInput", () => {
               id: "gid://test/Item/1",
               count: 5,
               details: {
-                name: "First Item"
-              }
-            }
+                name: "First Item",
+              },
+            },
           ],
           secondItems: [
             {
               id: "gid://test/Item/1",
               count: 5,
               details: {
-                name: "First Item"
-              }
-            }
-          ]
-        }
+                name: "First Item",
+              },
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Each alias is validated independently, so extra fields in each should be detected
       expect(result.errors).toHaveLength(2);
-      expect(result.errors[0]).toBe('Extra field "details" found in fixture data not in query');
-      expect(result.errors[1]).toBe('Extra field "count" found in fixture data not in query');
+      expect(result.errors[0]).toBe(
+        'Extra field "details" found in fixture data not in query',
+      );
+      expect(result.errors[1]).toBe(
+        'Extra field "count" found in fixture data not in query',
+      );
     });
 
     it("detects extra fields at root level", () => {
@@ -1322,18 +1328,20 @@ describe("validateFixtureInput", () => {
         data: {
           items: [
             {
-              id: "gid://test/Item/1"
-            }
-          ]
+              id: "gid://test/Item/1",
+            },
+          ],
         },
-        version: "1.0.0"  // Real field from schema, but not selected in query
+        version: "1.0.0", // Real field from schema, but not selected in query
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect the version field since it wasn't selected in the query
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe('Extra field "version" found in fixture data not in query');
+      expect(result.errors[0]).toBe(
+        'Extra field "version" found in fixture data not in query',
+      );
     });
 
     it("detects extra fields with complex nesting, typename aliases, and type discrimination", () => {
@@ -1392,63 +1400,63 @@ describe("validateFixtureInput", () => {
 
       const fixtureInput = {
         queryType: "Query",
-        extraRootField: "should not be here",  // Extra at root
+        extraRootField: "should not be here", // Extra at root
         data: {
           searchResults: [
             {
               resultType: "Item",
               id: "1",
-              count: 999,  // Extra - count not queried for Item
+              count: 999, // Extra - count not queried for Item
               details: {
                 __typename: "ItemDetails",
                 name: "Details",
-                extraDetailField: "wrong"  // Extra at nested level
-              }
+                extraDetailField: "wrong", // Extra at nested level
+              },
             },
             {
               resultType: "Metadata",
               email: "test@example.com",
-              phone: "555-1234"  // Extra - phone not queried
-            }
+              phone: "555-1234", // Extra - phone not queried
+            },
           ],
           interfaceImplementers: [
             {
               implType: "InterfaceImplementer1",
               id: "impl1",
               name: "First",
-              description: "extra"  // Extra - description not queried
+              description: "extra", // Extra - description not queried
             },
             {
               implType: "InterfaceImplementer2",
               id: "impl2",
               name: "Second",
-              extraField: "also wrong"  // Generic extra field
-            }
+              extraField: "also wrong", // Generic extra field
+            },
           ],
           implementersNoType: [
-            { id: "impl3" },  // Valid - has id from HasId fragment
-            {}  // Empty object - valid without __typename (single fragment, union of all fields)
+            { id: "impl3" }, // Valid - has id from HasId fragment
+            {}, // Empty object - valid without __typename (single fragment, union of all fields)
           ],
           nested: [
             {
               nestedType: "NestedOuterA",
               id: "outer1",
-              email: "cross-contamination",  // Extra - email is from NestedOuterB
+              email: "cross-contamination", // Extra - email is from NestedOuterB
               inner: [
                 {
                   innerType: "NestedInnerA",
                   name: "Inner",
-                  value: "cross-contamination"  // Extra - value is from NestedInnerB
-                }
-              ]
+                  value: "cross-contamination", // Extra - value is from NestedInnerB
+                },
+              ],
             },
             {
               nestedType: "NestedOuterB",
               email: "outer@example.com",
-              id: "cross-contamination"  // Extra - id is from NestedOuterA
-            }
-          ]
-        }
+              id: "cross-contamination", // Extra - id is from NestedOuterA
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1457,15 +1465,33 @@ describe("validateFixtureInput", () => {
       // Empty object in implementersNoType is valid (single fragment without __typename - union mode)
       // Errors appear in post-order traversal (deepest to shallowest):
       expect(result.errors).toHaveLength(9);
-      expect(result.errors[0]).toBe('Extra field "extraDetailField" found in fixture data not in query');  // details (deepest)
-      expect(result.errors[1]).toBe('Extra field "count" found in fixture data not in query');  // Item
-      expect(result.errors[2]).toBe('Extra field "phone" found in fixture data not in query');  // Metadata
-      expect(result.errors[3]).toBe('Extra field "description" found in fixture data not in query');  // InterfaceImplementer1
-      expect(result.errors[4]).toBe('Extra field "extraField" found in fixture data not in query');  // InterfaceImplementer2
-      expect(result.errors[5]).toBe('Extra field "value" found in fixture data not in query');  // NestedInnerA cross-contamination
-      expect(result.errors[6]).toBe('Extra field "email" found in fixture data not in query');  // NestedOuterA cross-contamination
-      expect(result.errors[7]).toBe('Extra field "id" found in fixture data not in query');  // NestedOuterB cross-contamination
-      expect(result.errors[8]).toBe('Extra field "extraRootField" found in fixture data not in query');  // root (last)
+      expect(result.errors[0]).toBe(
+        'Extra field "extraDetailField" found in fixture data not in query',
+      ); // details (deepest)
+      expect(result.errors[1]).toBe(
+        'Extra field "count" found in fixture data not in query',
+      ); // Item
+      expect(result.errors[2]).toBe(
+        'Extra field "phone" found in fixture data not in query',
+      ); // Metadata
+      expect(result.errors[3]).toBe(
+        'Extra field "description" found in fixture data not in query',
+      ); // InterfaceImplementer1
+      expect(result.errors[4]).toBe(
+        'Extra field "extraField" found in fixture data not in query',
+      ); // InterfaceImplementer2
+      expect(result.errors[5]).toBe(
+        'Extra field "value" found in fixture data not in query',
+      ); // NestedInnerA cross-contamination
+      expect(result.errors[6]).toBe(
+        'Extra field "email" found in fixture data not in query',
+      ); // NestedOuterA cross-contamination
+      expect(result.errors[7]).toBe(
+        'Extra field "id" found in fixture data not in query',
+      ); // NestedOuterB cross-contamination
+      expect(result.errors[8]).toBe(
+        'Extra field "extraRootField" found in fixture data not in query',
+      ); // root (last)
     });
 
     it("detects extra fields in union types with inline fragments", () => {
@@ -1491,23 +1517,27 @@ describe("validateFixtureInput", () => {
             {
               __typename: "Item",
               id: "gid://test/Item/1",
-              count: 5  // Extra field - queried id but not count
+              count: 5, // Extra field - queried id but not count
             },
             {
               __typename: "Metadata",
               email: "test@example.com",
-              phone: "555-0001"  // Extra field - queried email but not phone
-            }
-          ]
-        }
+              phone: "555-0001", // Extra field - queried email but not phone
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       // Should detect extra fields in both union members
       expect(result.errors).toHaveLength(2);
-      expect(result.errors[0]).toBe('Extra field "count" found in fixture data not in query');
-      expect(result.errors[1]).toBe('Extra field "phone" found in fixture data not in query');
+      expect(result.errors[0]).toBe(
+        'Extra field "count" found in fixture data not in query',
+      );
+      expect(result.errors[1]).toBe(
+        'Extra field "phone" found in fixture data not in query',
+      );
     });
 
     it("detects fields from wrong fragment type in unions (cross-contamination)", () => {
@@ -1536,18 +1566,18 @@ describe("validateFixtureInput", () => {
               __typename: "Item",
               id: "gid://test/Item/1",
               count: 5,
-              email: "item@example.com",  // email is only in Metadata fragment
-              phone: "555-1234"  // phone is only in Metadata fragment
+              email: "item@example.com", // email is only in Metadata fragment
+              phone: "555-1234", // phone is only in Metadata fragment
             },
             {
               __typename: "Metadata",
               email: "metadata@example.com",
               phone: "555-5678",
-              id: "wrong-id",  // id is only in Item fragment
-              count: 10  // count is only in Item fragment
-            }
-          ]
-        }
+              id: "wrong-id", // id is only in Item fragment
+              count: 10, // count is only in Item fragment
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1556,10 +1586,18 @@ describe("validateFixtureInput", () => {
       // Item should NOT have email/phone (those are Metadata fields)
       // Metadata should NOT have id/count (those are Item fields)
       expect(result.errors).toHaveLength(4);
-      expect(result.errors[0]).toBe('Extra field "email" found in fixture data not in query');
-      expect(result.errors[1]).toBe('Extra field "phone" found in fixture data not in query');
-      expect(result.errors[2]).toBe('Extra field "id" found in fixture data not in query');
-      expect(result.errors[3]).toBe('Extra field "count" found in fixture data not in query');
+      expect(result.errors[0]).toBe(
+        'Extra field "email" found in fixture data not in query',
+      );
+      expect(result.errors[1]).toBe(
+        'Extra field "phone" found in fixture data not in query',
+      );
+      expect(result.errors[2]).toBe(
+        'Extra field "id" found in fixture data not in query',
+      );
+      expect(result.errors[3]).toBe(
+        'Extra field "count" found in fixture data not in query',
+      );
     });
 
     it("detects extra fields in interface fragments with type discrimination", () => {
@@ -1586,28 +1624,28 @@ describe("validateFixtureInput", () => {
         data: {
           interfaceImplementers: [
             {
-              __typename: "InterfaceImplementer1",  // Implements HasId, HasName, HasDescription
+              __typename: "InterfaceImplementer1", // Implements HasId, HasName, HasDescription
               id: "1",
               name: "First",
               description: "Desc",
-              extraField1: "should not be here"  // Extra field
+              extraField1: "should not be here", // Extra field
             },
             {
-              __typename: "InterfaceImplementer2",  // Implements HasId, HasName only
+              __typename: "InterfaceImplementer2", // Implements HasId, HasName only
               id: "2",
               name: "Second",
-              description: "Wrong!",  // Does NOT implement HasDescription
-              extraField2: "also wrong"
+              description: "Wrong!", // Does NOT implement HasDescription
+              extraField2: "also wrong",
             },
             {
-              __typename: "InterfaceImplementer3",  // Implements HasId only
+              __typename: "InterfaceImplementer3", // Implements HasId only
               id: "3",
-              name: "Wrong!",  // Does NOT implement HasName
-              description: "Wrong!",  // Does NOT implement HasDescription
-              extraField3: "also wrong"
-            }
-          ]
-        }
+              name: "Wrong!", // Does NOT implement HasName
+              description: "Wrong!", // Does NOT implement HasDescription
+              extraField3: "also wrong",
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1617,12 +1655,24 @@ describe("validateFixtureInput", () => {
       // - description and extraField2 on InterfaceImplementer2 (doesn't implement HasDescription)
       // - name, description, and extraField3 on InterfaceImplementer3 (doesn't implement HasName or HasDescription)
       expect(result.errors).toHaveLength(6);
-      expect(result.errors[0]).toBe('Extra field "extraField1" found in fixture data not in query');
-      expect(result.errors[1]).toBe('Extra field "description" found in fixture data not in query');
-      expect(result.errors[2]).toBe('Extra field "extraField2" found in fixture data not in query');
-      expect(result.errors[3]).toBe('Extra field "name" found in fixture data not in query');
-      expect(result.errors[4]).toBe('Extra field "description" found in fixture data not in query');
-      expect(result.errors[5]).toBe('Extra field "extraField3" found in fixture data not in query');
+      expect(result.errors[0]).toBe(
+        'Extra field "extraField1" found in fixture data not in query',
+      );
+      expect(result.errors[1]).toBe(
+        'Extra field "description" found in fixture data not in query',
+      );
+      expect(result.errors[2]).toBe(
+        'Extra field "extraField2" found in fixture data not in query',
+      );
+      expect(result.errors[3]).toBe(
+        'Extra field "name" found in fixture data not in query',
+      );
+      expect(result.errors[4]).toBe(
+        'Extra field "description" found in fixture data not in query',
+      );
+      expect(result.errors[5]).toBe(
+        'Extra field "extraField3" found in fixture data not in query',
+      );
     });
 
     it("detects extra fields in truly nested inline fragments (fragment within fragment)", () => {
@@ -1657,22 +1707,22 @@ describe("validateFixtureInput", () => {
             {
               __typename: "NestedOuterA",
               id: "1",
-              email: "wrongField",  // email is from NestedOuterB, not NestedOuterA
+              email: "wrongField", // email is from NestedOuterB, not NestedOuterA
               inner: [
                 {
                   __typename: "NestedInnerA",
                   name: "Inner name",
-                  value: "wrongField"  // value is from NestedInnerB, not NestedInnerA
-                }
-              ]
+                  value: "wrongField", // value is from NestedInnerB, not NestedInnerA
+                },
+              ],
             },
             {
               __typename: "NestedOuterB",
               email: "outer@example.com",
-              id: "wrongField"  // id is from NestedOuterA, not NestedOuterB
-            }
-          ]
-        }
+              id: "wrongField", // id is from NestedOuterA, not NestedOuterB
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1682,9 +1732,15 @@ describe("validateFixtureInput", () => {
       // - email on NestedOuterA (outer level)
       // - id on NestedOuterB (outer level)
       expect(result.errors).toHaveLength(3);
-      expect(result.errors[0]).toBe('Extra field "value" found in fixture data not in query');
-      expect(result.errors[1]).toBe('Extra field "email" found in fixture data not in query');
-      expect(result.errors[2]).toBe('Extra field "id" found in fixture data not in query');
+      expect(result.errors[0]).toBe(
+        'Extra field "value" found in fixture data not in query',
+      );
+      expect(result.errors[1]).toBe(
+        'Extra field "email" found in fixture data not in query',
+      );
+      expect(result.errors[2]).toBe(
+        'Extra field "id" found in fixture data not in query',
+      );
     });
 
     it("detects extra fields in nested inline fragments on concrete union types", () => {
@@ -1715,23 +1771,23 @@ describe("validateFixtureInput", () => {
               __typename: "InterfaceImplementer1",
               id: "1",
               name: "First",
-              description: "extra field",  // Not queried for InterfaceImplementer1
-              extraField1: "should not be here"
+              description: "extra field", // Not queried for InterfaceImplementer1
+              extraField1: "should not be here",
             },
             {
               __typename: "InterfaceImplementer2",
               id: "2",
-              name: "Wrong!",  // InterfaceImplementer2 fragment only queries id
-              extraField2: "also wrong"
+              name: "Wrong!", // InterfaceImplementer2 fragment only queries id
+              extraField2: "also wrong",
             },
             {
               __typename: "InterfaceImplementer3",
               id: "3",
-              name: "Wrong!",  // InterfaceImplementer3 fragment only queries id
-              description: "also wrong"
-            }
-          ]
-        }
+              name: "Wrong!", // InterfaceImplementer3 fragment only queries id
+              description: "also wrong",
+            },
+          ],
+        },
       };
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
@@ -1741,12 +1797,24 @@ describe("validateFixtureInput", () => {
       // - name and extraField2 on InterfaceImplementer2 (only id queried)
       // - name and description on InterfaceImplementer3 (only id queried)
       expect(result.errors).toHaveLength(6);
-      expect(result.errors[0]).toBe('Extra field "description" found in fixture data not in query');
-      expect(result.errors[1]).toBe('Extra field "extraField1" found in fixture data not in query');
-      expect(result.errors[2]).toBe('Extra field "name" found in fixture data not in query');
-      expect(result.errors[3]).toBe('Extra field "extraField2" found in fixture data not in query');
-      expect(result.errors[4]).toBe('Extra field "name" found in fixture data not in query');
-      expect(result.errors[5]).toBe('Extra field "description" found in fixture data not in query');
+      expect(result.errors[0]).toBe(
+        'Extra field "description" found in fixture data not in query',
+      );
+      expect(result.errors[1]).toBe(
+        'Extra field "extraField1" found in fixture data not in query',
+      );
+      expect(result.errors[2]).toBe(
+        'Extra field "name" found in fixture data not in query',
+      );
+      expect(result.errors[3]).toBe(
+        'Extra field "extraField2" found in fixture data not in query',
+      );
+      expect(result.errors[4]).toBe(
+        'Extra field "name" found in fixture data not in query',
+      );
+      expect(result.errors[5]).toBe(
+        'Extra field "description" found in fixture data not in query',
+      );
     });
 
     it("detects type mismatches (object vs scalar)", () => {
