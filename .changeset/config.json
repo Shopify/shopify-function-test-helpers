@@ -7,5 +7,10 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [
+    "test-app",
+    "cart-validation-js",
+    "cart-validation-js-tests",
+    "discount-function-rs-tests"
+  ]
 }

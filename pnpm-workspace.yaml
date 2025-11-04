@@ -1,4 +1,5 @@
 packages:
+  - '.'
   - 'test-app'
   - 'test-app/extensions/*'
   - 'test-app/extensions/*/tests'
