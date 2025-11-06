@@ -34,10 +34,7 @@ export interface ValidateFixtureInputResult {
  */
 interface ExpectedFields {
   common: Set<string>; // Fields that should be present on all objects
-  byType: Map<
-    GraphQLNamedType,
-    { fields: Set<string>; possibleTypes: Set<string> }
-  >; // Fields specific to inline fragment types
+  byType: Map<string, Set<string>>; // Map from concrete type name to its expected fields
 }
 
 /**
@@ -70,7 +67,7 @@ export function validateFixtureInput(
   const expectedFieldsStack: ExpectedFields[] = [
     { common: new Set(), byType: new Map() },
   ];
-  const typeConditionStack: (GraphQLNamedType | null)[] = [null];
+  const typeConditionStack: (Set<string> | null)[] = [null];
 
   const errors: string[] = [];
 
@@ -82,10 +79,10 @@ export function validateFixtureInput(
           let possibleTypes = new Set(
             possibleTypesStack[possibleTypesStack.length - 1],
           );
-          let namedType: GraphQLNamedType | undefined;
+          let concreteTypes: Set<string> | null = null;
 
           if (node.typeCondition !== null && node.typeCondition !== undefined) {
-            namedType = schema.getType(node.typeCondition.name.value);
+            const namedType = schema.getType(node.typeCondition.name.value);
 
             if (namedType) {
               if (isAbstractType(namedType)) {
@@ -97,10 +94,11 @@ export function validateFixtureInput(
               } else if (isObjectType(namedType)) {
                 possibleTypes = new Set([namedType.name]);
               }
+              concreteTypes = possibleTypes;
             }
           }
           possibleTypesStack.push(possibleTypes);
-          typeConditionStack.push(namedType ?? null);
+          typeConditionStack.push(concreteTypes);
         },
         leave() {
           possibleTypesStack.pop();
@@ -121,18 +119,15 @@ export function validateFixtureInput(
             typeConditionStack[typeConditionStack.length - 1];
 
           if (currentFragmentType) {
-            // Inside an inline fragment - add to type-specific set
-            if (!currentExpectedFields.byType.has(currentFragmentType)) {
-              const fragmentPossibleTypes =
-                possibleTypesStack[possibleTypesStack.length - 1];
-              currentExpectedFields.byType.set(currentFragmentType, {
-                fields: new Set(),
-                possibleTypes: fragmentPossibleTypes,
-              });
+            // Inside an inline fragment - expand to all concrete types
+            for (const concreteTypeName of currentFragmentType) {
+              if (!currentExpectedFields.byType.has(concreteTypeName)) {
+                currentExpectedFields.byType.set(concreteTypeName, new Set());
+              }
+              currentExpectedFields.byType
+                .get(concreteTypeName)!
+                .add(responseKey);
             }
-            currentExpectedFields.byType
-              .get(currentFragmentType)!
-              .fields.add(responseKey);
           } else {
             // Outside inline fragments - add to common fields
             currentExpectedFields.common.add(responseKey);
@@ -525,14 +520,12 @@ function checkForExtraFields(
         : fixtureObject.__typename;
 
       if (objectTypename) {
-        // Object has __typename - check which fragment types match
-        for (const {
-          fields,
-          possibleTypes,
-        } of expectedFields.byType.values()) {
-          if (possibleTypes.has(objectTypename)) {
-            fields.forEach((field) => expectedForThisObject.add(field));
-          }
+        // Object has __typename - direct lookup by concrete type name
+        const typeSpecificFields = expectedFields.byType.get(objectTypename);
+        if (typeSpecificFields) {
+          typeSpecificFields.forEach((field) =>
+            expectedForThisObject.add(field),
+          );
         }
       } else if (expectedFields.byType.size > 0) {
         // No __typename - allow union of all fragment fields
@@ -540,7 +533,7 @@ function checkForExtraFields(
         // Note: We use > 0 (not === 1) to handle nested fragments (e.g., ... on HasId { ... on HasName { ... }})
         // where byType.size can be > 1. For 2+ sibling fragments (e.g., ... on Item / ... on Metadata)
         // without __typename, validation BREAKs early (line 277) to enforce __typename requirement.
-        expectedFields.byType.forEach(({ fields }) => {
+        expectedFields.byType.forEach((fields) => {
           fields.forEach((field) => expectedForThisObject.add(field));
         });
       }
