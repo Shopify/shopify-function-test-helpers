@@ -47,9 +47,7 @@ export function validateFixtureInput(
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
   const valueStack: any[][] = [[value]];
-  // based on field depth
   const typeStack: (GraphQLNamedType | undefined)[] = [];
-  // based on selection set depth
   const possibleTypesStack: Set<string>[] = [
     new Set([schema.getQueryType()!.name]),
   ];
@@ -66,7 +64,6 @@ export function validateFixtureInput(
           let possibleTypes = new Set(
             possibleTypesStack[possibleTypesStack.length - 1],
           );
-          let concreteTypes: Set<string> | null = null;
 
           if (node.typeCondition !== null && node.typeCondition !== undefined) {
             const namedType = schema.getType(node.typeCondition.name.value);
@@ -81,7 +78,6 @@ export function validateFixtureInput(
               } else if (isObjectType(namedType)) {
                 possibleTypes = new Set([namedType.name]);
               }
-              concreteTypes = possibleTypes;
             }
           }
           possibleTypesStack.push(possibleTypes);
@@ -294,8 +290,13 @@ export function validateFixtureInput(
           return undefined;
         },
         leave(_node, _key, parent) {
-          // If this SelectionSet belongs to a Field, validate for extra fields
-          if (parent && "kind" in parent && parent.kind === Kind.FIELD) {
+          // If this SelectionSet belongs to a Field or is the root (OperationDefinition), validate for extra fields
+          if (
+            parent &&
+            "kind" in parent &&
+            (parent.kind === Kind.FIELD ||
+              parent.kind === Kind.OPERATION_DEFINITION)
+          ) {
             const expectedFields = expectedFieldsStack.pop()!;
             const nestedValues = valueStack[valueStack.length - 1];
             const typenameResponseKey =
@@ -313,18 +314,6 @@ export function validateFixtureInput(
         },
       },
     }),
-  );
-
-  // The query's root SelectionSet has no parent Field node, so there's no Field.leave event to check it.
-  // We manually perform the same check here that would happen in Field.leave for nested objects.
-  const rootTypenameResponseKey =
-    typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
-  errors.push(
-    ...checkForExtraFields(
-      valueStack[0],
-      expectedFieldsStack[0],
-      rootTypenameResponseKey,
-    ),
   );
 
   return { errors };
@@ -487,7 +476,7 @@ function checkForExtraFields(
       const fixtureFields = Object.keys(fixtureObject);
 
       // Build the set of expected fields for this specific object
-      const expectedForThisObject = new Set();
+      let expectedForThisObject = new Set();
 
       const objectTypename = typenameResponseKey
         ? fixtureObject[typenameResponseKey]
@@ -497,9 +486,7 @@ function checkForExtraFields(
         // Object has __typename - direct lookup by concrete type name
         const typeSpecificFields = expectedFields.get(objectTypename);
         if (typeSpecificFields) {
-          typeSpecificFields.forEach((field) =>
-            expectedForThisObject.add(field),
-          );
+          expectedForThisObject = typeSpecificFields;
         }
       } else if (expectedFields.size > 0) {
         // No __typename - allow union of all fragment fields
