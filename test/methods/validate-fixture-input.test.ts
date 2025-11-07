@@ -254,9 +254,10 @@ describe("validateFixtureInput", () => {
       // - inner SelectionSet has typenameResponseKey = undefined (doesn't inherit "outerType")
       // - Detects missing __typename and BREAKs early
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        "Missing __typename field for abstract type NestedInner",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Missing __typename field for abstract type NestedInner",
+        path: ["data", "nested", "inner"],
+      });
     });
 
     it("handles nested unions with typename at each level", () => {
@@ -646,13 +647,18 @@ describe("validateFixtureInput", () => {
       // (due to type not implementing nested interfaces) or invalid (incomplete data)
       // So it conservatively expects all selected fields on non-empty objects
       expect(result.errors).toHaveLength(3);
-      expect(result.errors[0]).toBe("Missing expected fixture data for name");
-      expect(result.errors[1]).toBe(
-        "Missing expected fixture data for description",
-      );
-      expect(result.errors[2]).toBe(
-        "Missing expected fixture data for description",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Missing expected fixture data for name",
+        path: ["data", "interfaceImplementers", 2, "name"],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: "Missing expected fixture data for description",
+        path: ["data", "interfaceImplementers", 1, "description"],
+      });
+      expect(result.errors[2]).toStrictEqual({
+        message: "Missing expected fixture data for description",
+        path: ["data", "interfaceImplementers", 2, "description"],
+      });
     });
 
     it("handles objects with only __typename when inline fragment doesn't match", () => {
@@ -1130,9 +1136,10 @@ describe("validateFixtureInput", () => {
 
       // count is Int! so null should not be allowed
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        'Expected non-nullable type "Int!" not to be null. At ""',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Expected non-nullable type "Int!" not to be null.',
+        path: ["data", "items", 0, "count"],
+      });
     });
 
     it("should detect null in non-nullable array", () => {
@@ -1157,9 +1164,10 @@ describe("validateFixtureInput", () => {
 
       // items is [Item!]! so null should not be allowed
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        "Null value found in non-nullable array at items[1]",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Null value found in non-nullable array",
+        path: ["data", "items", 1],
+      });
     });
 
     it("should detect null in non-nullable object field", () => {
@@ -1184,9 +1192,10 @@ describe("validateFixtureInput", () => {
 
       // requiredMetadata is Metadata! so null should not be allowed
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        "Expected object for requiredMetadata, but got null",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Expected object, but got null",
+        path: ["data", "requiredMetadata"],
+      });
     });
 
     it("detects missing fields in fixture data", () => {
@@ -1220,13 +1229,18 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
       expect(result.errors).toHaveLength(3);
-      expect(result.errors[0]).toBe("Missing expected fixture data for count");
-      expect(result.errors[1]).toBe(
-        "Missing expected fixture data for details",
-      );
-      expect(result.errors[2]).toBe(
-        "Missing expected fixture data for metadata",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Missing expected fixture data for count",
+        path: ["data", "items", 0, "count"],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: "Missing expected fixture data for details",
+        path: ["data", "items", 0, "details"],
+      });
+      expect(result.errors[2]).toStrictEqual({
+        message: "Missing expected fixture data for metadata",
+        path: ["data", "metadata"],
+      });
     });
 
     it("detects extra fields not in query", () => {
@@ -1255,9 +1269,10 @@ describe("validateFixtureInput", () => {
 
       // Should detect that 'count' is not in the query
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        'Extra field "count" found in fixture data not in query',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Extra field "count" found in fixture data not in query',
+        path: ["data", "items", 0, "count"],
+      });
     });
 
     it("detects extra fields with multiple aliases for the same field", () => {
@@ -1305,12 +1320,14 @@ describe("validateFixtureInput", () => {
 
       // Each alias is validated independently, so extra fields in each should be detected
       expect(result.errors).toHaveLength(2);
-      expect(result.errors[0]).toBe(
-        'Extra field "details" found in fixture data not in query',
-      );
-      expect(result.errors[1]).toBe(
-        'Extra field "count" found in fixture data not in query',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Extra field "details" found in fixture data not in query',
+        path: ["data", "firstItems", 0, "details"],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: 'Extra field "count" found in fixture data not in query',
+        path: ["data", "secondItems", 0, "count"],
+      });
     });
 
     it("detects extra fields at root level", () => {
@@ -1339,9 +1356,10 @@ describe("validateFixtureInput", () => {
 
       // Should detect the version field since it wasn't selected in the query
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        'Extra field "version" found in fixture data not in query',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Extra field "version" found in fixture data not in query',
+        path: ["version"],
+      });
     });
 
     it("detects extra fields with complex nesting, typename aliases, and type discrimination", () => {
@@ -1465,33 +1483,44 @@ describe("validateFixtureInput", () => {
       // Empty object in implementersNoType is valid (single fragment without __typename - union mode)
       // Errors appear in post-order traversal (deepest to shallowest):
       expect(result.errors).toHaveLength(9);
-      expect(result.errors[0]).toBe(
-        'Extra field "extraDetailField" found in fixture data not in query',
-      ); // details (deepest)
-      expect(result.errors[1]).toBe(
-        'Extra field "count" found in fixture data not in query',
-      ); // Item
-      expect(result.errors[2]).toBe(
-        'Extra field "phone" found in fixture data not in query',
-      ); // Metadata
-      expect(result.errors[3]).toBe(
-        'Extra field "description" found in fixture data not in query',
-      ); // InterfaceImplementer1
-      expect(result.errors[4]).toBe(
-        'Extra field "extraField" found in fixture data not in query',
-      ); // InterfaceImplementer2
-      expect(result.errors[5]).toBe(
-        'Extra field "value" found in fixture data not in query',
-      ); // NestedInnerA cross-contamination
-      expect(result.errors[6]).toBe(
-        'Extra field "email" found in fixture data not in query',
-      ); // NestedOuterA cross-contamination
-      expect(result.errors[7]).toBe(
-        'Extra field "id" found in fixture data not in query',
-      ); // NestedOuterB cross-contamination
-      expect(result.errors[8]).toBe(
-        'Extra field "extraRootField" found in fixture data not in query',
-      ); // root (last)
+      expect(result.errors[0]).toStrictEqual({
+        message:
+          'Extra field "extraDetailField" found in fixture data not in query',
+        path: ["data", "searchResults", 0, "details", "extraDetailField"],
+      }); // details (deepest)
+      expect(result.errors[1]).toStrictEqual({
+        message: 'Extra field "count" found in fixture data not in query',
+        path: ["data", "searchResults", 0, "count"],
+      }); // Item
+      expect(result.errors[2]).toStrictEqual({
+        message: 'Extra field "phone" found in fixture data not in query',
+        path: ["data", "searchResults", 1, "phone"],
+      }); // Metadata
+      expect(result.errors[3]).toStrictEqual({
+        message: 'Extra field "description" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 0, "description"],
+      }); // InterfaceImplementer1
+      expect(result.errors[4]).toStrictEqual({
+        message: 'Extra field "extraField" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 1, "extraField"],
+      }); // InterfaceImplementer2
+      expect(result.errors[5]).toStrictEqual({
+        message: 'Extra field "value" found in fixture data not in query',
+        path: ["data", "nested", 0, "inner", 0, "value"],
+      }); // NestedInnerA cross-contamination
+      expect(result.errors[6]).toStrictEqual({
+        message: 'Extra field "email" found in fixture data not in query',
+        path: ["data", "nested", 0, "email"],
+      }); // NestedOuterA cross-contamination
+      expect(result.errors[7]).toStrictEqual({
+        message: 'Extra field "id" found in fixture data not in query',
+        path: ["data", "nested", 1, "id"],
+      }); // NestedOuterB cross-contamination
+      expect(result.errors[8]).toStrictEqual({
+        message:
+          'Extra field "extraRootField" found in fixture data not in query',
+        path: ["extraRootField"],
+      }); // root (last)
     });
 
     it("detects extra fields in union types with inline fragments", () => {
@@ -1532,12 +1561,14 @@ describe("validateFixtureInput", () => {
 
       // Should detect extra fields in both union members
       expect(result.errors).toHaveLength(2);
-      expect(result.errors[0]).toBe(
-        'Extra field "count" found in fixture data not in query',
-      );
-      expect(result.errors[1]).toBe(
-        'Extra field "phone" found in fixture data not in query',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Extra field "count" found in fixture data not in query',
+        path: ["data", "searchResults", 0, "count"],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: 'Extra field "phone" found in fixture data not in query',
+        path: ["data", "searchResults", 1, "phone"],
+      });
     });
 
     it("detects fields from wrong fragment type in unions (cross-contamination)", () => {
@@ -1586,18 +1617,22 @@ describe("validateFixtureInput", () => {
       // Item should NOT have email/phone (those are Metadata fields)
       // Metadata should NOT have id/count (those are Item fields)
       expect(result.errors).toHaveLength(4);
-      expect(result.errors[0]).toBe(
-        'Extra field "email" found in fixture data not in query',
-      );
-      expect(result.errors[1]).toBe(
-        'Extra field "phone" found in fixture data not in query',
-      );
-      expect(result.errors[2]).toBe(
-        'Extra field "id" found in fixture data not in query',
-      );
-      expect(result.errors[3]).toBe(
-        'Extra field "count" found in fixture data not in query',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Extra field "email" found in fixture data not in query',
+        path: ["data", "searchResults", 0, "email"],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: 'Extra field "phone" found in fixture data not in query',
+        path: ["data", "searchResults", 0, "phone"],
+      });
+      expect(result.errors[2]).toStrictEqual({
+        message: 'Extra field "id" found in fixture data not in query',
+        path: ["data", "searchResults", 1, "id"],
+      });
+      expect(result.errors[3]).toStrictEqual({
+        message: 'Extra field "count" found in fixture data not in query',
+        path: ["data", "searchResults", 1, "count"],
+      });
     });
 
     it("detects extra fields in interface fragments with type discrimination", () => {
@@ -1655,24 +1690,30 @@ describe("validateFixtureInput", () => {
       // - description and extraField2 on InterfaceImplementer2 (doesn't implement HasDescription)
       // - name, description, and extraField3 on InterfaceImplementer3 (doesn't implement HasName or HasDescription)
       expect(result.errors).toHaveLength(6);
-      expect(result.errors[0]).toBe(
-        'Extra field "extraField1" found in fixture data not in query',
-      );
-      expect(result.errors[1]).toBe(
-        'Extra field "description" found in fixture data not in query',
-      );
-      expect(result.errors[2]).toBe(
-        'Extra field "extraField2" found in fixture data not in query',
-      );
-      expect(result.errors[3]).toBe(
-        'Extra field "name" found in fixture data not in query',
-      );
-      expect(result.errors[4]).toBe(
-        'Extra field "description" found in fixture data not in query',
-      );
-      expect(result.errors[5]).toBe(
-        'Extra field "extraField3" found in fixture data not in query',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Extra field "extraField1" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 0, "extraField1"],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: 'Extra field "description" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 1, "description"],
+      });
+      expect(result.errors[2]).toStrictEqual({
+        message: 'Extra field "extraField2" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 1, "extraField2"],
+      });
+      expect(result.errors[3]).toStrictEqual({
+        message: 'Extra field "name" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 2, "name"],
+      });
+      expect(result.errors[4]).toStrictEqual({
+        message: 'Extra field "description" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 2, "description"],
+      });
+      expect(result.errors[5]).toStrictEqual({
+        message: 'Extra field "extraField3" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 2, "extraField3"],
+      });
     });
 
     it("detects extra fields in truly nested inline fragments (fragment within fragment)", () => {
@@ -1732,15 +1773,18 @@ describe("validateFixtureInput", () => {
       // - email on NestedOuterA (outer level)
       // - id on NestedOuterB (outer level)
       expect(result.errors).toHaveLength(3);
-      expect(result.errors[0]).toBe(
-        'Extra field "value" found in fixture data not in query',
-      );
-      expect(result.errors[1]).toBe(
-        'Extra field "email" found in fixture data not in query',
-      );
-      expect(result.errors[2]).toBe(
-        'Extra field "id" found in fixture data not in query',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Extra field "value" found in fixture data not in query',
+        path: ["data", "nested", 0, "inner", 0, "value"],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: 'Extra field "email" found in fixture data not in query',
+        path: ["data", "nested", 0, "email"],
+      });
+      expect(result.errors[2]).toStrictEqual({
+        message: 'Extra field "id" found in fixture data not in query',
+        path: ["data", "nested", 1, "id"],
+      });
     });
 
     it("detects extra fields in nested inline fragments on concrete union types", () => {
@@ -1797,24 +1841,30 @@ describe("validateFixtureInput", () => {
       // - name and extraField2 on InterfaceImplementer2 (only id queried)
       // - name and description on InterfaceImplementer3 (only id queried)
       expect(result.errors).toHaveLength(6);
-      expect(result.errors[0]).toBe(
-        'Extra field "description" found in fixture data not in query',
-      );
-      expect(result.errors[1]).toBe(
-        'Extra field "extraField1" found in fixture data not in query',
-      );
-      expect(result.errors[2]).toBe(
-        'Extra field "name" found in fixture data not in query',
-      );
-      expect(result.errors[3]).toBe(
-        'Extra field "extraField2" found in fixture data not in query',
-      );
-      expect(result.errors[4]).toBe(
-        'Extra field "name" found in fixture data not in query',
-      );
-      expect(result.errors[5]).toBe(
-        'Extra field "description" found in fixture data not in query',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Extra field "description" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 0, "description"],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: 'Extra field "extraField1" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 0, "extraField1"],
+      });
+      expect(result.errors[2]).toStrictEqual({
+        message: 'Extra field "name" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 1, "name"],
+      });
+      expect(result.errors[3]).toStrictEqual({
+        message: 'Extra field "extraField2" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 1, "extraField2"],
+      });
+      expect(result.errors[4]).toStrictEqual({
+        message: 'Extra field "name" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 2, "name"],
+      });
+      expect(result.errors[5]).toStrictEqual({
+        message: 'Extra field "description" found in fixture data not in query',
+        path: ["data", "interfaceImplementers", 2, "description"],
+      });
     });
 
     it("detects type mismatches (object vs scalar)", () => {
@@ -1842,7 +1892,10 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe("Expected object for data, but got string");
+      expect(result.errors[0]).toStrictEqual({
+        message: "Expected object, but got string",
+        path: ["data"],
+      });
     });
 
     it("detects invalid scalar values", () => {
@@ -1871,9 +1924,10 @@ describe("validateFixtureInput", () => {
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
 
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        'Int cannot represent non-integer value: "not a number" At ""',
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: 'Int cannot represent non-integer value: "not a number"',
+        path: ["data", "items", 0, "count"],
+      });
     });
 
     it("detects missing required fields at root level", () => {
@@ -1903,9 +1957,10 @@ describe("validateFixtureInput", () => {
 
       const result = validateFixtureInput(queryAST, schema, fixtureInput);
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        "Missing expected fixture data for metadata",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Missing expected fixture data for metadata",
+        path: ["data", "metadata"],
+      });
     });
 
     it("should detect incorrect array nesting depth", () => {
@@ -1935,12 +1990,14 @@ describe("validateFixtureInput", () => {
 
       // Should detect that we got objects where we expected arrays
       expect(result.errors).toHaveLength(2);
-      expect(result.errors[0]).toBe(
-        "Expected array at itemMatrix[0], but got object",
-      );
-      expect(result.errors[1]).toBe(
-        "Expected array at itemMatrix[1], but got object",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Expected array, but got object",
+        path: ["data", "itemMatrix", 0],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: "Expected array, but got object",
+        path: ["data", "itemMatrix", 1],
+      });
     });
 
     it("should detect non-array value where array is expected", () => {
@@ -1967,7 +2024,10 @@ describe("validateFixtureInput", () => {
 
       // Should detect that we got an object where we expected an array
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe("Expected array for items, but got object");
+      expect(result.errors[0]).toStrictEqual({
+        message: "Expected array, but got object",
+        path: ["data", "items"],
+      });
     });
 
     it("detects fields with missing type information", () => {
@@ -1998,9 +2058,10 @@ describe("validateFixtureInput", () => {
 
       // Should detect missing type information for the invalid field
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        "Cannot validate nonExistentField: missing field definition",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Cannot validate nonExistentField: missing field definition",
+        path: ["data", "items", "nonExistentField"],
+      });
     });
 
     it("detects empty objects in non-union context", () => {
@@ -2031,8 +2092,14 @@ describe("validateFixtureInput", () => {
 
       // Empty object {} is invalid in non-union context - missing required fields
       expect(result.errors).toHaveLength(2);
-      expect(result.errors[0]).toBe("Missing expected fixture data for id");
-      expect(result.errors[1]).toBe("Missing expected fixture data for count");
+      expect(result.errors[0]).toStrictEqual({
+        message: "Missing expected fixture data for id",
+        path: ["data", "items", 1, "id"],
+      });
+      expect(result.errors[1]).toStrictEqual({
+        message: "Missing expected fixture data for count",
+        path: ["data", "items", 1, "count"],
+      });
     });
 
     it("detects empty objects when inline fragment is on same type as field", () => {
@@ -2059,7 +2126,10 @@ describe("validateFixtureInput", () => {
       // Empty object {} is invalid when inline fragment is on the same type as the field
       // We're not discriminating between union members, so all fields are required
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe("Missing expected fixture data for price");
+      expect(result.errors[0]).toStrictEqual({
+        message: "Missing expected fixture data for price",
+        path: ["data", "purchasable", "price"],
+      });
     });
 
     it("handles multiple inline fragments on same type without typename", () => {
@@ -2095,9 +2165,10 @@ describe("validateFixtureInput", () => {
       // Still errors on missing __typename because fragmentSpreadCount > 1
       // However, NO cascading field errors because all fragments select on same type
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        "Missing __typename field for abstract type SearchResult",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Missing __typename field for abstract type SearchResult",
+        path: ["data", "searchResults"],
+      });
     });
 
     it("detects missing fields when __typename is not selected in union with inline fragments", () => {
@@ -2138,9 +2209,10 @@ describe("validateFixtureInput", () => {
       // Without __typename, we can't discriminate which fields are expected for each object
       // Validator detects missing __typename for abstract type with 2+ fragments and BREAKs early
       expect(result.errors).toHaveLength(1);
-      expect(result.errors[0]).toBe(
-        "Missing __typename field for abstract type SearchResult",
-      );
+      expect(result.errors[0]).toStrictEqual({
+        message: "Missing __typename field for abstract type SearchResult",
+        path: ["data", "searchResults"],
+      });
     });
   });
 });
