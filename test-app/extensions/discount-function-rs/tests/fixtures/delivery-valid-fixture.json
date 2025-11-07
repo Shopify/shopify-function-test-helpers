@@ -11,12 +11,7 @@
            {
              "id": "gid://shopify/CartDeliveryGroup/1"
            }
-        ],
-        "cost": {
-          "subtotalAmount": {
-            "amount": "100.0"
-          }
-        }
+        ]
       }
     },
     "output": {

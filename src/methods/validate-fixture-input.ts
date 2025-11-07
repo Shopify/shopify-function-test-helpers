@@ -47,13 +47,12 @@ export function validateFixtureInput(
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
   const valueStack: any[][] = [[value]];
-  // based on field depth
   const typeStack: (GraphQLNamedType | undefined)[] = [];
-  // based on selection set depth
   const possibleTypesStack: Set<string>[] = [
     new Set([schema.getQueryType()!.name]),
   ];
   const typenameResponseKeyStack: (string | undefined)[] = [];
+  const expectedFieldsStack: Map<string, Set<string>>[] = [new Map()];
 
   const errors: string[] = [];
 
@@ -65,16 +64,20 @@ export function validateFixtureInput(
           let possibleTypes = new Set(
             possibleTypesStack[possibleTypesStack.length - 1],
           );
+
           if (node.typeCondition !== null && node.typeCondition !== undefined) {
             const namedType = schema.getType(node.typeCondition.name.value);
-            if (namedType && isAbstractType(namedType)) {
-              possibleTypes = possibleTypes.intersection(
-                new Set(
-                  schema.getPossibleTypes(namedType).map((type) => type.name),
-                ),
-              );
-            } else if (namedType && isObjectType(namedType)) {
-              possibleTypes = new Set([namedType.name]);
+
+            if (namedType) {
+              if (isAbstractType(namedType)) {
+                possibleTypes = possibleTypes.intersection(
+                  new Set(
+                    schema.getPossibleTypes(namedType).map((type) => type.name),
+                  ),
+                );
+              } else if (isObjectType(namedType)) {
+                possibleTypes = new Set([namedType.name]);
+              }
             }
           }
           possibleTypesStack.push(possibleTypes);
@@ -89,6 +92,19 @@ export function validateFixtureInput(
           const nestedValues = [];
 
           const responseKey = node.alias?.value || node.name.value;
+
+          // Track this field in the appropriate set based on whether we're in an inline fragment
+          const currentExpectedFields =
+            expectedFieldsStack[expectedFieldsStack.length - 1];
+          const currentPossibleTypes =
+            possibleTypesStack[possibleTypesStack.length - 1];
+
+          for (const concreteTypeName of currentPossibleTypes) {
+            if (!currentExpectedFields.has(concreteTypeName)) {
+              currentExpectedFields.set(concreteTypeName, new Set());
+            }
+            currentExpectedFields.get(concreteTypeName)!.add(responseKey);
+          }
 
           const fieldDefinition = typeInfo.getFieldDef();
           if (fieldDefinition === undefined || fieldDefinition === null) {
@@ -221,6 +237,11 @@ export function validateFixtureInput(
       },
       SelectionSet: {
         enter(node, _key, parent) {
+          // If this SelectionSet belongs to a Field, prepare to track expected fields
+          if (parent && "kind" in parent && parent.kind === Kind.FIELD) {
+            expectedFieldsStack.push(new Map());
+          }
+
           // Look ahead to find __typename field and track its response key
           const typenameField = node.selections.find(
             (selection) =>
@@ -268,12 +289,33 @@ export function validateFixtureInput(
           }
           return undefined;
         },
-        leave() {
+        leave(_node, _key, parent) {
+          // If this SelectionSet belongs to a Field or is the root (OperationDefinition), validate for extra fields
+          if (
+            parent &&
+            "kind" in parent &&
+            (parent.kind === Kind.FIELD ||
+              parent.kind === Kind.OPERATION_DEFINITION)
+          ) {
+            const expectedFields = expectedFieldsStack.pop()!;
+            const nestedValues = valueStack[valueStack.length - 1];
+            const typenameResponseKey =
+              typenameResponseKeyStack[typenameResponseKeyStack.length - 1];
+            errors.push(
+              ...checkForExtraFields(
+                nestedValues,
+                expectedFields,
+                typenameResponseKey,
+              ),
+            );
+          }
+
           typenameResponseKeyStack.pop();
         },
       },
     }),
   );
+
   return { errors };
 }
 
@@ -400,4 +442,73 @@ function isValueExpectedForType(
   }
 
   return possibleTypes.has(valueTypename);
+}
+
+/**
+ * Checks fixture objects for fields that are not present in the GraphQL query.
+ * Supports type discrimination for abstract types (unions/interfaces) using __typename.
+ *
+ * @param fixtureObjects - Array of fixture objects to validate
+ * @param expectedFields - Expected fields structure with common fields and type-specific fields
+ * @param typenameResponseKey - The response key for the __typename field (supports aliases like `type: __typename`)
+ * @returns Array of error messages for any extra fields found (empty if valid)
+ *
+ * @remarks
+ * - Only validates object types - skips null values and arrays
+ * - Uses __typename to determine which inline fragment fields apply to each object
+ * - Common fields (outside inline fragments) are expected on all objects
+ * - Type-specific fields (inside inline fragments) are only expected on matching types
+ * - No schema lookups needed - possible types were pre-computed during traversal
+ */
+function checkForExtraFields(
+  fixtureObjects: any[],
+  expectedFields: Map<string, Set<string>>,
+  typenameResponseKey: string | undefined,
+): string[] {
+  const errors: string[] = [];
+
+  for (const fixtureObject of fixtureObjects) {
+    if (
+      typeof fixtureObject === "object" &&
+      fixtureObject !== null &&
+      !Array.isArray(fixtureObject)
+    ) {
+      const fixtureFields = Object.keys(fixtureObject);
+
+      // Build the set of expected fields for this specific object
+      let expectedForThisObject = new Set();
+
+      const objectTypename = typenameResponseKey
+        ? fixtureObject[typenameResponseKey]
+        : fixtureObject.__typename;
+
+      if (objectTypename) {
+        // Object has __typename - direct lookup by concrete type name
+        const typeSpecificFields = expectedFields.get(objectTypename);
+        if (typeSpecificFields) {
+          expectedForThisObject = typeSpecificFields;
+        }
+      } else if (expectedFields.size > 0) {
+        // No __typename - allow union of all fragment fields
+        // Without __typename we can't discriminate which fragment applies
+        // Note: We use > 0 (not === 1) to handle nested fragments (e.g., ... on HasId { ... on HasName { ... }})
+        // where byType.size can be > 1. For 2+ sibling fragments (e.g., ... on Item / ... on Metadata)
+        // without __typename, validation BREAKs early (line 277) to enforce __typename requirement.
+        expectedFields.forEach((fields) => {
+          fields.forEach((field) => expectedForThisObject.add(field));
+        });
+      }
+
+      // Check each field in the fixture object
+      for (const fixtureField of fixtureFields) {
+        if (!expectedForThisObject.has(fixtureField)) {
+          errors.push(
+            `Extra field "${fixtureField}" found in fixture data not in query`,
+          );
+        }
+      }
+    }
+  }
+
+  return errors;
 }
