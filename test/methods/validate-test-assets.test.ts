@@ -119,15 +119,18 @@ describe("validateTestAssets", () => {
 
       // Input fixture should be invalid due to type mismatch and missing fields
       expect(result.inputFixture.errors.length).toBe(3);
-      expect(result.inputFixture.errors[0]).toContain(
-        'Int cannot represent non-integer value: "not_a_number"',
-      );
-      expect(result.inputFixture.errors[1]).toBe(
-        "Missing expected fixture data for details",
-      );
-      expect(result.inputFixture.errors[2]).toBe(
-        "Missing expected fixture data for metadata",
-      );
+      expect(result.inputFixture.errors[0]).toStrictEqual({
+        message: 'Int cannot represent non-integer value: "not_a_number"',
+        path: ["data", "items", 0, "count"],
+      });
+      expect(result.inputFixture.errors[1]).toStrictEqual({
+        message: "Missing expected fixture data for details",
+        path: ["data", "items", 0, "details"],
+      });
+      expect(result.inputFixture.errors[2]).toStrictEqual({
+        message: "Missing expected fixture data for metadata",
+        path: ["data", "metadata"],
+      });
     });
 
     it("should detect input fixture with invalid fields", async () => {
@@ -159,15 +162,19 @@ describe("validateTestAssets", () => {
 
       // Input fixture should be invalid due to missing fields and extra field
       expect(result.inputFixture.errors.length).toBe(3);
-      expect(result.inputFixture.errors[0]).toBe(
-        "Missing expected fixture data for details",
-      );
-      expect(result.inputFixture.errors[1]).toBe(
-        'Extra field "invalidField" found in fixture data not in query',
-      );
-      expect(result.inputFixture.errors[2]).toBe(
-        "Missing expected fixture data for metadata",
-      );
+      expect(result.inputFixture.errors[0]).toStrictEqual({
+        message: "Missing expected fixture data for details",
+        path: ["data", "items", 0, "details"],
+      });
+      expect(result.inputFixture.errors[1]).toStrictEqual({
+        message:
+          'Extra field "invalidField" found in fixture data not in query',
+        path: ["data", "items", 0, "invalidField"],
+      });
+      expect(result.inputFixture.errors[2]).toStrictEqual({
+        message: "Missing expected fixture data for metadata",
+        path: ["data", "metadata"],
+      });
 
       expect(result.outputFixture.errors).toHaveLength(0);
     });

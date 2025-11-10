@@ -4,7 +4,10 @@ import { determineMutationFromTarget } from "../utils/determine-mutation-from-ta
 
 import { validateInputQuery } from "./validate-input-query.js";
 import { validateFixtureOutput } from "./validate-fixture-output.js";
-import { validateFixtureInput } from "./validate-fixture-input.js";
+import {
+  validateFixtureInput,
+  FixtureInputValidationError,
+} from "./validate-fixture-input.js";
 import { FixtureData } from "./load-fixture.js";
 
 /**
@@ -28,7 +31,7 @@ export interface CompleteValidationResult {
     errors: ReadonlyArray<GraphQLError>;
   };
   inputFixture: {
-    errors: string[];
+    errors: FixtureInputValidationError[];
   };
   outputFixture: {
     errors: { message: string }[];

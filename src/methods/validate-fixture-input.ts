@@ -19,12 +19,23 @@ import {
   visit,
   visitWithTypeInfo,
   BREAK,
+  ASTNode,
 } from "graphql";
 
 import { inlineNamedFragmentSpreads } from "../utils/inline-named-fragment-spreads.js";
 
+export interface FixtureInputValidationError {
+  message: string;
+  path: (string | number)[];
+}
+
 export interface ValidateFixtureInputResult {
-  errors: string[];
+  errors: FixtureInputValidationError[];
+}
+
+interface NestedValue {
+  value: any;
+  path: (string | number)[];
 }
 
 /**
@@ -46,7 +57,7 @@ export function validateFixtureInput(
 ): ValidateFixtureInputResult {
   const inlineFragmentSpreadsAst = inlineNamedFragmentSpreads(queryAST);
   const typeInfo = new TypeInfo(schema);
-  const valueStack: any[][] = [[value]];
+  const valueStack: NestedValue[][] = [[{ value, path: [] }]];
   const typeStack: (GraphQLNamedType | undefined)[] = [];
   const possibleTypesStack: Set<string>[] = [
     new Set([schema.getQueryType()!.name]),
@@ -54,7 +65,7 @@ export function validateFixtureInput(
   const typenameResponseKeyStack: (string | undefined)[] = [];
   const expectedFieldsStack: Map<string, Set<string>>[] = [new Map()];
 
-  const errors: string[] = [];
+  const errors: FixtureInputValidationError[] = [];
 
   visit(
     inlineFragmentSpreadsAst,
@@ -87,7 +98,7 @@ export function validateFixtureInput(
         },
       },
       Field: {
-        enter(node) {
+        enter(node, _key, _parent, _path, ancestors) {
           const currentValues = valueStack[valueStack.length - 1];
           const nestedValues = [];
 
@@ -108,14 +119,19 @@ export function validateFixtureInput(
 
           const fieldDefinition = typeInfo.getFieldDef();
           if (fieldDefinition === undefined || fieldDefinition === null) {
-            errors.push(
-              `Cannot validate ${responseKey}: missing field definition`,
-            );
+            const currentPath = pathFromAncestors(ancestors);
+            errors.push({
+              message: `Cannot validate ${responseKey}: missing field definition`,
+              path: [...currentPath, responseKey],
+            });
             return BREAK;
           }
           const fieldType = fieldDefinition.type;
 
-          for (const currentValue of currentValues) {
+          for (const {
+            value: currentValue,
+            path: currentPath,
+          } of currentValues) {
             const valueForResponseKey = currentValue[responseKey];
 
             // Field is missing from fixture
@@ -134,7 +150,10 @@ export function validateFixtureInput(
                   typenameResponseKey,
                 )
               ) {
-                errors.push(`Missing expected fixture data for ${responseKey}`);
+                errors.push({
+                  message: `Missing expected fixture data for ${responseKey}`,
+                  path: [...currentPath, responseKey],
+                });
               }
             }
             // Scalars and Enums (including wrapped types)
@@ -146,8 +165,11 @@ export function validateFixtureInput(
               coerceInputValue(
                 valueForResponseKey,
                 fieldType,
-                (path, _invalidValue, error) => {
-                  errors.push(`${error.message} At "${path.join(".")}"`);
+                (_path, _invalidValue, error) => {
+                  errors.push({
+                    message: error.message,
+                    path: [...currentPath, responseKey],
+                  });
                 },
               );
             }
@@ -169,14 +191,15 @@ export function validateFixtureInput(
                     processNestedArrays(
                       valueForResponseKey,
                       unwrappedFieldType,
-                      responseKey,
+                      [...currentPath, responseKey],
                     );
                   nestedValues.push(...flattened);
                   errors.push(...flattenErrors);
                 } else {
-                  errors.push(
-                    `Expected array for ${responseKey}, but got ${typeof valueForResponseKey}`,
-                  );
+                  errors.push({
+                    message: `Expected array, but got ${typeof valueForResponseKey}`,
+                    path: [...currentPath, responseKey],
+                  });
                 }
               }
               // Objects - validate and add to traversal stack
@@ -185,29 +208,36 @@ export function validateFixtureInput(
                 isAbstractType(unwrappedFieldType)
               ) {
                 if (valueForResponseKey === null) {
-                  errors.push(
-                    `Expected object for ${responseKey}, but got null`,
-                  );
+                  errors.push({
+                    message: `Expected object, but got null`,
+                    path: [...currentPath, responseKey],
+                  });
                 } else if (typeof valueForResponseKey === "object") {
-                  nestedValues.push(valueForResponseKey);
+                  nestedValues.push({
+                    value: valueForResponseKey,
+                    path: [...currentPath, responseKey],
+                  });
                 } else {
-                  errors.push(
-                    `Expected object for ${responseKey}, but got ${typeof valueForResponseKey}`,
-                  );
+                  errors.push({
+                    message: `Expected object, but got ${typeof valueForResponseKey}`,
+                    path: [...currentPath, responseKey],
+                  });
                 }
               }
               // Unexpected type - defensive check that should never be reached
               else {
-                errors.push(
-                  `Unexpected type for ${responseKey}: ${unwrappedFieldType}`,
-                );
+                errors.push({
+                  message: `Unexpected type, expected ${unwrappedFieldType}`,
+                  path: [...currentPath, responseKey],
+                });
               }
             }
             // No type information - should not happen with valid query
             else {
-              errors.push(
-                `Cannot validate ${responseKey}: missing type information`,
-              );
+              errors.push({
+                message: `Cannot validate ${responseKey}: missing type information`,
+                path: [...currentPath, responseKey],
+              });
             }
           }
 
@@ -236,7 +266,7 @@ export function validateFixtureInput(
         },
       },
       SelectionSet: {
-        enter(node, _key, parent) {
+        enter(node, _key, parent, _path, ancestors) {
           // If this SelectionSet belongs to a Field, prepare to track expected fields
           if (parent && "kind" in parent && parent.kind === Kind.FIELD) {
             expectedFieldsStack.push(new Map());
@@ -281,9 +311,11 @@ export function validateFixtureInput(
             ).length;
 
             if (!hasTypename && fragmentSpreadCount > 1) {
-              errors.push(
-                `Missing __typename field for abstract type ${getNamedType(typeInfo.getType())?.name}`,
-              );
+              const currentPath = pathFromAncestors([...ancestors, parent!]);
+              errors.push({
+                message: `Missing __typename field for abstract type ${getNamedType(typeInfo.getType())?.name}`,
+                path: currentPath,
+              });
               return BREAK;
             }
           }
@@ -348,42 +380,43 @@ export function validateFixtureInput(
 function processNestedArrays(
   value: any[],
   listType: GraphQLList<any>,
-  fieldName: string,
-): { values: any[]; errors: string[] } {
-  const result: any[] = [];
-  const errors: string[] = [];
+  path: (string | number)[],
+): { values: NestedValue[]; errors: FixtureInputValidationError[] } {
+  const nestedValues: NestedValue[] = [];
+  const errors: FixtureInputValidationError[] = [];
   const elementType = listType.ofType;
 
   for (const [index, element] of value.entries()) {
     if (element === null) {
       if (!isNullableType(elementType)) {
-        errors.push(
-          `Null value found in non-nullable array at ${fieldName}[${index}]`,
-        );
+        errors.push({
+          message: "Null value found in non-nullable array",
+          path: [...path, index],
+        });
       }
     } else if (isListType(elementType)) {
       // Element type is a list - expect nested array and recurse
       if (Array.isArray(element)) {
-        const nested = processNestedArrays(
-          element,
-          elementType,
-          `${fieldName}[${index}]`,
-        );
-        result.push(...nested.values);
+        const nested = processNestedArrays(element, elementType, [
+          ...path,
+          index,
+        ]);
+        nestedValues.push(...nested.values);
         errors.push(...nested.errors);
       } else {
         // Error: fixture structure doesn't match schema nesting
-        errors.push(
-          `Expected array at ${fieldName}[${index}], but got ${typeof element}`,
-        );
+        errors.push({
+          message: `Expected array, but got ${typeof element}`,
+          path: [...path, index],
+        });
       }
     } else {
       // Non-list type - add directly
-      result.push(element);
+      nestedValues.push({ value: element, path: [...path, index] });
     }
   }
 
-  return { values: result, errors };
+  return { values: nestedValues, errors };
 }
 
 /**
@@ -461,13 +494,13 @@ function isValueExpectedForType(
  * - No schema lookups needed - possible types were pre-computed during traversal
  */
 function checkForExtraFields(
-  fixtureObjects: any[],
+  fixtureObjects: NestedValue[],
   expectedFields: Map<string, Set<string>>,
   typenameResponseKey: string | undefined,
-): string[] {
-  const errors: string[] = [];
+): FixtureInputValidationError[] {
+  const errors: FixtureInputValidationError[] = [];
 
-  for (const fixtureObject of fixtureObjects) {
+  for (const { value: fixtureObject, path } of fixtureObjects) {
     if (
       typeof fixtureObject === "object" &&
       fixtureObject !== null &&
@@ -502,13 +535,22 @@ function checkForExtraFields(
       // Check each field in the fixture object
       for (const fixtureField of fixtureFields) {
         if (!expectedForThisObject.has(fixtureField)) {
-          errors.push(
-            `Extra field "${fixtureField}" found in fixture data not in query`,
-          );
+          errors.push({
+            message: `Extra field "${fixtureField}" found in fixture data not in query`,
+            path: [...path, fixtureField],
+          });
         }
       }
     }
   }
 
   return errors;
+}
+
+function pathFromAncestors(
+  ancestors: ReadonlyArray<ASTNode | ReadonlyArray<ASTNode>>,
+): (string | number)[] {
+  return ancestors
+    .filter((ancestor) => "kind" in ancestor && ancestor.kind === Kind.FIELD)
+    .map((ancestor) => ancestor.alias?.value || ancestor.name.value);
 }
