@@ -134,7 +134,8 @@ pnpm test
 pnpm test:watch
 ```
 
-### Create a tarball from a package 
+### Create a tarball from a package
+
 ```bash
 pnpm build
 pnpm pack
@@ -163,6 +164,40 @@ The CI configuration can be found in [.github/workflows/ci.yml](./.github/workfl
 ## License
 
 MIT
+
+## Creating a new release
+
+This repo uses [Changesets](https://github.com/changesets/changesets) to manage releases.
+
+### Adding a changeset
+
+When making significant changes, generate a new changeset:
+
+```bash
+pnpm changeset
+```
+
+Follow the prompts to:
+
+1. Select the change type (patch, minor, or major)
+2. Provide a description of your changes
+
+Commit the generated changeset file (`.changeset/*.md`) with your PR.
+
+### Release process
+
+1. **When your PR merges to `main`**: The [release workflow](.github/workflows/release.yml) automatically creates or updates a "Version Packages" pull request.
+2. **Version Packages PR**: Contains all unreleased changes from merged changesets, with updated version numbers and CHANGELOG entries.
+3. **When the Version Packages PR merges**: The workflow publishes the new version to the npm registry.
+
+### Modifying unreleased changes
+
+To change or expand the contents of the next release:
+
+1. Close the existing "Version Packages" PR.
+2. The next commit to `main` will create a new "Version Packages" PR containing all unreleased changes (including the ones from the closed PR).
+
+This allows you to add more changes or modify changeset descriptions before releasing.
 
 ## Contributing
 
