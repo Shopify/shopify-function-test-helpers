@@ -25,31 +25,34 @@ For a full test suite that runs multiple fixtures using `getFunctionInfo`:
 ```javascript
 import path from "path";
 import fs from "fs";
+import { describe, beforeAll, test, expect } from "vitest";
 import {
   buildFunction,
   getFunctionInfo,
-  loadFixture,
-  runFunction,
-  validateTestAssets,
   loadSchema,
   loadInputQuery,
+  loadFixture,
+  validateTestAssets,
+  runFunction
 } from "@shopify/shopify-function-test-helpers";
 
-describe("Function Tests", () => {
+describe("Default Integration Test", () => {
   let schema;
   let functionDir;
-  let functionInfo;
+  let schemaPath;
+  let targeting;
+  let functionRunnerPath;
+  let wasmPath;
 
   beforeAll(async () => {
     functionDir = path.dirname(__dirname);
     await buildFunction(functionDir);
 
-    // Get function information from Shopify CLI
-    functionInfo = await getFunctionInfo(functionDir);
+    const functionInfo = await getFunctionInfo(functionDir);
+    ({ schemaPath, functionRunnerPath, wasmPath, targeting } = functionInfo);
 
-    // Load schema
-    schema = await loadSchema(functionInfo.schemaPath);
-  }, 20000);
+    schema = await loadSchema(schemaPath);
+  }, 45000);
 
   const fixturesDir = path.join(__dirname, "fixtures");
   const fixtureFiles = fs
@@ -58,31 +61,27 @@ describe("Function Tests", () => {
     .map((file) => path.join(fixturesDir, file));
 
   fixtureFiles.forEach((fixtureFile) => {
-    test(\`runs \${path.basename(fixtureFile)}\`, async () => {
+    test(`runs ${path.relative(fixturesDir, fixtureFile)}`, async () => {
       const fixture = await loadFixture(fixtureFile);
-
-      // Get the correct input query for this fixture's target
-      const targetInputQueryPath = functionInfo.targeting[fixture.target].inputQueryPath;
+      const targetInputQueryPath = targeting[fixture.target].inputQueryPath;
       const inputQueryAST = await loadInputQuery(targetInputQueryPath);
 
-      // Validate test assets
       const validationResult = await validateTestAssets({
         schema,
         fixture,
-        inputQueryAST,
+        inputQueryAST
       });
 
-      expect(validationResult.inputQuery.errors).toHaveLength(0);
-      expect(validationResult.inputFixture.errors).toHaveLength(0);
-      expect(validationResult.outputFixture.errors).toHaveLength(0);
+      expect(validationResult.inputQuery.errors).toEqual([]);
+      expect(validationResult.inputFixture.errors).toEqual([]);
+      expect(validationResult.outputFixture.errors).toEqual([]);
 
-      // Run the function
       const runResult = await runFunction(
         fixture,
-        functionInfo.functionRunnerPath,
-        functionInfo.wasmPath,
+        functionRunnerPath,
+        wasmPath,
         targetInputQueryPath,
-        functionInfo.schemaPath
+        schemaPath
       );
 
       expect(runResult.error).toBeNull();
