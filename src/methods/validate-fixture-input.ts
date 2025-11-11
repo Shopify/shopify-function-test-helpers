@@ -121,7 +121,7 @@ export function validateFixtureInput(
           if (fieldDefinition === undefined || fieldDefinition === null) {
             const currentPath = pathFromAncestors(ancestors);
             errors.push({
-              message: `Cannot validate ${responseKey}: missing field definition`,
+              message: `Cannot validate \`${responseKey}\`: missing field definition`,
               path: [...currentPath, responseKey],
             });
             return BREAK;
@@ -151,7 +151,7 @@ export function validateFixtureInput(
                 )
               ) {
                 errors.push({
-                  message: `Missing expected fixture data for ${responseKey}`,
+                  message: `Missing expected fixture data for \`${responseKey}\``,
                   path: [...currentPath, responseKey],
                 });
               }
@@ -227,7 +227,7 @@ export function validateFixtureInput(
               // Unexpected type - defensive check that should never be reached
               else {
                 errors.push({
-                  message: `Unexpected type, expected ${unwrappedFieldType}`,
+                  message: `Unexpected type, expected \`${unwrappedFieldType}\``,
                   path: [...currentPath, responseKey],
                 });
               }
@@ -235,7 +235,7 @@ export function validateFixtureInput(
             // No type information - should not happen with valid query
             else {
               errors.push({
-                message: `Cannot validate ${responseKey}: missing type information`,
+                message: `Cannot validate \`${responseKey}\`: missing type information`,
                 path: [...currentPath, responseKey],
               });
             }
@@ -313,7 +313,7 @@ export function validateFixtureInput(
             if (!hasTypename && fragmentSpreadCount > 1) {
               const currentPath = pathFromAncestors([...ancestors, parent!]);
               errors.push({
-                message: `Missing __typename field for abstract type ${getNamedType(typeInfo.getType())?.name}`,
+                message: `Missing \`__typename\` field for abstract type \`${getNamedType(typeInfo.getType())?.name}\``,
                 path: currentPath,
               });
               return BREAK;
@@ -536,7 +536,7 @@ function checkForExtraFields(
       for (const fixtureField of fixtureFields) {
         if (!expectedForThisObject.has(fixtureField)) {
           errors.push({
-            message: `Extra field "${fixtureField}" found in fixture data not in query`,
+            message: `Extra field \`${fixtureField}\` found in fixture data not in query`,
             path: [...path, fixtureField],
           });
         }
