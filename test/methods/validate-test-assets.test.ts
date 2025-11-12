@@ -124,11 +124,11 @@ describe("validateTestAssets", () => {
         path: ["data", "items", 0, "count"],
       });
       expect(result.inputFixture.errors[1]).toStrictEqual({
-        message: "Missing expected fixture data for details",
+        message: "Missing expected fixture data for `details`",
         path: ["data", "items", 0, "details"],
       });
       expect(result.inputFixture.errors[2]).toStrictEqual({
-        message: "Missing expected fixture data for metadata",
+        message: "Missing expected fixture data for `metadata`",
         path: ["data", "metadata"],
       });
     });
@@ -163,16 +163,16 @@ describe("validateTestAssets", () => {
       // Input fixture should be invalid due to missing fields and extra field
       expect(result.inputFixture.errors.length).toBe(3);
       expect(result.inputFixture.errors[0]).toStrictEqual({
-        message: "Missing expected fixture data for details",
+        message: "Missing expected fixture data for `details`",
         path: ["data", "items", 0, "details"],
       });
       expect(result.inputFixture.errors[1]).toStrictEqual({
         message:
-          'Extra field "invalidField" found in fixture data not in query',
+          "Extra field `invalidField` found in fixture data not in query",
         path: ["data", "items", 0, "invalidField"],
       });
       expect(result.inputFixture.errors[2]).toStrictEqual({
-        message: "Missing expected fixture data for metadata",
+        message: "Missing expected fixture data for `metadata`",
         path: ["data", "metadata"],
       });
 
