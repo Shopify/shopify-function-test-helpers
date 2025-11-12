@@ -1,5 +1,11 @@
 # @shopify/shopify-function-test-helpers
 
+## 0.0.4
+
+### Patch Changes
+
+- df053cb: Add path to fixture input validation errors
+
 ## 0.0.3
 
 ### Patch Changes
