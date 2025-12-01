@@ -1,5 +1,15 @@
 # @shopify/shopify-function-test-helpers
 
+## 1.0.0
+
+### Major Changes
+
+- fc8a0df: Release 1.0
+
+### Patch Changes
+
+- df053cb: Add path to fixture input validation errors
+
 ## 0.0.3
 
 ### Patch Changes
