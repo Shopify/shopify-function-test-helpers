@@ -39,6 +39,8 @@ export async function getFunctionInfo(
           ...process.env,
           SHOPIFY_INVOKED_BY: "shopify-function-test-helpers",
         },
+        // Ensure resolution of .cmd on Windows
+        shell: process.platform === "win32",
       },
     );
 
