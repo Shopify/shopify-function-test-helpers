@@ -1,28 +1,16 @@
-import { EventEmitter } from "events";
-import { spawn } from "child_process";
 import path from "path";
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { execa } from "execa";
 
 import { getFunctionInfo } from "../../src/methods/get-function-info.ts";
 
-vi.mock("child_process", () => ({
-  spawn: vi.fn(),
+vi.mock("execa", () => ({
+  execa: vi.fn(),
 }));
 
 describe("getFunctionInfo", () => {
-  const mockSpawn = vi.mocked(spawn);
-  let mockProcess: any;
-
-  beforeEach(() => {
-    // Create a mock process object that extends EventEmitter
-    mockProcess = new EventEmitter();
-    mockProcess.stdout = new EventEmitter();
-    mockProcess.stderr = new EventEmitter();
-
-    // Configure the mock to return our mock process
-    mockSpawn.mockReturnValue(mockProcess);
-  });
+  const mockExeca = vi.mocked(execa);
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -39,14 +27,14 @@ describe("getFunctionInfo", () => {
       },
     };
 
+    mockExeca.mockResolvedValue({
+      stdout: JSON.stringify(mockFunctionInfo),
+      stderr: "",
+      exitCode: 0,
+    } as any);
+
     const functionDir = "/path/to/extensions/my-function";
     const promise = getFunctionInfo(functionDir);
-
-    // Simulate successful CLI response
-    setTimeout(() => {
-      mockProcess.stdout.emit("data", JSON.stringify(mockFunctionInfo));
-      mockProcess.emit("close", 0);
-    }, 10);
 
     const result = await promise;
 
@@ -55,7 +43,7 @@ describe("getFunctionInfo", () => {
     const expectedCwd = path.dirname(resolvedFunctionDir);
 
     expect(result).toEqual(mockFunctionInfo);
-    expect(mockSpawn).toHaveBeenCalledWith(
+    expect(mockExeca).toHaveBeenCalledWith(
       "shopify",
       ["app", "function", "info", "--json", "--path", "my-function"],
       expect.objectContaining({
@@ -63,21 +51,17 @@ describe("getFunctionInfo", () => {
         env: expect.objectContaining({
           SHOPIFY_INVOKED_BY: "shopify-function-test-helpers",
         }),
-        stdio: ["pipe", "pipe", "pipe"],
       }),
     );
   });
 
   it("should reject when CLI command is not found", async () => {
-    const promise = getFunctionInfo("/path/to/extensions/my-function");
+    const error: any = new Error("Command failed");
+    error.exitCode = 1;
+    error.stderr = "Error: Command app function info not found";
+    mockExeca.mockRejectedValue(error);
 
-    setTimeout(() => {
-      mockProcess.stderr.emit(
-        "data",
-        "Error: Command app function info not found",
-      );
-      mockProcess.emit("close", 1);
-    }, 10);
+    const promise = getFunctionInfo("/path/to/extensions/my-function");
 
     await expect(promise).rejects.toThrow(
       'The "shopify app function info" command is not available',
@@ -88,12 +72,12 @@ describe("getFunctionInfo", () => {
   });
 
   it("should reject when shopify command is not found", async () => {
-    const promise = getFunctionInfo("/path/to/extensions/my-function");
+    const error: any = new Error("Command failed");
+    error.exitCode = 127;
+    error.stderr = "shopify: command not found";
+    mockExeca.mockRejectedValue(error);
 
-    setTimeout(() => {
-      mockProcess.stderr.emit("data", "shopify: command not found");
-      mockProcess.emit("close", 127);
-    }, 10);
+    const promise = getFunctionInfo("/path/to/extensions/my-function");
 
     await expect(promise).rejects.toThrow(
       'The "shopify app function info" command is not available',
@@ -101,12 +85,12 @@ describe("getFunctionInfo", () => {
   });
 
   it("should reject when CLI command fails with non-zero exit code", async () => {
-    const promise = getFunctionInfo("/path/to/extensions/my-function");
+    const error: any = new Error("Command failed");
+    error.exitCode = 1;
+    error.stderr = "Error: Function not found\n";
+    mockExeca.mockRejectedValue(error);
 
-    setTimeout(() => {
-      mockProcess.stderr.emit("data", "Error: Function not found\n");
-      mockProcess.emit("close", 1);
-    }, 10);
+    const promise = getFunctionInfo("/path/to/extensions/my-function");
 
     await expect(promise).rejects.toThrow(
       "Function info command failed with exit code 1",
@@ -115,23 +99,23 @@ describe("getFunctionInfo", () => {
   });
 
   it("should reject when JSON parsing fails", async () => {
-    const promise = getFunctionInfo("/path/to/extensions/my-function");
+    mockExeca.mockResolvedValue({
+      stdout: "Invalid JSON output",
+      stderr: "",
+      exitCode: 0,
+    } as any);
 
-    setTimeout(() => {
-      mockProcess.stdout.emit("data", "Invalid JSON output");
-      mockProcess.emit("close", 0);
-    }, 10);
+    const promise = getFunctionInfo("/path/to/extensions/my-function");
 
     await expect(promise).rejects.toThrow("Failed to parse function info JSON");
     await expect(promise).rejects.toThrow("Invalid JSON output");
   });
 
   it("should reject when spawn process emits an error", async () => {
-    const promise = getFunctionInfo("/path/to/extensions/my-function");
+    const error = new Error("ENOENT: spawn failed");
+    mockExeca.mockRejectedValue(error);
 
-    setTimeout(() => {
-      mockProcess.emit("error", new Error("ENOENT: spawn failed"));
-    }, 10);
+    const promise = getFunctionInfo("/path/to/extensions/my-function");
 
     await expect(promise).rejects.toThrow(
       "Failed to start shopify function info command",
@@ -140,14 +124,12 @@ describe("getFunctionInfo", () => {
   });
 
   it("should accumulate stderr output for error messages", async () => {
-    const promise = getFunctionInfo("/path/to/extensions/my-function");
+    const error: any = new Error("Command failed");
+    error.exitCode = 1;
+    error.stderr = "Error line 1\nError line 2\nError line 3";
+    mockExeca.mockRejectedValue(error);
 
-    setTimeout(() => {
-      mockProcess.stderr.emit("data", "Error line 1\n");
-      mockProcess.stderr.emit("data", "Error line 2\n");
-      mockProcess.stderr.emit("data", "Error line 3");
-      mockProcess.emit("close", 1);
-    }, 10);
+    const promise = getFunctionInfo("/path/to/extensions/my-function");
 
     await expect(promise).rejects.toThrow("Error line 1");
     await expect(promise).rejects.toThrow("Error line 2");
