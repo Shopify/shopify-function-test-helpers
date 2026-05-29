@@ -20,7 +20,10 @@ export { validateFixtureInput } from "./methods/validate-fixture-input.js";
 // Export types for consumers
 export type { FixtureData } from "./methods/load-fixture.js";
 export type { BuildFunctionResult } from "./methods/build-function.js";
-export type { RunFunctionResult } from "./methods/run-function.js";
+export type {
+  FunctionRunMetadata,
+  RunFunctionResult,
+} from "./methods/run-function.js";
 export type { FunctionInfo } from "./methods/get-function-info.js";
 export type {
   ValidateTestAssetsOptions,

@@ -85,7 +85,12 @@ describe("Default Integration Test", () => {
       );
 
       expect(runResult.error).toBeNull();
-      expect(runResult.result.output).toEqual(fixture.expectedOutput);
+      expect(runResult.result?.output).toEqual(fixture.expectedOutput);
+      expect(runResult.metadata).toEqual({
+        instructionCount: expect.any(Number),
+        memoryUsageKiB: expect.any(Number),
+        moduleSizeKiB: expect.any(Number)
+      });
     }, 10000);
   });
 });
