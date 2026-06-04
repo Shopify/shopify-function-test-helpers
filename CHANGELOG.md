@@ -1,5 +1,15 @@
 # @shopify/shopify-function-test-helpers
 
+## 1.1.0
+
+### Minor Changes
+
+- 370c196: Add function run metadata to `runFunction`, including instruction count, memory usage, and module size.
+
+### Patch Changes
+
+- 1ea336d: Switched from spawn to execa for invoking shopify cli
+
 ## 1.0.0
 
 ### Major Changes
