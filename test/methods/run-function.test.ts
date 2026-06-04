@@ -46,6 +46,46 @@ describe("runFunction", () => {
     vi.clearAllMocks();
   });
 
+  function runnerOutputJson(
+    change?: (result: Record<string, unknown>) => void,
+  ): string {
+    const result: Record<string, unknown> = {
+      output: { operations: [] },
+      instructions: 4423,
+      size: 49,
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      memory_usage: 1088,
+    };
+
+    change?.(result);
+
+    return JSON.stringify(result);
+  }
+
+  async function runFunctionWithStdout(stdout: string) {
+    const fixture: FixtureData = {
+      export: "cart-validations-generate-run",
+      input: { cart: { lines: [] } },
+      expectedOutput: {},
+      target: "cart.validations.generate.run",
+    };
+
+    const resultPromise = runFunction(
+      fixture,
+      "/path/to/function-runner",
+      "/path/to/function.wasm",
+      "/path/to/query.graphql",
+      "/path/to/schema.graphql",
+    );
+
+    setImmediate(() => {
+      mockStdout.emit("data", Buffer.from(stdout));
+      mockProcess.emit("close", 0);
+    });
+
+    return resultPromise;
+  }
+
   it("should run a function successfully and return result", async () => {
     const fixture: FixtureData = {
       export: "cart-validations-generate-run",
@@ -75,9 +115,13 @@ describe("runFunction", () => {
 
     // Simulate successful function execution
     const expectedOutput = {
+      size: 49,
+      instructions: 4423,
       output: {
         operations: [],
       },
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      memory_usage: 1088,
     };
     setImmediate(() => {
       mockStdout.emit("data", Buffer.from(JSON.stringify(expectedOutput)));
@@ -88,7 +132,12 @@ describe("runFunction", () => {
 
     expect(result).toBeDefined();
     expect(result.error).toBeNull();
-    expect(result.result).toEqual(expectedOutput);
+    expect(result.result).toEqual({ output: expectedOutput.output });
+    expect(result.metadata).toEqual({
+      instructionCount: 4423,
+      memoryUsageKiB: 1088,
+      moduleSizeKiB: 49,
+    });
 
     // Verify spawn was called with correct arguments
     expect(mockSpawn).toHaveBeenCalledWith(
@@ -145,6 +194,7 @@ describe("runFunction", () => {
     expect(result.error).toContain("function-runner failed with exit code 1");
     expect(result.error).toContain("Error: Export not found");
     expect(result.result).toBeNull();
+    expect(result.metadata).toBeNull();
   });
 
   it("should handle process spawn errors", async () => {
@@ -180,6 +230,7 @@ describe("runFunction", () => {
     expect(result.error).toContain("Failed to start function-runner");
     expect(result.error).toContain("ENOENT");
     expect(result.result).toBeNull();
+    expect(result.metadata).toBeNull();
   });
 
   it("should handle invalid JSON output from function-runner", async () => {
@@ -214,6 +265,7 @@ describe("runFunction", () => {
     expect(result).toBeDefined();
     expect(result.error).toContain("Failed to parse function-runner output");
     expect(result.result).toBeNull();
+    expect(result.metadata).toBeNull();
   });
 
   it("should handle multiple stdout/stderr chunks", async () => {
@@ -238,9 +290,10 @@ describe("runFunction", () => {
     );
 
     // Simulate output in multiple chunks
-    const outputPart1 = '{"output":';
+    const outputPart1 =
+      '{"name":"function.wasm","size":49,"instructions":4423,"logs":"","input":{},"output":';
     const outputPart2 = '{"operations":[]}';
-    const outputPart3 = "}";
+    const outputPart3 = ',"success":true,"memory_usage":1088}';
 
     setImmediate(() => {
       mockStdout.emit("data", Buffer.from(outputPart1));
@@ -258,9 +311,44 @@ describe("runFunction", () => {
         operations: [],
       },
     });
+    expect(result.metadata).toEqual({
+      instructionCount: 4423,
+      memoryUsageKiB: 1088,
+      moduleSizeKiB: 49,
+    });
   });
 
-  it("should reject output without explicit output wrapper", async () => {
+  it("should return function-runner error without metadata for invalid JSON shape on non-zero exit code", async () => {
+    const fixture: FixtureData = {
+      export: "cart-validations-generate-run",
+      input: { cart: { lines: [] } },
+      expectedOutput: {},
+      target: "cart.validations.generate.run",
+    };
+
+    const resultPromise = runFunction(
+      fixture,
+      "/path/to/function-runner",
+      "/path/to/function.wasm",
+      "/path/to/query.graphql",
+      "/path/to/schema.graphql",
+    );
+
+    setImmediate(() => {
+      mockStdout.emit("data", Buffer.from(JSON.stringify({ error: "boom" })));
+      mockStderr.emit("data", Buffer.from("Function failed"));
+      mockProcess.emit("close", 1);
+    });
+
+    const result = await resultPromise;
+
+    expect(result.error).toContain("function-runner failed with exit code 1");
+    expect(result.error).toContain("Function failed");
+    expect(result.result).toBeNull();
+    expect(result.metadata).toBeNull();
+  });
+
+  it("should return metadata from parseable output on non-zero exit code", async () => {
     const fixture: FixtureData = {
       export: "cart-validations-generate-run",
       input: { cart: { lines: [] } },
@@ -281,26 +369,74 @@ describe("runFunction", () => {
       schemaPath,
     );
 
-    // Simulate output without "output" wrapper
     setImmediate(() => {
       mockStdout.emit(
         "data",
         Buffer.from(
           JSON.stringify({
-            operations: [],
+            size: 42,
+            instructions: 999,
+            output: {},
+            // eslint-disable-next-line @typescript-eslint/naming-convention
+            memory_usage: 1000,
           }),
         ),
       );
-      mockProcess.emit("close", 0);
+      mockStderr.emit("data", Buffer.from("Function failed"));
+      mockProcess.emit("close", 1);
     });
 
     const result = await resultPromise;
 
-    expect(result).toBeDefined();
-    expect(result.error).toContain(
-      "function-runner returned unexpected format",
-    );
-    expect(result.error).toContain("missing 'output' field");
+    expect(result.error).toContain("function-runner failed with exit code 1");
+    expect(result.error).toContain("Function failed");
     expect(result.result).toBeNull();
+    expect(result.metadata).toEqual({
+      instructionCount: 999,
+      memoryUsageKiB: 1000,
+      moduleSizeKiB: 42,
+    });
   });
+
+  it.each([
+    ["null", () => JSON.stringify(null)],
+    ["string", () => JSON.stringify("not an object")],
+    [
+      "missing output",
+      () => runnerOutputJson((result) => delete result.output),
+    ],
+    [
+      "missing instructions",
+      () => runnerOutputJson((result) => delete result.instructions),
+    ],
+    [
+      "non-number instructions",
+      () => runnerOutputJson((result) => (result.instructions = "4423")),
+    ],
+    [
+      "missing memory usage",
+      () => runnerOutputJson((result) => delete result.memory_usage),
+    ],
+    [
+      "non-number memory usage",
+      () => runnerOutputJson((result) => (result.memory_usage = "1088")),
+    ],
+    ["missing size", () => runnerOutputJson((result) => delete result.size)],
+    [
+      "non-number size",
+      () => runnerOutputJson((result) => (result.size = "49")),
+    ],
+  ])(
+    "should reject invalid function-runner JSON shape: %s",
+    async (_name, getStdout) => {
+      const result = await runFunctionWithStdout(getStdout());
+
+      expect(result).toBeDefined();
+      expect(result.error).toContain(
+        "function-runner returned unexpected format",
+      );
+      expect(result.result).toBeNull();
+      expect(result.metadata).toBeNull();
+    },
+  );
 });
