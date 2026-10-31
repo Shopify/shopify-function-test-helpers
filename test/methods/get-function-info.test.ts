@@ -55,6 +55,56 @@ describe("getFunctionInfo", () => {
     );
   });
 
+  it("should read Shopify CLI 5's output, nested under function with a targets array", async () => {
+    const cartTarget = "cart.lines.discounts.generate.run";
+    const deliveryTarget = "cart.delivery-options.discounts.generate.run";
+    const cli5Output = {
+      function: {
+        handle: "my-function",
+        name: "My Function",
+        apiVersion: "2026-07",
+        directory: "/path/to/extensions/my-function",
+        targets: [
+          {
+            target: cartTarget,
+            inputQueryPath: "/path/to/cart_run.graphql",
+            export: "generate_cart_run",
+          },
+          {
+            target: deliveryTarget,
+            inputQueryPath: "/path/to/shipping_run.graphql",
+            export: "generate_delivery_run",
+          },
+        ],
+        schemaPath: "/path/to/schema.graphql",
+        wasmPath: "/path/to/function.wasm",
+        functionRunnerPath: "/path/to/function-runner",
+      },
+    };
+
+    mockExeca.mockResolvedValue({
+      stdout: JSON.stringify(cli5Output, null, 2),
+      stderr: "",
+      exitCode: 0,
+    } as any);
+
+    const result = await getFunctionInfo("/path/to/extensions/my-function");
+
+    expect(result.schemaPath).toBe("/path/to/schema.graphql");
+    expect(result.wasmPath).toBe("/path/to/function.wasm");
+    expect(result.functionRunnerPath).toBe("/path/to/function-runner");
+    expect(result.targeting).toEqual({
+      [cartTarget]: {
+        inputQueryPath: "/path/to/cart_run.graphql",
+        export: "generate_cart_run",
+      },
+      [deliveryTarget]: {
+        inputQueryPath: "/path/to/shipping_run.graphql",
+        export: "generate_delivery_run",
+      },
+    });
+  });
+
   it("should reject when CLI command is not found", async () => {
     const error: any = new Error("Command failed");
     error.exitCode = 1;
