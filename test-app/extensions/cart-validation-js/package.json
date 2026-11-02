@@ -1,6 +1,7 @@
 {
   "name": "cart-validation-js",
   "version": "0.0.1",
+  "private": true,
   "license": "UNLICENSED",
   "scripts": {
     "shopify": "npm exec -- shopify",
