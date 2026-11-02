@@ -17,6 +17,33 @@ export interface FunctionInfo {
 }
 
 /**
+ * A target as Shopify CLI 5 lists it in `app function info --json`
+ */
+interface FunctionInfoTarget {
+  target: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Shopify CLI 5 nests the info under `function` and lists the targets as an
+ * array of `{ target, inputQueryPath, export }`. Earlier versions return the
+ * info at the top level, with `targeting` keyed by target. Both come back in
+ * the earlier shape, which `FunctionInfo` describes.
+ */
+function normalizeFunctionInfo(output: any): FunctionInfo {
+  const info = output?.function ?? output;
+  if (!info.targeting && Array.isArray(info.targets)) {
+    info.targeting = Object.fromEntries(
+      info.targets.map(({ target, ...rest }: FunctionInfoTarget) => [
+        target,
+        rest,
+      ]),
+    );
+  }
+  return info as FunctionInfo;
+}
+
+/**
  * Retrieves function information from the Shopify CLI
  * @param {string} functionDir - The directory path of the function
  * @returns {Promise<FunctionInfo>} Function information including schemaPath, functionRunnerPath, wasmPath, and targeting
@@ -42,8 +69,7 @@ export async function getFunctionInfo(
       },
     );
 
-    const functionInfo = JSON.parse(result.stdout.trim()) as FunctionInfo;
-    return functionInfo;
+    return normalizeFunctionInfo(JSON.parse(result.stdout.trim()));
   } catch (error: any) {
     // Handle JSON parsing errors
     if (error instanceof SyntaxError) {
